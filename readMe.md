@@ -80,7 +80,7 @@ We welcome contributors of all experience levels!
 * Fork the repository
 * Create a feature branch
 * Open a pull request
-* - [Figma Design](https://www.figma.com/proto/Iy3eNcv9g5xci8K3zHwQw4/Ahjoor-Design?node-id=814-45&t=TSxCDBQxRkJTTfzC-1)
+* - [Figma Design](https://www.figma.com/design/NlDFuleGHbh26rRp1ZfyvE/Ahjoor-Design?node-id=0-1&t=3E08H8am5RpUngRF-1)
 ### 🌳 Branching Strategy
 
 * `main` → stable release branch
@@ -116,9 +116,6 @@ We use __Conventional Commits__ to standardize commit messages.
 
 This project is licensed under the **MIT License**.
 
----
-
-**Built with ❤️ to help communities save money together through Ahjoor Savings**
 ---
 
 ##  Contact Us
