@@ -1,152 +1,128 @@
-# ahjoorxmr-frontend
+# Ahjoor Frontend 
 
-A production-ready Next.js application built with TypeScript, App Router, and Tailwind CSS.
+**Ahjoor** is a trustless community savings platform built with transparency in mind. This repository contains the frontend application, which provides real-time dashboards for savings groups to manage their circles, track contributions, and monitor payout status. It offers a user-friendly interface to interact with the Ahjoor platform, visualize round milestones, and keep every participant informed.
 
-## Project Overview
+---
 
-This is a modern Next.js application featuring:
+## 💰 Overview of Frontend Functionalities
 
-- Next.js 16+ with App Router
-- TypeScript with strict mode enabled
-- Tailwind CSS v4 for styling
-- ESLint for code quality
-- React 19+
+The Ahjoor Frontend provides the following key features:
 
-## Prerequisites
+* 📊 Real-time dashboards for group organizers and participants to track savings circle status.
+* 👁️ Visualization of immutable records of contributions, round history, and payout events stored on-chain.
+* 📈 Display of automated payout status triggered when all participants have contributed and the round duration has elapsed.
+* 📱 Responsive interface designed for optimal viewing and usability on all devices (mobile, tablet, desktop).
 
-Before you begin, ensure you have the following installed:
+---
 
-- Node.js 18.17 or later (currently using v22.19.0)
-- pnpm 8.0 or later (recommended) or npm 9.0 or later
+## ⚙️ Key Frontend Components
 
-You can verify your installations by running:
+**Frontend Dashboard**
+React/Next.js interface for organizers and participants to track savings circle status in real time.
 
-```bash
-node --version
-pnpm --version
+**User Authentication Module**
+Handles wallet connection, session management, and participant verification.
+
+**Savings Circle View**
+Displays all active groups with their current round, contribution status, and next payout.
+
+**Detailed Circle View**
+Shows a comprehensive overview of a single group, including round history, participant contributions, and payout schedule.
+
+**Notification System**
+Provides real-time alerts for round completions, missed contributions, or upcoming payouts.
+
+**Payout History / Status**
+Displays a record of past payouts and their on-chain transaction details.
+
+**Organizer Dashboard**
+Specific views and functionalities for group organizers to manage circles and participants.
+
+**Participant Dashboard**
+Specific views for members to track their individual circle progress and contribution history.
+
+---
+
+## 🛠️ Frontend Setup and Initialization
+
+### ✅ Prerequisites
+
+* NodeJS (v16+)
+* npm
+
+### 🔧 Installation
+
 ```
+# Clone the frontend repo
+git clone https://github.com/Ahjoor/ahjoor-frontend.git
+cd ahjoor-frontend
 
-## Installation Instructions
+# Install dependencies
+npm install # or npm install --legacy-peer-deps
 
-1. Clone the repository (if not already done):
-
-```bash
-git clone <repository-url>
-cd ahjoorxmr-frontend
-```
-
-2. Install dependencies:
-
-```bash
-pnpm install
-```
-
-Or if using npm:
-
-```bash
-npm install
-```
-
-3. Set up environment variables:
-
-Copy the `.env.example` file to `.env.local`:
-
-```bash
-cp .env.example .env.local
-```
-
-Then update the variables in `.env.local` with your actual values.
-
-## Development Workflow
-
-### Running the Development Server
-
-Start the development server:
-
-```bash
-pnpm dev
-```
-
-Or with npm:
-
-```bash
+# Start the development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+Open [http://localhost:3000](http://localhost:3000) in your browser and you'll see the app running.
 
-The page auto-updates as you edit files in the `app` directory.
+Note: If this frontend is part of a monorepo, adjust the `git clone` and `cd` commands accordingly to navigate to the frontend directory after cloning the main repository.
 
-### Building for Production
+---
 
-Create an optimized production build:
+## 🤝 Contributing
 
-```bash
-pnpm build
-```
+We welcome contributors of all experience levels!
 
-### Running the Production Build
+### 🧰 Getting Started
 
-After building, start the production server:
+* Look for __good first issues__
+* Fork the repository
+* Create a feature branch
+* Open a pull request
+* - [Figma Design](https://www.figma.com/design/NlDFuleGHbh26rRp1ZfyvE/Ahjoor-Design?node-id=0-1&t=3E08H8am5RpUngRF-1)
+### 🌳 Branching Strategy
 
-```bash
-pnpm start
-```
+* `main` → stable release branch
+* `dev` → active development
+* `feature/*` → for individual features or fixes
 
-### Linting
+### 📂 Code Guidelines
 
-Run ESLint to check code quality:
+* Keep PRs small and focused
+* Write clear commit messages
+* Update docs when necessary
 
-```bash
-pnpm lint
-```
+### ✍️ Commit Convention
 
-## Environment Variable Setup
+We use __Conventional Commits__ to standardize commit messages.
 
-This project uses environment variables for configuration. Follow these steps:
+* `feat`: new feature
+* `fix`: bug fix
+* `docs`: documentation only
+* `refactor`: code changes without feature/fix
+* `chore`: maintenance tasks
 
-1. Copy `.env.example` to `.env.local`:
-   ```bash
-   cp .env.example .env.local
-   ```
+## 🔗 Resources
 
-2. Update the variables in `.env.local` with your values
+- [Stellar Documentation](https://developers.stellar.org/)
+- [Soroban Smart Contracts](https://soroban.stellar.org/)
+- [Stellar CLI Reference](https://developers.stellar.org/docs/tools/developer-tools)
+- [Next.js App Router](https://nextjs.org/docs/app)
 
-3. Never commit `.env.local` to version control (it's already in `.gitignore`)
 
-### Environment Variable Types
 
-- `.env.local` - Local development variables (not committed)
-- `.env.example` - Template file showing required variables (committed)
-- `.env.production` - Production-specific variables (optional)
+## 🛡️ License
 
-Variables prefixed with `NEXT_PUBLIC_` are exposed to the browser.
+This project is licensed under the **MIT License**.
 
-## Project Structure
+---
 
-```
-ahjoorxmr-frontend/
-├── app/                  # App Router directory
-│   ├── layout.tsx       # Root layout
-│   ├── page.tsx         # Home page
-│   └── globals.css      # Global styles with Tailwind
-├── public/              # Static assets
-├── .env.example         # Environment variables template
-├── next.config.ts       # Next.js configuration
-├── tsconfig.json        # TypeScript configuration
-├── postcss.config.mjs   # PostCSS configuration for Tailwind
-└── package.json         # Project dependencies
-```
+##  Contact Us
 
-## Learn More
+Have questions or feedback?
 
-- [Next.js Documentation](https://nextjs.org/docs) - Learn about Next.js features and API
-- [Next.js App Router](https://nextjs.org/docs/app) - App Router documentation
-- [TypeScript](https://www.typescriptlang.org/docs/) - TypeScript documentation
-- [Tailwind CSS](https://tailwindcss.com/docs) - Tailwind CSS documentation
+*  [Telegram: __Ahjoor Telegram Group__](https://t.me/ahjoor)
 
-## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new).
-
-Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
