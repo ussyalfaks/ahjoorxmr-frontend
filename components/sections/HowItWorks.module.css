@@ -1,0 +1,124 @@
+.section {
+  background: var(--bg2);
+  padding: 96px 24px;
+  text-align: center;
+}
+
+.inner {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.label {
+  font-size: 11px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.h2 {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  color: var(--white);
+  margin-bottom: 14px;
+}
+
+.sub {
+  color: var(--muted);
+  font-size: 16px;
+  margin-bottom: 52px;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 48px;
+}
+
+.stepGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 28px;
+  width: 100%;
+  text-align: left;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.step:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 0 28px var(--glow);
+  transform: translateX(4px);
+}
+
+.stepNum {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: white;
+  box-shadow: 0 0 14px var(--glow);
+}
+
+.stepContent { flex: 1; }
+
+.stepTitle {
+  font-family: 'Sora', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+
+.stepDesc {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.arrow {
+  color: var(--accent2);
+  padding: 8px 0;
+  opacity: 0.5;
+}
+
+.cta {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  text-decoration: none;
+  padding: 13px 32px;
+  border-radius: 12px;
+  font-family: 'Sora', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  transition: transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px var(--glow);
+}
+
+.cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px var(--glow);
+}

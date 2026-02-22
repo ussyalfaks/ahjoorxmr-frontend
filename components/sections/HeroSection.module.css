@@ -1,0 +1,185 @@
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 130px 24px 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.glow {
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 760px;
+  height: 760px;
+  background: radial-gradient(circle, rgba(108, 92, 231, 0.16) 0%, transparent 68%);
+  pointer-events: none;
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.glowSecondary {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(139, 124, 248, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(108, 92, 231, 0.12);
+  border: 1px solid rgba(108, 92, 231, 0.35);
+  color: var(--accent2);
+  padding: 7px 18px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 28px;
+  letter-spacing: 0.2px;
+}
+
+.badgeDot {
+  width: 7px;
+  height: 7px;
+  background: #4ade80;
+  border-radius: 50%;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Headline */
+.h1 {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(38px, 6vw, 72px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -1.5px;
+  margin-bottom: 22px;
+  color: var(--white);
+}
+
+.accent {
+  background: linear-gradient(135deg, var(--accent2) 0%, #c4bbff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtitle */
+.subtitle {
+  font-size: clamp(16px, 2.5vw, 19px);
+  color: var(--muted);
+  max-width: 440px;
+  margin: 0 auto 38px;
+  line-height: 1.6;
+}
+
+.brDesktop { display: block; }
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 64px;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  text-decoration: none;
+  padding: 13px 28px;
+  border-radius: 12px;
+  font-family: 'Sora', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  transition: transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px var(--glow);
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px var(--glow);
+}
+
+.btnOutline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  padding: 13px 28px;
+  border-radius: 12px;
+  font-family: 'Sora', sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.btnOutline:hover {
+  background: var(--card);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* Image wrap */
+.imgWrap {
+  position: relative;
+  width: 380px;
+  max-width: 90vw;
+}
+
+.img {
+  width: 100%;
+  height: auto;
+  border-radius: 22px;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5);
+}
+
+.imgGlow {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(circle, rgba(108, 92, 231, 0.2) 0%, transparent 70%);
+  z-index: 0;
+}
+
+/* Floating coins */
+.coin {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #1a1a30, #2a2845);
+  border: 1px solid rgba(139, 124, 248, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px var(--glow), inset 0 0 12px rgba(108, 92, 231, 0.1);
+  z-index: 2;
+}
+
+.coinTL { top: 24px;    left: -28px;  animation: float 3.2s ease-in-out infinite; }
+.coinTR { top: 24px;    right: -28px; animation: float 3.2s 0.5s ease-in-out infinite; }
+.coinBL { bottom: 24px; left: -28px;  animation: float 3.2s 1.0s ease-in-out infinite; }
+.coinBR { bottom: 24px; right: -28px; animation: float 3.2s 1.5s ease-in-out infinite; }
+
+@media (max-width: 480px) {
+  .hero { padding: 110px 20px 60px; }
+  .brDesktop { display: none; }
+  .imgWrap { width: 100%; }
+  .coinTL, .coinBL { left: -10px; }
+  .coinTR, .coinBR { right: -10px; }
+}

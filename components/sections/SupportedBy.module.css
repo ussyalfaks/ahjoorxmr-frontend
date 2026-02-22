@@ -1,0 +1,68 @@
+.wrap {
+  padding: 44px 40px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.label {
+  font-size: 11px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+
+.logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  transition: color 0.2s;
+}
+
+.brand:hover { color: var(--white); }
+
+.icon {
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+}
+
+.brand:hover .icon { opacity: 1; }
+
+.brandName {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.3px;
+}
+
+.baseIcon {
+  width: 28px;
+  height: 28px;
+  background: #0052ff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: white;
+}
+
+@media (max-width: 600px) {
+  .logos { gap: 32px; }
+  .brandName { font-size: 16px; }
+}
