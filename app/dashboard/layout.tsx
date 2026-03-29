@@ -29,7 +29,7 @@ export default function DashboardLayout({
               <span className="font-medium">Overview</span>
             </Link>
             <Link
-              href="#"
+              href="/dashboard/locked-funds"
               className="flex items-center gap-3 px-4 py-3 text-[#9A9A9A] hover:text-[#EBEBEB] hover:bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-transparent"
             >
               <Lock size={20} />
@@ -91,7 +91,7 @@ export default function DashboardLayout({
             <LayoutGrid size={20} />
             <span className="text-[10px]">Overview</span>
           </Link>
-          <Link href="#" className="text-[#9A9A9A] flex flex-col items-center gap-1">
+          <Link href="/dashboard/locked-funds" className="text-[#9A9A9A] flex flex-col items-center gap-1">
             <Lock size={20} />
             <span className="text-[10px]">Locked</span>
           </Link>
