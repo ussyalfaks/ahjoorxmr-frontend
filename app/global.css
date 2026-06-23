@@ -68,6 +68,30 @@ body {
   animation: fadeUp 0.7s ease both;
 }
 
+.animate-float {
+  animation: float 3.2s ease-in-out infinite;
+}
+
+.animate-float-delay-1 {
+  animation: float 3.2s 0.5s ease-in-out infinite;
+}
+
+.animate-float-delay-2 {
+  animation: float 3.2s 1.0s ease-in-out infinite;
+}
+
+.animate-float-delay-3 {
+  animation: float 3.2s 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.animate-pulse-badge {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
 .delay-1 { animation-delay: 0.1s; }
 .delay-2 { animation-delay: 0.2s; }
 .delay-3 { animation-delay: 0.3s; }
