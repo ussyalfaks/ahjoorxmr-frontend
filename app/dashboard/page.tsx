@@ -1,25 +1,91 @@
 "use client";
 
 import { useMemo } from "react";
-import { ArrowUpRight, Users, CheckCircle2, DollarSign, Clock, Hourglass } from "lucide-react";
-import CountdownTimer from "@/components/ui/CountdownTimer";
+import { ArrowUpRight, Users, CheckCircle2, DollarSign } from "lucide-react";
+import SavingsCard from "@/components/cards/SavingsCard";
+import type { Circle } from "@/types/circle";
 
 export default function DashboardOverviewPage() {
   const deadlines = useMemo(
     () => ({
-      card1: new Date(Date.now() + 25 * 60 * 1000),           // 25 min — red
-      card2: new Date(Date.now() + 18 * 60 * 60 * 1000),      // 18 h  — amber
-      card3: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),  // 2 days — normal
-      card4: null,                                              // no deadline — Ongoing
+      card1: new Date(Date.now() + 25 * 60 * 1000),
+      card2: new Date(Date.now() + 18 * 60 * 60 * 1000),
+      card3: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      card4: null,
     }),
     []
+  );
+
+  const circles: Circle[] = useMemo(
+    () => [
+      {
+        id: "1",
+        name: "Family savings",
+        creator: "Emeka",
+        members: 2,
+        contribution: "3 USDT",
+        duration: "2 Days",
+        currentRound: 1,
+        totalRounds: 3,
+        status: "active",
+        isYourTurn: true,
+        deadline: deadlines.card1,
+        contributionButtonLabel: "Make Contribution (50 USDT)",
+        claimButtonVariant: "secondary",
+      },
+      {
+        id: "2",
+        name: "School fees",
+        creator: "Emmanuel",
+        members: 6,
+        contribution: "40 USDT",
+        duration: "12 Days",
+        currentRound: 3,
+        totalRounds: 4,
+        status: "active",
+        isYourTurn: false,
+        deadline: deadlines.card2,
+        contributionButtonLabel: "Make Contribution (2 USDT)",
+        claimButtonVariant: "disabled",
+      },
+      {
+        id: "3",
+        name: "Family savings",
+        creator: "Emeka",
+        members: 2,
+        contribution: "30 USDT",
+        duration: "2 Days",
+        currentRound: 1,
+        totalRounds: 3,
+        status: "active",
+        isYourTurn: true,
+        deadline: deadlines.card3,
+        contributionButtonLabel: "Make Contribution (5 USDT)",
+        claimButtonVariant: "primary",
+      },
+      {
+        id: "4",
+        name: "School fees",
+        creator: "Emmanuel",
+        members: 4,
+        contribution: "40 USDT",
+        duration: "12 Days",
+        currentRound: 2,
+        totalRounds: 5,
+        status: "active",
+        isYourTurn: false,
+        deadline: deadlines.card4,
+        contributionButtonLabel: "Make Contribution (10 USDT)",
+        claimButtonVariant: "disabled",
+      },
+    ],
+    [deadlines]
   );
 
   return (
     <div className="space-y-10 pb-20 md:pb-0">
       {/* Top Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Saved */}
         <div className="bg-[#1C1C1E] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[#222224] transition-colors">
           <div className="w-10 h-10 rounded-full bg-[#ffffff0a] flex items-center justify-center mb-6">
             <DollarSign size={20} className="text-white" aria-hidden="true" />
@@ -34,7 +100,6 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
-        {/* Active Pools */}
         <div className="bg-[#1C1C1E] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[#222224] transition-colors">
           <div className="w-10 h-10 rounded-full bg-[#ffffff0a] flex items-center justify-center mb-6">
             <Users size={20} className="text-white" aria-hidden="true" />
@@ -49,7 +114,6 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
-        {/* Next Payout */}
         <div className="bg-[#1C1C1E] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[#222224] transition-colors">
           <div className="w-10 h-10 rounded-full bg-[#ffffff0a] flex items-center justify-center mb-6">
             <div className="relative" aria-hidden="true">
@@ -67,7 +131,6 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
-        {/* Completed Circles */}
         <div className="bg-[#1C1C1E] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[#222224] transition-colors">
           <div className="w-10 h-10 rounded-full bg-[#ffffff0a] flex items-center justify-center mb-6">
             <CheckCircle2 size={20} className="text-white" aria-hidden="true" />
@@ -91,259 +154,9 @@ export default function DashboardOverviewPage() {
         </div>
 
         <div className="space-y-4">
-          {/* Card 1: Family savings — deadline in 25 min (red) */}
-          <div className="bg-[#212124] p-6 md:p-8 rounded-3xl">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white" aria-hidden="true" />
-                  <h3 className="text-xl font-bold text-white font-sora tracking-wide">Family savings</h3>
-                  <span className="px-2.5 py-1 text-[10px] font-medium bg-[#ffffff1a] text-white rounded-full uppercase tracking-wider">
-                    Your turn
-                  </span>
-                </div>
-                <p className="text-[#888888] text-xs ml-6">Created by Emeka</p>
-              </div>
-              <CountdownTimer deadline={deadlines.card1} />
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Members</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Users size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">2</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Contributions</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <DollarSign size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">3 USDT</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Duration</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Clock size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">2 Days</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Current Rounds</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Hourglass size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">1/3</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-[#ffffff0f] shrink-0">
-              <button className="flex-1 sm:flex-none px-6 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
-                Make Contribution (50 USDT)
-              </button>
-              <button className="flex-1 sm:flex-none px-6 py-2.5 bg-[#5E686A] hover:bg-[#4d5658] text-white text-sm font-medium rounded-lg transition-colors text-center ml-auto sm:ml-0 md:ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
-                Claim Reward
-              </button>
-            </div>
-          </div>
-
-          {/* Card 2: School fees — deadline in 18 hours (amber) */}
-          <div className="bg-[#212124] p-6 md:p-8 rounded-3xl">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white" aria-hidden="true" />
-                  <h3 className="text-xl font-bold text-white font-sora tracking-wide">School fees</h3>
-                </div>
-                <p className="text-[#888888] text-xs ml-6">Created by Emmanuel</p>
-              </div>
-              <CountdownTimer deadline={deadlines.card2} />
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Members</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Users size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">6</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Contributions</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <DollarSign size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">40 USDT</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Duration</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Clock size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">12 Days</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Current Rounds</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Hourglass size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">3/4</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-[#ffffff0f]">
-              <button className="flex-1 sm:flex-none px-6 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
-                Make Contribution (2 USDT)
-              </button>
-              <button className="flex-1 sm:flex-none px-6 py-2.5 bg-[#78787B] hover:bg-[#636366] text-[#E0E0E0] text-sm font-medium rounded-lg transition-colors text-center ml-auto sm:ml-0 md:ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
-                Claim Reward
-              </button>
-            </div>
-          </div>
-
-          {/* Card 3: Family savings 2 — deadline in 2 days (normal) */}
-          <div className="bg-[#212124] p-6 md:p-8 rounded-3xl">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white" aria-hidden="true" />
-                  <h3 className="text-xl font-bold text-white font-sora tracking-wide">Family savings</h3>
-                  <span className="px-2.5 py-1 text-[10px] font-medium bg-[#ffffff1a] text-white rounded-full uppercase tracking-wider">
-                    Your turn
-                  </span>
-                </div>
-                <p className="text-[#888888] text-xs ml-6">Created by Emeka</p>
-              </div>
-              <CountdownTimer deadline={deadlines.card3} />
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Members</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Users size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">2</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Contributions</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <DollarSign size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">30 USDT</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Duration</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Clock size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">2 Days</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Current Rounds</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Hourglass size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">1/3</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-[#ffffff0f]">
-              <button className="flex-1 sm:flex-none px-6 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
-                Make Contribution (5 USDT)
-              </button>
-              <button className="flex-1 sm:flex-none px-6 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors text-center ml-auto sm:ml-0 md:ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
-                Claim Reward
-              </button>
-            </div>
-          </div>
-
-          {/* Card 4: School fees 2 — no deadline (Ongoing) */}
-          <div className="bg-[#212124] p-6 md:p-8 rounded-3xl">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white" aria-hidden="true" />
-                  <h3 className="text-xl font-bold text-white font-sora tracking-wide">School fees</h3>
-                </div>
-                <p className="text-[#888888] text-xs ml-6">Created by Emmanuel</p>
-              </div>
-              <CountdownTimer deadline={deadlines.card4} />
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Members</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Users size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">4</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Contributions</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <DollarSign size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">40 USDT</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Duration</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Clock size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">12 Days</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[#A1A1AA] text-sm font-medium mb-2">Current Rounds</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#ffffff0f] flex items-center justify-center shrink-0">
-                    <Hourglass size={16} className="text-[#A1A1AA]" aria-hidden="true" />
-                  </div>
-                  <span className="text-xl font-semibold text-white">2/5</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-[#ffffff0f]">
-              <button className="flex-1 sm:flex-none px-6 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
-                Make Contribution (10 USDT)
-              </button>
-              <button className="flex-1 sm:flex-none px-6 py-2.5 bg-[#78787B] hover:bg-[#636366] text-[#E0E0E0] text-sm font-medium rounded-lg transition-colors text-center ml-auto sm:ml-0 md:ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
-                Claim Reward
-              </button>
-            </div>
-          </div>
+          {circles.map((circle) => (
+            <SavingsCard key={circle.id} circle={circle} />
+          ))}
         </div>
       </div>
     </div>

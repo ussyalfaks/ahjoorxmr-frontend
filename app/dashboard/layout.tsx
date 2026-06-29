@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 const WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 const WALLET_DISPLAY = "0x23g43gdaa...";
@@ -115,47 +116,7 @@ export default function DashboardLayout({
           {children}
         </main>
 
-        {/* Mobile Bottom Nav */}
-        <nav
-          className="md:hidden fixed bottom-0 left-0 right-0 bg-[#161616] border-t border-[#ffffff0f] flex justify-around p-4 z-50"
-          aria-label="Mobile navigation"
-        >
-          <Link
-            href="/dashboard"
-            className="text-white flex flex-col items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
-          >
-            <LayoutGrid size={20} aria-hidden="true" />
-            <span className="text-[10px]">Overview</span>
-          </Link>
-          <Link
-            href="/dashboard/circles"
-            className="text-[#9A9A9A] flex flex-col items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
-          >
-            <Users size={20} aria-hidden="true" />
-            <span className="text-[10px]">Circles</span>
-          </Link>
-          <Link
-            href="/dashboard/locked-funds"
-            className="text-[#9A9A9A] flex flex-col items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
-          >
-            <Lock size={20} aria-hidden="true" />
-            <span className="text-[10px]">Locked</span>
-          </Link>
-          <Link
-            href="#"
-            className="text-[#9A9A9A] flex flex-col items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
-          >
-            <User size={20} aria-hidden="true" />
-            <span className="text-[10px]">Profile</span>
-          </Link>
-          <Link
-            href="#"
-            className="text-[#9A9A9A] flex flex-col items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
-          >
-            <Settings size={20} aria-hidden="true" />
-            <span className="text-[10px]">Settings</span>
-          </Link>
-        </nav>
+        <MobileBottomNav />
       </div>
     </div>
   );
