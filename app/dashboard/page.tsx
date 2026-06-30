@@ -1,11 +1,33 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ArrowUpRight, Users, CheckCircle2, DollarSign } from "lucide-react";
 import SavingsCard from "@/components/cards/SavingsCard";
+import TxConfirmModal, { TxType } from "@/components/modals/TxConfirmModal";
 import type { Circle } from "@/types/circle";
 
+interface PendingTx {
+  type: TxType;
+  circle: Circle;
+  amount: number;
+}
+
+/**
+ * contributionButtonLabel looks like "Make Contribution (50 USDT)".
+ * Pulls the numeric amount out so the modal can display/use a clean number.
+ * Falls back to parsing `circle.contribution` (e.g. "40 USDT") if that fails.
+ */
+function getContributionAmount(circle: Circle): number {
+  const fromLabel = circle.contributionButtonLabel.match(/([\d.]+)\s*USDT/i);
+  if (fromLabel) return parseFloat(fromLabel[1]);
+
+  const fromContribution = circle.contribution.match(/([\d.]+)/);
+  return fromContribution ? parseFloat(fromContribution[1]) : 0;
+}
+
 export default function DashboardOverviewPage() {
+  const [pendingTx, setPendingTx] = useState<PendingTx | null>(null);
+
   const deadlines = useMemo(
     () => ({
       card1: new Date(Date.now() + 25 * 60 * 1000),
@@ -82,6 +104,38 @@ export default function DashboardOverviewPage() {
     [deadlines]
   );
 
+  const handleContributeClick = (circle: Circle) => {
+    setPendingTx({
+      type: "contribute",
+      circle,
+      amount: getContributionAmount(circle),
+    });
+  };
+
+  const handleClaimClick = (circle: Circle) => {
+    // TODO: replace with the real claimable amount once available on Circle
+    setPendingTx({
+      type: "claim",
+      circle,
+      amount: getContributionAmount(circle),
+    });
+  };
+
+  // Replace these stubs with real contract/service calls (e.g. starknet.js)
+  const submitContribution = async (circle: Circle, amount: number): Promise<string> => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // const tx = await contract.contribute(circle.id, amount);
+    // return tx.transaction_hash;
+    return "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd";
+  };
+
+  const submitClaim = async (circle: Circle): Promise<string> => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // const tx = await contract.claim(circle.id);
+    // return tx.transaction_hash;
+    return "0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567";
+  };
+
   return (
     <div className="space-y-10 pb-20 md:pb-0">
       {/* Top Stats Cards */}
@@ -155,10 +209,30 @@ export default function DashboardOverviewPage() {
 
         <div className="space-y-4">
           {circles.map((circle) => (
-            <SavingsCard key={circle.id} circle={circle} />
+            <SavingsCard
+              key={circle.id}
+              circle={circle}
+              onContribute={handleContributeClick}
+              onClaim={handleClaimClick}
+            />
           ))}
         </div>
       </div>
+
+      {pendingTx && (
+        <TxConfirmModal
+          isOpen={!!pendingTx}
+          onClose={() => setPendingTx(null)}
+          type={pendingTx.type}
+          circleName={pendingTx.circle.name}
+          amount={pendingTx.amount}
+          onConfirm={() =>
+            pendingTx.type === "contribute"
+              ? submitContribution(pendingTx.circle, pendingTx.amount)
+              : submitClaim(pendingTx.circle)
+          }
+        />
+      )}
     </div>
   );
 }

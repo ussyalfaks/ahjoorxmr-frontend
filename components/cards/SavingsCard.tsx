@@ -7,9 +7,13 @@ import type { Circle } from "@/types/circle";
 
 interface Props {
   circle: Circle;
+  onContribute: (circle: Circle) => void;
+  onClaim: (circle: Circle) => void;
 }
 
-export default function SavingsCard({ circle }: Props) {
+export default function SavingsCard({ circle, onContribute, onClaim }: Props) {
+  const claimDisabled = circle.claimButtonVariant === "disabled";
+
   return (
     <div className="bg-[#212124] p-6 md:p-8 rounded-3xl">
       <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-4">
@@ -74,16 +78,26 @@ export default function SavingsCard({ circle }: Props) {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-[#ffffff0f] shrink-0">
-        <button className="flex-1 sm:flex-none px-6 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
+        <button
+          type="button"
+          onClick={() => onContribute(circle)}
+          className="flex-1 sm:flex-none px-6 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]"
+        >
           {circle.contributionButtonLabel}
         </button>
         <button
+          type="button"
+          onClick={() => !claimDisabled && onClaim(circle)}
+          disabled={claimDisabled}
+          aria-disabled={claimDisabled}
           className={`flex-1 sm:flex-none px-6 py-2.5 text-sm font-medium rounded-lg transition-colors text-center ml-auto sm:ml-0 md:ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124] ${
+            claimDisabled ? "cursor-not-allowed" : ""
+          } ${
             circle.claimButtonVariant === "primary"
               ? "bg-[#4B6B76] hover:bg-[#3D5A64] text-white"
               : circle.claimButtonVariant === "secondary"
               ? "bg-[#5E686A] hover:bg-[#4d5658] text-white"
-              : "bg-[#78787B] hover:bg-[#636366] text-[#E0E0E0]"
+              : "bg-[#78787B] text-[#E0E0E0]"
           }`}
         >
           Claim Reward
