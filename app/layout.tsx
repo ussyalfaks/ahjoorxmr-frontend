@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./global.css";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: "Ahjoor — Save With Friends",
@@ -21,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

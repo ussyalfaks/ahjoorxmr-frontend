@@ -2,6 +2,7 @@
 
 import { Users, DollarSign, Clock, Hourglass } from "lucide-react";
 import CountdownTimer from "@/components/ui/CountdownTimer";
+import RoundProgressBar from "@/components/ui/RoundProgressBar";
 import type { Circle } from "@/types/circle";
 
 interface Props {
@@ -66,6 +67,10 @@ export default function SavingsCard({ circle }: Props) {
             </span>
           </div>
         </div>
+      </div>
+
+      <div className="mb-8">
+        <RoundProgressBar current={circle.currentRound} total={circle.totalRounds} />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-[#ffffff0f] shrink-0">

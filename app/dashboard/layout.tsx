@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import OnboardingModal from "@/components/modals/OnboardingModal";
 
 const WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
@@ -101,7 +102,8 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Top Header */}
-        <header className="flex items-center justify-end p-6 md:px-10 py-5">
+        <header className="flex items-center justify-end p-6 md:px-10 py-5 gap-3">
+          <NotificationDropdown />
           <div
             className="flex items-center border border-[#ffffff1a] rounded-full px-4 py-2 gap-2 bg-[#ffffff05]"
             role="status"

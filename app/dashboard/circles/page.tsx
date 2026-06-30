@@ -88,6 +88,8 @@ function CirclesContent() {
     if (circle) setJoinCircle(circle);
   }, [inviteId]);
 
+  const [joiningCircle, setJoiningCircle] = useState<Circle | null>(null);
+
   const myCircles = mockCircles.filter((c) => c.members.includes(CURRENT_WALLET));
   const discoverCircles = mockCircles.filter((c) => !c.members.includes(CURRENT_WALLET));
   const displayCircles = tab === "my" ? myCircles : discoverCircles;
@@ -96,7 +98,10 @@ function CirclesContent() {
     router.push(`/dashboard/circles?tab=${t}`);
   };
 
+  const handleJoinClose = useCallback(() => setJoiningCircle(null), []);
+
   return (
+    <>
     <div className="space-y-8 pb-20 md:pb-0">
       {/* Page Title + Create button */}
       <div className="flex items-center gap-4">
@@ -223,6 +228,11 @@ function CirclesContent() {
         currentWallet={CURRENT_WALLET}
       />
     </div>
+
+    {joiningCircle && (
+      <JoinCircleModal circle={joiningCircle} onClose={handleJoinClose} />
+    )}
+    </>
   );
 }
 
