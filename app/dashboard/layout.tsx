@@ -3,6 +3,7 @@ import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut } from "lucid
 import CopyButton from "@/components/ui/CopyButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
+import OnboardingModal from "@/components/modals/OnboardingModal";
 
 const WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 const WALLET_DISPLAY = "0x23g43gdaa...";
@@ -120,6 +121,7 @@ export default function DashboardLayout({
 
         <MobileBottomNav />
       </div>
+      <OnboardingModal />
     </div>
   );
 }

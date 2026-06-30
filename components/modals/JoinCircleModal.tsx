@@ -1,195 +1,145 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { X, Users, DollarSign, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, CheckCircle2 } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
-interface CircleInfo {
+export interface JoinCircleData {
   id: string;
   name: string;
-  creator: string;
-  members: string[];
-  totalSlots: number;
   contribution: string;
   duration: string;
+  members: string[];
+  totalSlots: number;
 }
 
 interface Props {
-  circle: CircleInfo;
+  open: boolean;
   onClose: () => void;
+  circle: JoinCircleData | null;
+  currentWallet: string;
 }
 
-type State = "idle" | "loading" | "success" | "error";
+export default function JoinCircleModal({ open, onClose, circle, currentWallet }: Props) {
+  const [joining, setJoining] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-function truncateAddress(addr: string): string {
-  if (addr.length <= 14) return addr;
-  return `${addr.slice(0, 8)}...${addr.slice(-6)}`;
-}
+  useFocusTrap(ref, open, handleClose);
 
-export default function JoinCircleModal({ circle, onClose }: Props) {
-  const [state, setState] = useState<State>("idle");
-  const modalRef = useRef<HTMLDivElement>(null);
+  function handleClose() {
+    setSuccess(false);
+    onClose();
+  }
 
-  useFocusTrap(modalRef, true, onClose);
+  async function handleJoin() {
+    setJoining(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    setJoining(false);
+    setSuccess(true);
+  }
 
-  const handleConfirm = useCallback(async () => {
-    setState("loading");
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1800));
-      setState("success");
-    } catch {
-      setState("error");
-    }
-  }, []);
+  if (!open || !circle) return null;
 
-  const handleRetry = useCallback(() => setState("idle"), []);
+  const isMember = circle.members.includes(currentWallet);
+  const isFull = circle.members.length >= circle.totalSlots;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="join-modal-title"
-    >
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={state !== "loading" ? onClose : undefined}
-        aria-hidden="true"
-      />
-
-      <div
-        ref={modalRef}
-        className="relative z-10 w-full max-w-md mx-4 rounded-2xl border border-[#ffffff14] overflow-hidden"
-        style={{ background: "#1C1C1E" }}
+        ref={ref}
+        className="bg-[#1C1C1E] rounded-2xl w-full max-w-sm p-8 relative"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="join-circle-title"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#ffffff0f]">
-          <h2 id="join-modal-title" className="text-lg font-bold text-white font-sora">
-            Join Circle
-          </h2>
-          {state !== "loading" && (
+        <button
+          onClick={handleClose}
+          className="absolute top-4 right-4 text-[#9A9A9A] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+          aria-label="Close"
+        >
+          <X size={20} />
+        </button>
+
+        {isMember ? (
+          <div className="text-center space-y-4 py-4">
+            <div className="w-14 h-14 rounded-full bg-[#4B6B76]/20 flex items-center justify-center mx-auto" aria-hidden="true">
+              <CheckCircle2 size={28} className="text-[#4B6B76]" />
+            </div>
+            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-white">
+              Already a Member
+            </h2>
+            <p className="text-[#A1A1AA] text-sm">
+              You&apos;re already in{" "}
+              <span className="text-white font-medium">{circle.name}</span>.
+            </p>
             <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-[#ffffff0f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-              aria-label="Close"
+              onClick={handleClose}
+              className="w-full py-2.5 bg-[#ffffff0a] hover:bg-[#ffffff14] text-white font-medium rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             >
-              <X size={18} />
+              Close
             </button>
-          )}
-        </div>
-
-        <div className="px-6 py-6">
-          {state === "success" ? (
-            <div className="flex flex-col items-center text-center gap-4 py-4">
-              <div className="w-14 h-14 rounded-full bg-[#4ADE8020] flex items-center justify-center">
-                <CheckCircle2 size={28} className="text-[#4ADE80]" aria-hidden="true" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-white mb-1">You joined the circle!</h3>
-                <p className="text-sm text-[#A1A1AA]">
-                  Welcome to <span className="text-white font-medium">{circle.name}</span>. You can now track it in your dashboard.
-                </p>
-              </div>
-              <a
-                href="/dashboard"
-                className="mt-2 inline-block px-6 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1C1C1E]"
-              >
-                Go to Dashboard
-              </a>
+          </div>
+        ) : success ? (
+          <div className="text-center space-y-4 py-4">
+            <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mx-auto" aria-hidden="true">
+              <CheckCircle2 size={28} className="text-green-400" />
             </div>
-          ) : state === "error" ? (
-            <div className="flex flex-col items-center text-center gap-4 py-4">
-              <div className="w-14 h-14 rounded-full bg-[#FF5B5B20] flex items-center justify-center">
-                <AlertCircle size={28} className="text-[#FF5B5B]" aria-hidden="true" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-white mb-1">Transaction failed</h3>
-                <p className="text-sm text-[#A1A1AA]">
-                  Something went wrong while joining the circle. Please try again.
-                </p>
-              </div>
-              <div className="flex gap-3 mt-2 w-full">
-                <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2.5 bg-[#ffffff0a] hover:bg-[#ffffff14] text-white text-sm font-medium rounded-lg border border-[#ffffff14] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRetry}
-                  className="flex-1 px-4 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-                >
-                  Retry
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Circle info */}
-              <div className="rounded-xl bg-[#ffffff05] border border-[#ffffff0a] p-4 mb-5">
-                <h3 className="text-base font-semibold text-white font-sora mb-3">{circle.name}</h3>
-
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#A1A1AA] flex items-center gap-1.5">
-                      <Users size={13} aria-hidden="true" />
-                      Members
-                    </span>
-                    <span className="text-white font-medium">
-                      {circle.members.length}/{circle.totalSlots}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#A1A1AA] flex items-center gap-1.5">
-                      <DollarSign size={13} aria-hidden="true" />
-                      Contribution
-                    </span>
-                    <span className="text-white font-medium">{circle.contribution}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#A1A1AA] flex items-center gap-1.5">
-                      <Clock size={13} aria-hidden="true" />
-                      Duration
-                    </span>
-                    <span className="text-white font-medium">{circle.duration}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm pt-1 border-t border-[#ffffff0a]">
-                    <span className="text-[#A1A1AA]">Organizer</span>
-                    <span className="text-white font-mono text-xs">{truncateAddress(circle.creator)}</span>
-                  </div>
+            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-white">
+              You&apos;re In!
+            </h2>
+            <p className="text-[#A1A1AA] text-sm">
+              You&apos;ve successfully joined{" "}
+              <span className="text-white font-medium">{circle.name}</span>.
+            </p>
+            <button
+              onClick={handleClose}
+              className="w-full py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white font-medium rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-white">
+              Join {circle.name}
+            </h2>
+            <div className="bg-[#ffffff0a] rounded-xl p-4 space-y-3">
+              {[
+                { label: "Contribution", value: circle.contribution },
+                { label: "Duration", value: circle.duration },
+                { label: "Slots", value: `${circle.members.length} / ${circle.totalSlots}` },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex justify-between text-sm">
+                  <span className="text-[#A1A1AA]">{label}</span>
+                  <span className="text-white font-medium">{value}</span>
                 </div>
-              </div>
-
-              <p className="text-xs text-[#A1A1AA] mb-5 leading-relaxed">
-                By joining, you agree to make regular contributions for the full duration of this circle. Missed contributions may result in penalties.
+              ))}
+            </div>
+            {isFull ? (
+              <p className="text-red-400 text-sm text-center">This circle is full.</p>
+            ) : (
+              <p className="text-[#A1A1AA] text-xs">
+                By joining, you agree to contribute {circle.contribution} each round.
               </p>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2.5 bg-[#ffffff0a] hover:bg-[#ffffff14] text-white text-sm font-medium rounded-lg border border-[#ffffff14] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirm}
-                  disabled={state === "loading"}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1C1C1E]"
-                >
-                  {state === "loading" ? (
-                    <>
-                      <Loader2 size={15} className="animate-spin" aria-hidden="true" />
-                      Joining...
-                    </>
-                  ) : (
-                    "Confirm & Join"
-                  )}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={handleClose}
+                className="flex-1 py-2.5 bg-[#ffffff0a] hover:bg-[#ffffff14] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleJoin}
+                disabled={joining || isFull}
+                className="flex-1 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              >
+                {joining ? "Joining…" : "Confirm Join"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

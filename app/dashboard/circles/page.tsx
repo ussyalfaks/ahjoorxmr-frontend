@@ -1,10 +1,12 @@
 "use client";
 
-import { Suspense, useState, useCallback } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Users, DollarSign, Clock } from "lucide-react";
+import { Users, DollarSign, Clock, Plus } from "lucide-react";
+import Link from "next/link";
 import CopyButton from "@/components/ui/CopyButton";
-import JoinCircleModal from "@/components/modals/JoinCircleModal";
+import CreateCircleModal from "@/components/modals/CreateCircleModal";
+import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -75,6 +77,16 @@ function CirclesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab: Tab = (searchParams.get("tab") as Tab) ?? "my";
+  const inviteId = searchParams.get("invite");
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [joinCircle, setJoinCircle] = useState<JoinCircleData | null>(null);
+
+  useEffect(() => {
+    if (!inviteId) return;
+    const circle = mockCircles.find((c) => c.id === inviteId);
+    if (circle) setJoinCircle(circle);
+  }, [inviteId]);
 
   const [joiningCircle, setJoiningCircle] = useState<Circle | null>(null);
 
@@ -91,10 +103,17 @@ function CirclesContent() {
   return (
     <>
     <div className="space-y-8 pb-20 md:pb-0">
-      {/* Page Title */}
+      {/* Page Title + Create button */}
       <div className="flex items-center gap-4">
         <h1 className="text-2xl font-bold font-sora text-white shrink-0">Circles</h1>
         <div className="h-px bg-[#ffffff1a] w-full" />
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="flex items-center gap-2 shrink-0 px-4 py-2 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+        >
+          <Plus size={16} aria-hidden="true" />
+          Create Circle
+        </button>
       </div>
 
       {/* Tab Toggle */}
@@ -148,7 +167,9 @@ function CirclesContent() {
                 key={circle.id}
                 className="bg-[#212124] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[#26262a] transition-colors"
               >
-                <h2 className="text-lg font-bold font-sora text-white">{circle.name}</h2>
+                <Link href={`/dashboard/circles/${circle.id}`} className="hover:underline">
+                  <h2 className="text-lg font-bold font-sora text-white">{circle.name}</h2>
+                </Link>
 
                 <div className="flex items-center gap-1.5 text-xs text-[#A1A1AA]">
                   <span>by</span>
@@ -160,7 +181,7 @@ function CirclesContent() {
                   <div>
                     <p className="text-[#A1A1AA] text-xs mb-1.5">Members</p>
                     <div className="flex items-center gap-1.5">
-                      <Users size={14} className="text-[#A1A1AA] shrink-0" />
+                      <Users size={14} className="text-[#A1A1AA] shrink-0" aria-hidden="true" />
                       <span className="text-sm font-semibold text-white">
                         {circle.members.length}/{circle.totalSlots}
                       </span>
@@ -169,14 +190,14 @@ function CirclesContent() {
                   <div>
                     <p className="text-[#A1A1AA] text-xs mb-1.5">Contribution</p>
                     <div className="flex items-center gap-1.5">
-                      <DollarSign size={14} className="text-[#A1A1AA] shrink-0" />
+                      <DollarSign size={14} className="text-[#A1A1AA] shrink-0" aria-hidden="true" />
                       <span className="text-sm font-semibold text-white">{circle.contribution}</span>
                     </div>
                   </div>
                   <div>
                     <p className="text-[#A1A1AA] text-xs mb-1.5">Duration</p>
                     <div className="flex items-center gap-1.5">
-                      <Clock size={14} className="text-[#A1A1AA] shrink-0" />
+                      <Clock size={14} className="text-[#A1A1AA] shrink-0" aria-hidden="true" />
                       <span className="text-sm font-semibold text-white">{circle.duration}</span>
                     </div>
                   </div>
@@ -184,7 +205,7 @@ function CirclesContent() {
 
                 {tab === "discover" && (
                   <button
-                    onClick={() => setJoiningCircle(circle)}
+                    onClick={() => setJoinCircle(circle)}
                     className="mt-auto px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]"
                   >
                     Join Circle
@@ -195,6 +216,17 @@ function CirclesContent() {
           </div>
         )}
       </div>
+
+      <CreateCircleModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <JoinCircleModal
+        open={joinCircle !== null}
+        onClose={() => {
+          setJoinCircle(null);
+          if (inviteId) router.replace("/dashboard/circles");
+        }}
+        circle={joinCircle}
+        currentWallet={CURRENT_WALLET}
+      />
     </div>
 
     {joiningCircle && (

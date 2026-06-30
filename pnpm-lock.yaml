@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@tailwindcss/oxide-linux-x64-gnu':
-        specifier: ^4.2.2
-        version: 4.3.1
       lucide-react:
         specifier: ^1.6.0
         version: 1.21.0(react@19.2.3)
@@ -464,12 +461,6 @@ packages:
 
   '@tailwindcss/oxide-linux-x64-gnu@4.2.0':
     resolution: {integrity: sha512-/hlXCBqn9K6fi7eAM0RsobHwJYa5V/xzWspVTzxnX+Ft9v6n+30Pz8+RxCn7sQL/vRHHLS30iQPrHQunu6/vJA==}
-    engines: {node: '>= 20'}
-    cpu: [x64]
-    os: [linux]
-
-  '@tailwindcss/oxide-linux-x64-gnu@4.3.1':
-    resolution: {integrity: sha512-Ymi8O8T15HYQdOUWUtTI6ldN0neHP85FC+Qz32xTcZ7iJXtem/x8ITev0o1e9e5rkqj4lONZfTRLvkmin1+tKg==}
     engines: {node: '>= 20'}
     cpu: [x64]
     os: [linux]
@@ -2314,8 +2305,6 @@ snapshots:
 
   '@tailwindcss/oxide-linux-x64-gnu@4.2.0':
     optional: true
-
-  '@tailwindcss/oxide-linux-x64-gnu@4.3.1': {}
 
   '@tailwindcss/oxide-linux-x64-musl@4.2.0':
     optional: true

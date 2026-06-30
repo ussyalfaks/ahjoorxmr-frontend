@@ -119,7 +119,7 @@ export default function ActivityFeed({ events, pageSize = 10 }: Props) {
                       <span className="text-[#9A9A9A]">{config.label}</span>
                     </>
                   )}
-                  {event.meta?.amount && (
+                  {!!event.meta?.amount && (
                     <span className="ml-1 font-semibold text-white">
                       · {String(event.meta.amount)}
                     </span>
