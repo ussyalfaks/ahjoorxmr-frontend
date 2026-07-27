@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut } from "lucide-react";
+import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut, Wallet } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
@@ -54,6 +54,15 @@ export default function DashboardLayout({
                 >
                   <Lock size={20} aria-hidden="true" />
                   <span className="font-medium">Locked Funds</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/payouts"
+                  className="flex items-center gap-3 px-4 py-3 text-[#9A9A9A] hover:text-[#EBEBEB] hover:bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <Wallet size={20} aria-hidden="true" />
+                  <span className="font-medium">Payouts</span>
                 </Link>
               </li>
               <li>
