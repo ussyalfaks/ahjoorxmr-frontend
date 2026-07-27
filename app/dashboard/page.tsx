@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ArrowUpRight, Users, CheckCircle2, DollarSign } from "lucide-react";
 import SavingsCard from "@/components/cards/SavingsCard";
+import SavingsGrowthChart from "@/components/charts/SavingsGrowthChart";
 import TxConfirmModal, { TxType } from "@/components/modals/TxConfirmModal";
 import type { Circle } from "@/types/circle";
 
@@ -199,6 +200,8 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
       </div>
+
+      <SavingsGrowthChart />
 
       {/* Active Savings Section */}
       <div>
