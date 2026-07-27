@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./global.css";
 import Providers from "./providers";
+import Toaster from "@/components/ui/Toaster";
 
 export const metadata: Metadata = {
   title: "Ahjoor — Save With Friends",
@@ -22,7 +23,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <Providers>
+          <Toaster />
+          {children}
+        </Providers>
       </body>
     </html>
   );
