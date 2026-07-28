@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Settings } from "lucide-react";
+import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Settings, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import ActivityFeed from "@/components/circles/ActivityFeed";
 import CountdownTimer from "@/components/ui/CountdownTimer";
@@ -281,6 +281,9 @@ function RoundHistoryTable({ rows }: { rows: RoundHistoryRow[] }) {
   );
 }
 
+import { useCallback } from "react";
+import { Flag } from "lucide-react";
+
 export default function CircleDetailPage({
   params,
 }: {
@@ -399,6 +402,13 @@ export default function CircleDetailPage({
         {circle.isOrganizer && (
           <>
             <InviteLinkButton circleId={circle.id} />
+            <Link
+              href={`/dashboard/circles/${circle.id}/analytics`}
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              <BarChart3 size={14} aria-hidden="true" />
+              Analytics
+            </Link>
             <Link
               href={`/dashboard/circles/${circle.id}/settings`}
               className="flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
