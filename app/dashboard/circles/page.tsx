@@ -78,6 +78,7 @@ function CirclesContent() {
   const router = useRouter();
   const tab: Tab = (searchParams.get("tab") as Tab) ?? "my";
   const inviteId = searchParams.get("invite");
+  const action = searchParams.get("action");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [joinCircle, setJoinCircle] = useState<JoinCircleData | null>(null);
@@ -87,6 +88,13 @@ function CirclesContent() {
     const circle = mockCircles.find((c) => c.id === inviteId);
     if (circle) setJoinCircle(circle);
   }, [inviteId]);
+
+  useEffect(() => {
+    if (action === "create") {
+      setCreateOpen(true);
+      router.replace("/dashboard/circles");
+    }
+  }, [action, router]);
 
   const myCircles = mockCircles.filter((c) => c.members.includes(CURRENT_WALLET));
   const discoverCircles = mockCircles.filter((c) => !c.members.includes(CURRENT_WALLET));
@@ -101,8 +109,8 @@ function CirclesContent() {
     <div className="space-y-8 pb-20 md:pb-0">
       {/* Page Title + Create button */}
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold font-sora text-white shrink-0">Circles</h1>
-        <div className="h-px bg-[#ffffff1a] w-full" />
+        <h1 className="text-2xl font-bold font-sora text-[var(--text)] shrink-0">Circles</h1>
+        <div className="h-px bg-[var(--ov-1a)] w-full" />
         <button
           onClick={() => setCreateOpen(true)}
           className="flex items-center gap-2 shrink-0 px-4 py-2 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
@@ -114,7 +122,7 @@ function CirclesContent() {
 
       {/* Tab Toggle */}
       <div
-        className="flex border-b border-[#ffffff1a]"
+        className="flex border-b border-[var(--ov-1a)]"
         role="tablist"
         aria-label="Circle views"
       >
@@ -125,8 +133,8 @@ function CirclesContent() {
           onClick={() => setTab("my")}
           className={`px-6 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-inset -mb-px ${
             tab === "my"
-              ? "text-white border-b-2 border-white"
-              : "text-[#9A9A9A] hover:text-white border-b-2 border-transparent"
+              ? "text-[var(--text)] border-b-2 border-white"
+              : "text-[var(--muted)] hover:text-[var(--text)] border-b-2 border-transparent"
           }`}
         >
           My Circles
@@ -138,8 +146,8 @@ function CirclesContent() {
           onClick={() => setTab("discover")}
           className={`px-6 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-inset -mb-px ${
             tab === "discover"
-              ? "text-white border-b-2 border-white"
-              : "text-[#9A9A9A] hover:text-white border-b-2 border-transparent"
+              ? "text-[var(--text)] border-b-2 border-white"
+              : "text-[var(--muted)] hover:text-[var(--text)] border-b-2 border-transparent"
           }`}
         >
           Discover
@@ -150,7 +158,7 @@ function CirclesContent() {
       <div id="circles-panel" role="tabpanel">
         {displayCircles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <p className="text-[#A1A1AA] text-base">
+            <p className="text-[var(--muted)] text-base">
               {tab === "my"
                 ? "You haven't joined any circles yet."
                 : "No open circles available to join right now."}
@@ -161,13 +169,13 @@ function CirclesContent() {
             {displayCircles.map((circle) => (
               <article
                 key={circle.id}
-                className="bg-[#212124] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[#26262a] transition-colors"
+                className="bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[var(--content-hover)] transition-colors"
               >
                 <Link href={`/dashboard/circles/${circle.id}`} className="hover:underline">
-                  <h2 className="text-lg font-bold font-sora text-white">{circle.name}</h2>
+                  <h2 className="text-lg font-bold font-sora text-[var(--text)]">{circle.name}</h2>
                 </Link>
 
-                <div className="flex items-center gap-1.5 text-xs text-[#A1A1AA]">
+                <div className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
                   <span>by</span>
                   <span className="font-mono truncate max-w-[140px]">{circle.creator}</span>
                   <CopyButton value={circle.creator} />
@@ -175,26 +183,26 @@ function CirclesContent() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <p className="text-[#A1A1AA] text-xs mb-1.5">Members</p>
+                    <p className="text-[var(--muted)] text-xs mb-1.5">Members</p>
                     <div className="flex items-center gap-1.5">
-                      <Users size={14} className="text-[#A1A1AA] shrink-0" aria-hidden="true" />
-                      <span className="text-sm font-semibold text-white">
+                      <Users size={14} className="text-[var(--muted)] shrink-0" aria-hidden="true" />
+                      <span className="text-sm font-semibold text-[var(--text)]">
                         {circle.members.length}/{circle.totalSlots}
                       </span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-[#A1A1AA] text-xs mb-1.5">Contribution</p>
+                    <p className="text-[var(--muted)] text-xs mb-1.5">Contribution</p>
                     <div className="flex items-center gap-1.5">
-                      <DollarSign size={14} className="text-[#A1A1AA] shrink-0" aria-hidden="true" />
-                      <span className="text-sm font-semibold text-white">{circle.contribution}</span>
+                      <DollarSign size={14} className="text-[var(--muted)] shrink-0" aria-hidden="true" />
+                      <span className="text-sm font-semibold text-[var(--text)]">{circle.contribution}</span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-[#A1A1AA] text-xs mb-1.5">Duration</p>
+                    <p className="text-[var(--muted)] text-xs mb-1.5">Duration</p>
                     <div className="flex items-center gap-1.5">
-                      <Clock size={14} className="text-[#A1A1AA] shrink-0" aria-hidden="true" />
-                      <span className="text-sm font-semibold text-white">{circle.duration}</span>
+                      <Clock size={14} className="text-[var(--muted)] shrink-0" aria-hidden="true" />
+                      <span className="text-sm font-semibold text-[var(--text)]">{circle.duration}</span>
                     </div>
                   </div>
                 </div>
@@ -202,7 +210,7 @@ function CirclesContent() {
                 {tab === "discover" && (
                   <button
                     onClick={() => setJoinCircle(circle)}
-                    className="mt-auto px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]"
+                    className="mt-auto px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--content)]"
                   >
                     Join Circle
                   </button>

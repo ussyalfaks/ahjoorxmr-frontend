@@ -43,8 +43,8 @@ export function FilterDropdown({ value, onChange }: FilterDropdownProps) {
         aria-expanded={open}
         className={`flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm sm:w-40 ${
           isActive
-            ? "border-blue-500 bg-blue-50 text-blue-700"
-            : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300"
+            : "border-gray-300 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] text-gray-700 dark:text-[var(--text)] hover:bg-gray-50 dark:hover:bg-[var(--content-hover)]"
         }`}
       >
         <span>{FILTER_LABELS[value]}</span>
@@ -56,7 +56,7 @@ export function FilterDropdown({ value, onChange }: FilterDropdownProps) {
       {open && (
         <ul
           role="listbox"
-          className="absolute z-10 mt-1 w-full sm:w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+          className="absolute z-10 mt-1 w-full sm:w-40 rounded-md border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--modal)] py-1 shadow-lg"
         >
           {FILTER_OPTIONS.map((option) => (
             <li key={option}>
@@ -68,10 +68,10 @@ export function FilterDropdown({ value, onChange }: FilterDropdownProps) {
                   onChange(option);
                   setOpen(false);
                 }}
-                className={`block w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                className={`block w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)] ${
                   value === option
-                    ? "font-medium text-blue-700"
-                    : "text-gray-700"
+                    ? "font-medium text-blue-700 dark:text-blue-300"
+                    : "text-gray-700 dark:text-[var(--text)]"
                 }`}
               >
                 {FILTER_LABELS[option]}

@@ -68,14 +68,14 @@ export default function CreateCircleModal({ open, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
       <div
         ref={ref}
-        className="bg-[#1C1C1E] rounded-2xl w-full max-w-md p-8 relative"
+        className="bg-[var(--modal)] rounded-2xl w-full max-w-md p-8 relative"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-circle-title"
       >
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-[#9A9A9A] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+          className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
           aria-label="Close"
         >
           <X size={20} />
@@ -84,13 +84,13 @@ export default function CreateCircleModal({ open, onClose }: Props) {
         {success ? (
           <div className="text-center space-y-5 py-4">
             <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto" aria-hidden="true">
-              <CheckCircle2 size={36} className="text-green-400" />
+              <CheckCircle2 size={36} className="text-green-600 dark:text-green-400" />
             </div>
-            <h2 id="create-circle-title" className="text-2xl font-bold font-sora text-white">
+            <h2 id="create-circle-title" className="text-2xl font-bold font-sora text-[var(--text)]">
               Circle Created!
             </h2>
-            <p className="text-[#A1A1AA] text-sm">
-              <span className="text-white font-medium">{form.name}</span> has been created.
+            <p className="text-[var(--muted)] text-sm">
+              <span className="text-[var(--text)] font-medium">{form.name}</span> has been created.
               Invite members to start saving together.
             </p>
             <button
@@ -107,7 +107,7 @@ export default function CreateCircleModal({ open, onClose }: Props) {
               {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
                 <div
                   key={i}
-                  className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= step ? "bg-[#4B6B76]" : "bg-[#ffffff1a]"}`}
+                  className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= step ? "bg-[#4B6B76]" : "bg-[var(--ov-1a)]"}`}
                 />
               ))}
             </div>
@@ -116,14 +116,14 @@ export default function CreateCircleModal({ open, onClose }: Props) {
             {step === 0 && (
               <div className="space-y-5">
                 <div>
-                  <h2 id="create-circle-title" className="text-xl font-bold font-sora text-white">
+                  <h2 id="create-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
                     Create a Circle
                   </h2>
-                  <p className="text-[#A1A1AA] text-sm mt-1">Give your savings circle a name.</p>
+                  <p className="text-[var(--muted)] text-sm mt-1">Give your savings circle a name.</p>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-[#A1A1AA] mb-1.5 block" htmlFor="circle-name">
+                    <label className="text-sm text-[var(--muted)] mb-1.5 block" htmlFor="circle-name">
                       Circle Name <span className="text-red-400">*</span>
                     </label>
                     <input
@@ -132,11 +132,11 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                       value={form.name}
                       onChange={set("name")}
                       placeholder="e.g. Family Savings"
-                      className="w-full bg-[#ffffff0a] border border-[#ffffff14] rounded-xl px-4 py-3 text-white text-sm placeholder:text-[#555] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                      className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-3 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-[#A1A1AA] mb-1.5 block" htmlFor="circle-desc">
+                    <label className="text-sm text-[var(--muted)] mb-1.5 block" htmlFor="circle-desc">
                       Description
                     </label>
                     <textarea
@@ -145,7 +145,7 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                       onChange={set("description")}
                       placeholder="Optional — what's this circle for?"
                       rows={3}
-                      className="w-full bg-[#ffffff0a] border border-[#ffffff14] rounded-xl px-4 py-3 text-white text-sm placeholder:text-[#555] focus:outline-none focus:ring-2 focus:ring-[#4B6B76] resize-none"
+                      className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-3 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76] resize-none"
                     />
                   </div>
                 </div>
@@ -156,14 +156,14 @@ export default function CreateCircleModal({ open, onClose }: Props) {
             {step === 1 && (
               <div className="space-y-5">
                 <div>
-                  <h2 id="create-circle-title" className="text-xl font-bold font-sora text-white">
+                  <h2 id="create-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
                     Circle Settings
                   </h2>
-                  <p className="text-[#A1A1AA] text-sm mt-1">Configure contribution details.</p>
+                  <p className="text-[var(--muted)] text-sm mt-1">Configure contribution details.</p>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-[#A1A1AA] mb-1.5 block" htmlFor="contribution">
+                    <label className="text-sm text-[var(--muted)] mb-1.5 block" htmlFor="contribution">
                       Contribution Amount (USDT) <span className="text-red-400">*</span>
                     </label>
                     <input
@@ -173,11 +173,11 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                       value={form.contribution}
                       onChange={set("contribution")}
                       placeholder="e.g. 50"
-                      className="w-full bg-[#ffffff0a] border border-[#ffffff14] rounded-xl px-4 py-3 text-white text-sm placeholder:text-[#555] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                      className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-3 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-[#A1A1AA] mb-1.5 block" htmlFor="max-members">
+                    <label className="text-sm text-[var(--muted)] mb-1.5 block" htmlFor="max-members">
                       Max Members <span className="text-red-400">*</span>
                     </label>
                     <input
@@ -187,11 +187,11 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                       value={form.maxMembers}
                       onChange={set("maxMembers")}
                       placeholder="e.g. 5 (minimum 2)"
-                      className="w-full bg-[#ffffff0a] border border-[#ffffff14] rounded-xl px-4 py-3 text-white text-sm placeholder:text-[#555] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                      className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-3 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-[#A1A1AA] mb-1.5 block" htmlFor="duration">
+                    <label className="text-sm text-[var(--muted)] mb-1.5 block" htmlFor="duration">
                       Round Duration (days) <span className="text-red-400">*</span>
                     </label>
                     <input
@@ -201,7 +201,7 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                       value={form.roundDuration}
                       onChange={set("roundDuration")}
                       placeholder="e.g. 7"
-                      className="w-full bg-[#ffffff0a] border border-[#ffffff14] rounded-xl px-4 py-3 text-white text-sm placeholder:text-[#555] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                      className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-3 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
                     />
                   </div>
                 </div>
@@ -212,12 +212,12 @@ export default function CreateCircleModal({ open, onClose }: Props) {
             {step === 2 && (
               <div className="space-y-5">
                 <div>
-                  <h2 id="create-circle-title" className="text-xl font-bold font-sora text-white">
+                  <h2 id="create-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
                     Review & Confirm
                   </h2>
-                  <p className="text-[#A1A1AA] text-sm mt-1">Check your circle details before creating.</p>
+                  <p className="text-[var(--muted)] text-sm mt-1">Check your circle details before creating.</p>
                 </div>
-                <div className="bg-[#ffffff0a] rounded-xl p-5 space-y-3">
+                <div className="bg-[var(--ov-0a)] rounded-xl p-5 space-y-3">
                   {[
                     { label: "Name", value: form.name },
                     { label: "Description", value: form.description || "—" },
@@ -226,8 +226,8 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                     { label: "Round Duration", value: `${form.roundDuration} days` },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex justify-between text-sm">
-                      <span className="text-[#A1A1AA]">{label}</span>
-                      <span className="text-white font-medium max-w-[60%] text-right">{value}</span>
+                      <span className="text-[var(--muted)]">{label}</span>
+                      <span className="text-[var(--text)] font-medium max-w-[60%] text-right">{value}</span>
                     </div>
                   ))}
                 </div>
@@ -239,14 +239,14 @@ export default function CreateCircleModal({ open, onClose }: Props) {
               {step > 0 ? (
                 <button
                   onClick={() => setStep((s) => s - 1)}
-                  className="flex items-center gap-1 text-sm text-[#9A9A9A] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded px-2 py-1"
+                  className="flex items-center gap-1 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded px-2 py-1"
                 >
                   <ArrowLeft size={16} aria-hidden="true" /> Back
                 </button>
               ) : (
                 <button
                   onClick={handleClose}
-                  className="text-sm text-[#9A9A9A] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded px-2 py-1"
+                  className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded px-2 py-1"
                 >
                   Cancel
                 </button>

@@ -48,14 +48,14 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet }
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
       <div
         ref={ref}
-        className="bg-[#1C1C1E] rounded-2xl w-full max-w-sm p-8 relative"
+        className="bg-[var(--modal)] rounded-2xl w-full max-w-sm p-8 relative"
         role="dialog"
         aria-modal="true"
         aria-labelledby="join-circle-title"
       >
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-[#9A9A9A] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+          className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
           aria-label="Close"
         >
           <X size={20} />
@@ -66,16 +66,16 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet }
             <div className="w-14 h-14 rounded-full bg-[#4B6B76]/20 flex items-center justify-center mx-auto" aria-hidden="true">
               <CheckCircle2 size={28} className="text-[#4B6B76]" />
             </div>
-            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-white">
+            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
               Already a Member
             </h2>
-            <p className="text-[#A1A1AA] text-sm">
+            <p className="text-[var(--muted)] text-sm">
               You&apos;re already in{" "}
-              <span className="text-white font-medium">{circle.name}</span>.
+              <span className="text-[var(--text)] font-medium">{circle.name}</span>.
             </p>
             <button
               onClick={handleClose}
-              className="w-full py-2.5 bg-[#ffffff0a] hover:bg-[#ffffff14] text-white font-medium rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              className="w-full py-2.5 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-[var(--text)] font-medium rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             >
               Close
             </button>
@@ -83,14 +83,14 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet }
         ) : success ? (
           <div className="text-center space-y-4 py-4">
             <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mx-auto" aria-hidden="true">
-              <CheckCircle2 size={28} className="text-green-400" />
+              <CheckCircle2 size={28} className="text-green-600 dark:text-green-400" />
             </div>
-            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-white">
+            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
               You&apos;re In!
             </h2>
-            <p className="text-[#A1A1AA] text-sm">
+            <p className="text-[var(--muted)] text-sm">
               You&apos;ve successfully joined{" "}
-              <span className="text-white font-medium">{circle.name}</span>.
+              <span className="text-[var(--text)] font-medium">{circle.name}</span>.
             </p>
             <button
               onClick={handleClose}
@@ -101,32 +101,32 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet }
           </div>
         ) : (
           <div className="space-y-5">
-            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-white">
+            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
               Join {circle.name}
             </h2>
-            <div className="bg-[#ffffff0a] rounded-xl p-4 space-y-3">
+            <div className="bg-[var(--ov-0a)] rounded-xl p-4 space-y-3">
               {[
                 { label: "Contribution", value: circle.contribution },
                 { label: "Duration", value: circle.duration },
                 { label: "Slots", value: `${circle.members.length} / ${circle.totalSlots}` },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between text-sm">
-                  <span className="text-[#A1A1AA]">{label}</span>
-                  <span className="text-white font-medium">{value}</span>
+                  <span className="text-[var(--muted)]">{label}</span>
+                  <span className="text-[var(--text)] font-medium">{value}</span>
                 </div>
               ))}
             </div>
             {isFull ? (
               <p className="text-red-400 text-sm text-center">This circle is full.</p>
             ) : (
-              <p className="text-[#A1A1AA] text-xs">
+              <p className="text-[var(--muted)] text-xs">
                 By joining, you agree to contribute {circle.contribution} each round.
               </p>
             )}
             <div className="flex gap-3">
               <button
                 onClick={handleClose}
-                className="flex-1 py-2.5 bg-[#ffffff0a] hover:bg-[#ffffff14] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                className="flex-1 py-2.5 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-[var(--text)] text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
               >
                 Cancel
               </button>

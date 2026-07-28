@@ -21,10 +21,10 @@ export default function DashboardError({ error, reset }: Props) {
       <div className="w-16 h-16 rounded-full bg-[#F8717115] flex items-center justify-center mb-6">
         <AlertTriangle size={32} className="text-[#F87171]" aria-hidden="true" />
       </div>
-      <h2 className="text-white text-xl font-bold font-sora mb-2">
+      <h2 className="text-[var(--text)] text-xl font-bold font-sora mb-2">
         Something went wrong
       </h2>
-      <p className="text-[#9A9A9A] text-sm mb-8 max-w-sm">
+      <p className="text-[var(--muted)] text-sm mb-8 max-w-sm">
         An unexpected error occurred. You can try again or return to the dashboard.
       </p>
       <button

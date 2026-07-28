@@ -23,20 +23,20 @@ const partners = [
 
 export default function SupportedBy() {
   return (
-    <div className="px-10 py-11 border-t border-white/[0.07] border-b border-white/[0.07] text-center bg-white/[0.01] max-sm:px-6">
-      <p className="text-[11px] tracking-[3.5px] uppercase text-[#7878a0] mb-6 font-medium">
+    <div className="px-10 py-11 border-t border-[var(--border)] border-b border-[var(--border)] text-center bg-[var(--ov-03)] max-sm:px-6">
+      <p className="text-[11px] tracking-[3.5px] uppercase text-[var(--muted)] mb-6 font-medium">
         Supported By
       </p>
       <div className="flex items-center justify-center gap-[60px] flex-wrap max-sm:gap-8" role="list" aria-label="Supported platforms">
         {partners.map((p) => (
           <div
             key={p.name}
-            className="flex items-center gap-[10px] text-[#7878a0] transition-colors duration-200 hover:text-white group"
+            className="flex items-center gap-[10px] text-[var(--muted)] transition-colors duration-200 hover:text-[var(--text)] group"
             role="listitem"
           >
             {p.isBase ? (
               <span
-                className="w-7 h-7 rounded-[6px] flex items-center justify-center font-['Sora'] font-extrabold text-[14px] text-white flex-shrink-0"
+                className="w-7 h-7 rounded-[6px] flex items-center justify-center font-['Sora'] font-extrabold text-[14px] text-[var(--text)] flex-shrink-0"
                 style={{ background: "#0052ff" }}
                 aria-hidden="true"
               >

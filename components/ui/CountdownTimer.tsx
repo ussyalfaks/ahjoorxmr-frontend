@@ -41,7 +41,7 @@ export default function CountdownTimer({ deadline }: Props) {
 
   if (!deadline) {
     return (
-      <span className="text-xs font-medium text-[#A1A1AA]" aria-label="No fixed deadline">
+      <span className="text-xs font-medium text-[var(--muted)]" aria-label="No fixed deadline">
         Ongoing
       </span>
     );
@@ -49,7 +49,7 @@ export default function CountdownTimer({ deadline }: Props) {
 
   if (!timeLeft) {
     return (
-      <span className="text-xs font-medium text-red-500" aria-label="Round has ended">
+      <span className="text-xs font-medium text-red-600 dark:text-red-500" aria-label="Round has ended">
         Round Ended
       </span>
     );
@@ -58,10 +58,10 @@ export default function CountdownTimer({ deadline }: Props) {
   const isUnderHour = timeLeft.totalMs < 60 * 60 * 1000;
   const isUnder24Hours = timeLeft.totalMs < 24 * 60 * 60 * 1000;
   const colorClass = isUnderHour
-    ? "text-red-500"
+    ? "text-red-600 dark:text-red-500"
     : isUnder24Hours
-    ? "text-amber-500"
-    : "text-[#A1A1AA]";
+    ? "text-amber-600 dark:text-amber-500"
+    : "text-[var(--muted)]";
 
   const pad = (n: number) => String(n).padStart(2, "0");
 

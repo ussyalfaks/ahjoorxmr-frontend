@@ -20,24 +20,24 @@ export function CircleCard({
   joining,
 }: CircleCardProps) {
   return (
-    <div className="flex flex-col justify-between rounded-lg border border-gray-200 bg-white p-4">
+    <div className="flex flex-col justify-between rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] p-4">
       <div>
-        <h3 className="text-sm font-semibold text-gray-900">{name}</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--text)]">{name}</h3>
 
         <dl className="mt-3 space-y-1.5 text-sm">
           <div className="flex justify-between">
-            <dt className="text-gray-500">Members</dt>
-            <dd className="font-medium text-gray-800">
+            <dt className="text-gray-500 dark:text-[var(--muted)]">Members</dt>
+            <dd className="font-medium text-gray-800 dark:text-[var(--text)]">
               {memberCount}/{maxMembers}
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-500">Contribution</dt>
-            <dd className="font-medium text-gray-800">{contributionAmount}</dd>
+            <dt className="text-gray-500 dark:text-[var(--muted)]">Contribution</dt>
+            <dd className="font-medium text-gray-800 dark:text-[var(--text)]">{contributionAmount}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-500">Duration</dt>
-            <dd className="font-medium text-gray-800">{durationLabel}</dd>
+            <dt className="text-gray-500 dark:text-[var(--muted)]">Duration</dt>
+            <dd className="font-medium text-gray-800 dark:text-[var(--text)]">{durationLabel}</dd>
           </div>
         </dl>
       </div>

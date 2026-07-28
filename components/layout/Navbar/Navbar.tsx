@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Copy, Check, ChevronDown, X } from "lucide-react";
+import { Copy, Check, ChevronDown, X, Search } from "lucide-react";
 import { useWallet, AVAILABLE_WALLETS, truncateAddress, type WalletId } from "@/contexts/WalletContext";
+import { OPEN_COMMAND_PALETTE_EVENT } from "@/components/ui/CommandPalette";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const navLinks = [
   { label: "Home", href: "#" },
@@ -35,23 +37,23 @@ function WalletSelectModal({ onClose, onSelect }: { onClose: () => void; onSelec
       />
       <div
         ref={modalRef}
-        className="relative z-10 w-full max-w-sm mx-4 rounded-2xl border border-[#ffffff14] p-6"
-        style={{ background: "#1C1C1E" }}
+        className="relative z-10 w-full max-w-sm mx-4 rounded-2xl border border-[var(--ov-14)] p-6"
+        style={{ background: "var(--modal)" }}
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 id="wallet-modal-title" className="text-lg font-bold text-white font-sora">
+          <h2 id="wallet-modal-title" className="text-lg font-bold text-[var(--text)] font-sora">
             Connect Wallet
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-[#ffffff0f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0f)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             aria-label="Close wallet selector"
           >
             <X size={18} />
           </button>
         </div>
 
-        <p className="text-[#A1A1AA] text-sm mb-5">
+        <p className="text-[var(--muted)] text-sm mb-5">
           Choose a Starknet-compatible wallet to connect.
         </p>
 
@@ -60,9 +62,9 @@ function WalletSelectModal({ onClose, onSelect }: { onClose: () => void; onSelec
             <button
               key={wallet.id}
               onClick={() => onSelect(wallet.id)}
-              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-[#ffffff08] hover:bg-[#ffffff12] border border-[#ffffff0f] hover:border-[#4B6B76] text-white text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-[var(--ov-08)] hover:bg-[var(--ov-12)] border border-[var(--ov-0f)] hover:border-[#4B6B76] text-[var(--text)] text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             >
-              <span className="w-8 h-8 rounded-full bg-[#ffffff14] flex items-center justify-center text-base" aria-hidden="true">
+              <span className="w-8 h-8 rounded-full bg-[var(--ov-14)] flex items-center justify-center text-base" aria-hidden="true">
                 {wallet.id === "argent" ? "🔷" : "🔶"}
               </span>
               <span>{wallet.name}</span>
@@ -98,18 +100,18 @@ function ConnectedDropdown({ address, onCopy, onDisconnect, onClose }: {
   return (
     <div ref={ref} className="relative">
       <div
-        className="absolute right-0 top-3 w-52 rounded-xl border border-[#ffffff14] overflow-hidden z-150"
-        style={{ background: "#1C1C1E" }}
+        className="absolute right-0 top-3 w-52 rounded-xl border border-[var(--ov-14)] overflow-hidden z-150"
+        style={{ background: "var(--modal)" }}
         role="menu"
         aria-label="Wallet options"
       >
-        <div className="px-4 py-3 border-b border-[#ffffff0f]">
-          <p className="text-xs text-[#A1A1AA] mb-0.5">Connected</p>
-          <p className="text-sm text-white font-mono">{truncateAddress(address)}</p>
+        <div className="px-4 py-3 border-b border-[var(--ov-0f)]">
+          <p className="text-xs text-[var(--muted)] mb-0.5">Connected</p>
+          <p className="text-sm text-[var(--text)] font-mono">{truncateAddress(address)}</p>
         </div>
         <button
           onClick={onCopy}
-          className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#c0c0c0] hover:text-white hover:bg-[#ffffff0a] transition-colors focus-visible:outline-none focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+          className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--muted2)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           role="menuitem"
         >
           <Copy size={14} aria-hidden="true" />
@@ -166,13 +168,13 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className="fixed top-0 left-0 right-0 z-100 backdrop-blur-[20px] border-b border-white/[0.07]"
-        style={{ background: "rgba(10,10,15,0.82)" }}
+        className="fixed top-0 left-0 right-0 z-100 backdrop-blur-[20px] border-b border-[var(--border)]"
+        style={{ background: "var(--nav-bg)" }}
       >
 
         <div className="max-w-[1200px] mx-auto flex items-center justify-between px-10 py-[18px] max-md:px-6 max-md:py-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-[9px] font-['Sora'] font-bold text-[19px] text-white no-underline tracking-[-0.3px]">
+          <Link href="/" className="flex items-center gap-[9px] font-['Sora'] font-bold text-[19px] text-[var(--text)] no-underline tracking-[-0.3px]">
             <span
               className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center"
               style={{
@@ -195,7 +197,7 @@ export default function Navbar() {
               <li key={l.label}>
                 <Link
                   href={l.href}
-                  className="text-[14px] font-medium text-[#7878a0] no-underline transition-colors duration-200 hover:text-white relative group"
+                  className="text-[14px] font-medium text-[var(--muted)] no-underline transition-colors duration-200 hover:text-[var(--text)] relative group"
                 >
                   {l.label}
                   <span className="absolute -bottom-[3px] left-0 w-0 h-px bg-[#8b7cf8] transition-all duration-200 group-hover:w-full" aria-hidden="true" />
@@ -206,20 +208,32 @@ export default function Navbar() {
 
           {/* Desktop CTA / Wallet */}
           <div className="max-md:hidden flex items-center gap-3">
+            <button
+              onClick={() => window.dispatchEvent(new Event(OPEN_COMMAND_PALETTE_EVENT))}
+              className="flex items-center gap-2 px-3 py-[7px] rounded-[10px] border border-[var(--ov-14)] bg-[var(--ov-05)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[#4B6B76] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              aria-label="Open command palette (Cmd+K)"
+            >
+              <Search size={15} aria-hidden="true" />
+              <span className="text-xs">Search</span>
+              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--ov-0a)] border border-[var(--ov-14)]" aria-hidden="true">
+                ⌘K
+              </kbd>
+            </button>
+            <ThemeToggle />
             {isConnected && address ? (
               <div className="relative">
                 <button
                   onClick={() => setShowDropdown((v) => !v)}
-                  className="flex items-center gap-2 border border-[#ffffff1a] rounded-[10px] px-4 py-[9px] bg-[#ffffff08] text-white text-[14px] font-semibold font-['Sora'] tracking-[-0.2px] transition-all duration-200 hover:bg-[#ffffff12] hover:border-[#4B6B76] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  className="flex items-center gap-2 border border-[var(--ov-1a)] rounded-[10px] px-4 py-[9px] bg-[var(--ov-08)] text-[var(--text)] text-[14px] font-semibold font-['Sora'] tracking-[-0.2px] transition-all duration-200 hover:bg-[var(--ov-12)] hover:border-[#4B6B76] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                   aria-haspopup="menu"
                   aria-expanded={showDropdown}
                 >
                   <span className="w-2 h-2 rounded-full bg-[#4ADE80] shrink-0" aria-hidden="true" />
                   <span className="font-mono">{truncateAddress(address)}</span>
                   {copied ? (
-                    <Check size={14} className="text-[#4ADE80]" aria-hidden="true" />
+                    <Check size={14} className="text-[var(--success)]" aria-hidden="true" />
                   ) : (
-                    <ChevronDown size={14} className="text-[#A1A1AA]" aria-hidden="true" />
+                    <ChevronDown size={14} className="text-[var(--muted)]" aria-hidden="true" />
                   )}
                 </button>
                 {showDropdown && (
@@ -244,39 +258,52 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile hamburger */}
+          {/* Mobile search + hamburger */}
+          <div className="hidden max-md:flex items-center gap-3">
           <button
-            className="hidden max-md:flex flex-col gap-[5px] bg-transparent border-0 cursor-pointer p-1"
+            onClick={() => window.dispatchEvent(new Event(OPEN_COMMAND_PALETTE_EVENT))}
+            className="flex items-center justify-center w-8 h-8 text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            aria-label="Open command palette (Cmd+K)"
+          >
+            <Search size={18} aria-hidden="true" />
+          </button>
+          <button
+            className="flex flex-col gap-[5px] bg-transparent border-0 cursor-pointer p-1"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
             aria-expanded={menuOpen}
           >
             <span
-              className={`block w-[22px] h-0.5 bg-[#a0a0c0] rounded-xs transition-transform duration-300 ${
+              className={`block w-[22px] h-0.5 bg-[var(--muted2)] rounded-xs transition-transform duration-300 ${
                 menuOpen ? "translate-y-[7px] rotate-45" : ""
               }`}
             />
             <span
-              className={`block w-[22px] h-0.5 bg-[#a0a0c0] rounded-xs transition-opacity duration-300 ${
+              className={`block w-[22px] h-0.5 bg-[var(--muted2)] rounded-xs transition-opacity duration-300 ${
                 menuOpen ? "opacity-0" : ""
               }`}
             />
             <span
-              className={`block w-[22px] h-0.5 bg-[#a0a0c0] rounded-xs transition-transform duration-300 ${
+              className={`block w-[22px] h-0.5 bg-[var(--muted2)] rounded-xs transition-transform duration-300 ${
                 menuOpen ? "-translate-y-[7px] -rotate-45" : ""
               }`}
             />
           </button>
+          </div>
         </div>
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="flex flex-col px-6 pt-4 pb-6 gap-1 border-t border-white/[0.07]">
+          <div className="flex flex-col px-6 pt-4 pb-6 gap-1 border-t border-[var(--border)]">
+            <div className="flex items-center justify-between py-2.5 border-b border-[var(--border)]">
+              <span className="text-[var(--muted)] text-[15px] font-medium">Theme</span>
+              <ThemeToggle />
+            </div>
             {navLinks.map((l) => (
               <Link
                 key={l.label}
                 href={l.href}
-                className="text-[#7878a0] no-underline text-[15px] font-medium py-2.5 border-b border-white/[0.07] transition-colors duration-200 hover:text-white"
+                className="text-[var(--muted)] no-underline text-[15px] font-medium py-2.5 border-b border-[var(--border)] transition-colors duration-200 hover:text-[var(--text)]"
                 onClick={() => setMenuOpen(false)}
               >
                 {l.label}
@@ -286,11 +313,11 @@ export default function Navbar() {
               <div className="mt-3 flex flex-col gap-2">
                 <div className="flex items-center gap-2 px-1 py-2">
                   <span className="w-2 h-2 rounded-full bg-[#4ADE80]" aria-hidden="true" />
-                  <span className="text-white font-mono text-[14px]">{truncateAddress(address)}</span>
+                  <span className="text-[var(--text)] font-mono text-[14px]">{truncateAddress(address)}</span>
                 </div>
                 <button
                   onClick={() => { handleCopyAddress(); setMenuOpen(false); }}
-                  className="flex items-center gap-2 text-[#c0c0c0] text-[15px] font-medium py-3 border-b border-white/[0.07] transition-colors hover:text-white"
+                  className="flex items-center gap-2 text-[var(--muted2)] text-[15px] font-medium py-3 border-b border-[var(--border)] transition-colors hover:text-[var(--text)]"
                 >
                   <Copy size={14} aria-hidden="true" />
                   Copy Address

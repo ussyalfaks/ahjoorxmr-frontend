@@ -98,21 +98,21 @@ export default function SavingsGrowthChart() {
   const activeCoords = hoveredPoint !== null ? plottedPoints[hoveredPoint] : null;
 
   return (
-    <section className="rounded-2xl bg-[#1C1C1E] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.28)]">
+    <section className="rounded-2xl bg-[var(--modal)] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.28)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#9A9A9A]">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--muted)]">
             Savings growth
           </p>
-          <h2 className="mt-2 text-xl font-bold font-sora text-white">
+          <h2 className="mt-2 text-xl font-bold font-sora text-[var(--text)]">
             Cumulative savings over time
           </h2>
-          <p className="mt-2 text-sm text-[#A1A1AA]">
+          <p className="mt-2 text-sm text-[var(--muted)]">
             Track how your USDT savings have grown across the selected timeframe.
           </p>
         </div>
 
-        <div className="inline-flex rounded-full border border-[#ffffff14] bg-[#ffffff07] p-1 self-start">
+        <div className="inline-flex rounded-full border border-[var(--ov-14)] bg-[var(--ov-07)] p-1 self-start">
           {TIMEFRAMES.map((option) => {
             const isActive = option === timeframe;
 
@@ -126,8 +126,8 @@ export default function SavingsGrowthChart() {
                 }}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
                   isActive
-                    ? "bg-white text-[#111111]"
-                    : "text-[#A1A1AA] hover:text-white"
+                    ? "bg-[var(--text)] text-[var(--bg)]"
+                    : "text-[var(--muted)] hover:text-[var(--text)]"
                 }`}
               >
                 {option}
@@ -139,14 +139,14 @@ export default function SavingsGrowthChart() {
 
       <div className="mt-6 relative">
         {activePoint && (
-          <div className="absolute right-0 top-0 z-10 rounded-2xl border border-[#ffffff12] bg-[#111111] px-4 py-3 text-right shadow-lg">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-[#9A9A9A]">{activePoint.label}</p>
-            <p className="mt-1 text-lg font-semibold text-white">{activePoint.value.toLocaleString()} USDT</p>
-            <p className="text-xs text-[#A1A1AA]">{activePoint.tooltipDate}</p>
+          <div className="absolute right-0 top-0 z-10 rounded-2xl border border-[var(--ov-12)] bg-[var(--bg)] px-4 py-3 text-right shadow-lg">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)]">{activePoint.label}</p>
+            <p className="mt-1 text-lg font-semibold text-[var(--text)]">{activePoint.value.toLocaleString()} USDT</p>
+            <p className="text-xs text-[var(--muted)]">{activePoint.tooltipDate}</p>
           </div>
         )}
 
-        <div className="h-[320px] w-full overflow-hidden rounded-[1.5rem] border border-[#ffffff10] bg-[#151516] p-4 sm:p-6">
+        <div className="h-[320px] w-full overflow-hidden rounded-[1.5rem] border border-[var(--ov-10)] bg-[var(--surface)] p-4 sm:p-6">
           <svg
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
@@ -200,7 +200,7 @@ export default function SavingsGrowthChart() {
                     cx={point.x}
                     cy={point.y}
                     r={isActive ? 2.8 : 1.8}
-                    fill="#E5E7EB"
+                    fill="var(--muted2)"
                   />
                   <circle
                     cx={point.x}
@@ -216,10 +216,10 @@ export default function SavingsGrowthChart() {
             })}
           </svg>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#A1A1AA] sm:grid-cols-4 lg:grid-cols-7">
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--muted)] sm:grid-cols-4 lg:grid-cols-7">
             {data.map((point) => (
               <div key={point.label} className="text-center">
-                <div className="font-medium text-white">{point.label}</div>
+                <div className="font-medium text-[var(--text)]">{point.label}</div>
                 <div>{point.value.toLocaleString()} USDT</div>
               </div>
             ))}
@@ -228,7 +228,7 @@ export default function SavingsGrowthChart() {
 
         {activePoint && activeCoords && (
           <div
-            className="pointer-events-none absolute z-20 hidden rounded-xl border border-[#ffffff14] bg-[#111111] px-3 py-2 text-xs text-white shadow-xl sm:block"
+            className="pointer-events-none absolute z-20 hidden rounded-xl border border-[var(--ov-14)] bg-[var(--bg)] px-3 py-2 text-xs text-[var(--text)] shadow-xl sm:block"
             style={{
               left: `calc(${activeCoords.x}% + 12px)`,
               top: `calc(${activeCoords.y}% + 18px)`,
@@ -239,7 +239,7 @@ export default function SavingsGrowthChart() {
           </div>
         )}
 
-        <div className="mt-3 text-xs text-[#A1A1AA]">
+        <div className="mt-3 text-xs text-[var(--muted)]">
           Range: {minValue.toLocaleString()} to {maxValue.toLocaleString()} USDT
         </div>
       </div>

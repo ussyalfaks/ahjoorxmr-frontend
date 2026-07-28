@@ -141,59 +141,59 @@ export default function DashboardOverviewPage() {
     <div className="space-y-10 pb-20 md:pb-0">
       {/* Top Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#1C1C1E] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[#222224] transition-colors">
-          <div className="w-10 h-10 rounded-full bg-[#ffffff0a] flex items-center justify-center mb-6">
-            <DollarSign size={20} className="text-white" aria-hidden="true" />
+        <div className="bg-[var(--modal)] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[var(--content-hover)] transition-colors">
+          <div className="w-10 h-10 rounded-full bg-[var(--ov-0a)] flex items-center justify-center mb-6">
+            <DollarSign size={20} className="text-[var(--text)]" aria-hidden="true" />
           </div>
-          <p className="text-[#A1A1AA] text-sm font-medium mb-2">Total Saved</p>
+          <p className="text-[var(--muted)] text-sm font-medium mb-2">Total Saved</p>
           <div className="flex items-end justify-between">
-            <h3 className="text-3xl font-semibold font-sora tracking-tight text-white">$1000</h3>
-            <div className="flex items-center gap-1 text-[#4ADE80] text-xs font-semibold" aria-label="200% increase">
+            <h3 className="text-3xl font-semibold font-sora tracking-tight text-[var(--text)]">$1000</h3>
+            <div className="flex items-center gap-1 text-[var(--success)] text-xs font-semibold" aria-label="200% increase">
               <span>+200%</span>
               <ArrowUpRight size={14} aria-hidden="true" />
             </div>
           </div>
         </div>
 
-        <div className="bg-[#1C1C1E] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[#222224] transition-colors">
-          <div className="w-10 h-10 rounded-full bg-[#ffffff0a] flex items-center justify-center mb-6">
-            <Users size={20} className="text-white" aria-hidden="true" />
+        <div className="bg-[var(--modal)] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[var(--content-hover)] transition-colors">
+          <div className="w-10 h-10 rounded-full bg-[var(--ov-0a)] flex items-center justify-center mb-6">
+            <Users size={20} className="text-[var(--text)]" aria-hidden="true" />
           </div>
-          <p className="text-[#A1A1AA] text-sm font-medium mb-2">Active Pools</p>
+          <p className="text-[var(--muted)] text-sm font-medium mb-2">Active Pools</p>
           <div className="flex items-end justify-between">
-            <h3 className="text-3xl font-semibold font-sora tracking-tight text-white">8</h3>
-            <div className="flex items-center gap-1 text-[#4ADE80] text-xs font-semibold" aria-label="200% increase">
+            <h3 className="text-3xl font-semibold font-sora tracking-tight text-[var(--text)]">8</h3>
+            <div className="flex items-center gap-1 text-[var(--success)] text-xs font-semibold" aria-label="200% increase">
               <span>+200%</span>
               <ArrowUpRight size={14} aria-hidden="true" />
             </div>
           </div>
         </div>
 
-        <div className="bg-[#1C1C1E] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[#222224] transition-colors">
-          <div className="w-10 h-10 rounded-full bg-[#ffffff0a] flex items-center justify-center mb-6">
+        <div className="bg-[var(--modal)] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[var(--content-hover)] transition-colors">
+          <div className="w-10 h-10 rounded-full bg-[var(--ov-0a)] flex items-center justify-center mb-6">
             <div className="relative" aria-hidden="true">
-              <DollarSign size={16} className="text-white absolute -top-1 -right-1" />
+              <DollarSign size={16} className="text-[var(--text)] absolute -top-1 -right-1" />
               <div className="w-5 h-4 border-2 border-white rounded-sm mt-1" />
             </div>
           </div>
-          <p className="text-[#A1A1AA] text-sm font-medium mb-2">Next Payout</p>
+          <p className="text-[var(--muted)] text-sm font-medium mb-2">Next Payout</p>
           <div className="flex items-end justify-between">
-            <h3 className="text-3xl font-semibold font-sora tracking-tight text-white">$50</h3>
-            <div className="flex items-center gap-1 text-[#4ADE80] text-xs font-semibold" aria-label="200% increase">
+            <h3 className="text-3xl font-semibold font-sora tracking-tight text-[var(--text)]">$50</h3>
+            <div className="flex items-center gap-1 text-[var(--success)] text-xs font-semibold" aria-label="200% increase">
               <span>+200%</span>
               <ArrowUpRight size={14} aria-hidden="true" />
             </div>
           </div>
         </div>
 
-        <div className="bg-[#1C1C1E] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[#222224] transition-colors">
-          <div className="w-10 h-10 rounded-full bg-[#ffffff0a] flex items-center justify-center mb-6">
-            <CheckCircle2 size={20} className="text-white" aria-hidden="true" />
+        <div className="bg-[var(--modal)] p-6 rounded-2xl flex flex-col relative overflow-hidden group hover:bg-[var(--content-hover)] transition-colors">
+          <div className="w-10 h-10 rounded-full bg-[var(--ov-0a)] flex items-center justify-center mb-6">
+            <CheckCircle2 size={20} className="text-[var(--text)]" aria-hidden="true" />
           </div>
-          <p className="text-[#A1A1AA] text-sm font-medium mb-2">Completed Circles</p>
+          <p className="text-[var(--muted)] text-sm font-medium mb-2">Completed Circles</p>
           <div className="flex items-end justify-between">
-            <h3 className="text-3xl font-semibold font-sora tracking-tight text-white">12</h3>
-            <div className="flex items-center gap-1 text-[#4ADE80] text-xs font-semibold" aria-label="200% increase">
+            <h3 className="text-3xl font-semibold font-sora tracking-tight text-[var(--text)]">12</h3>
+            <div className="flex items-center gap-1 text-[var(--success)] text-xs font-semibold" aria-label="200% increase">
               <span>+200%</span>
               <ArrowUpRight size={14} aria-hidden="true" />
             </div>
@@ -206,8 +206,8 @@ export default function DashboardOverviewPage() {
       {/* Active Savings Section */}
       <div>
         <div className="flex items-center mb-6">
-          <h2 className="text-xl font-bold font-sora text-white shrink-0">Active savings</h2>
-          <div className="ml-4 h-px bg-[#ffffff1a] w-full" aria-hidden="true" />
+          <h2 className="text-xl font-bold font-sora text-[var(--text)] shrink-0">Active savings</h2>
+          <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
         </div>
 
         <div className="space-y-4">

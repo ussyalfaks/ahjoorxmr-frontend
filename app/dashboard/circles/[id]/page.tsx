@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useCallback, useState } from "react";
-import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Flag } from "lucide-react";
+import { use, useState } from "react";
+import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Settings } from "lucide-react";
 import Link from "next/link";
 import ActivityFeed from "@/components/circles/ActivityFeed";
 import CountdownTimer from "@/components/ui/CountdownTimer";
@@ -172,9 +172,9 @@ const CIRCLES: Record<string, CircleDetail> = {
 };
 
 const STATUS_STYLES: Record<CircleDetail["status"], string> = {
-  active: "bg-green-500/10 text-green-400",
-  pending: "bg-amber-500/10 text-amber-400",
-  completed: "bg-[#ffffff0a] text-[#A1A1AA]",
+  active: "bg-green-500/10 text-green-600 dark:text-green-400",
+  pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  completed: "bg-[var(--ov-0a)] text-[var(--muted)]",
 };
 
 function fmt(address: string) {
@@ -204,12 +204,12 @@ function InviteLinkButton({ circleId }: { circleId: string }) {
   return (
     <button
       onClick={copy}
-      className="flex items-center gap-2 px-4 py-2 bg-[#ffffff0a] hover:bg-[#ffffff14] text-sm text-white font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+      className="flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
     >
       {copied ? (
         <>
-          <Check size={14} className="text-green-400" aria-hidden="true" />
-          <span className="text-green-400">Copied!</span>
+          <Check size={14} className="text-green-600 dark:text-green-400" aria-hidden="true" />
+          <span className="text-green-600 dark:text-green-400">Copied!</span>
         </>
       ) : (
         <>
@@ -224,12 +224,12 @@ function InviteLinkButton({ circleId }: { circleId: string }) {
 function ParticipantRow({ participant }: { participant: Participant }) {
   const isCurrentUser = participant.address === CURRENT_WALLET;
   return (
-    <div className="flex items-center justify-between bg-[#212124] px-5 py-3 rounded-xl">
+    <div className="flex items-center justify-between bg-[var(--content)] px-5 py-3 rounded-xl">
       <div className="flex items-center gap-3">
-        <div className="w-7 h-7 rounded-full bg-[#ffffff0a] flex items-center justify-center text-xs font-bold text-[#A1A1AA]">
+        <div className="w-7 h-7 rounded-full bg-[var(--ov-0a)] flex items-center justify-center text-xs font-bold text-[var(--muted)]">
           {participant.slot}
         </div>
-        <span className="font-mono text-sm text-[#EBEBEB]">
+        <span className="font-mono text-sm text-[var(--text)]">
           {fmt(participant.address)}
           {isCurrentUser && <span className="ml-2 text-xs text-[#4B6B76] font-sans">(you)</span>}
         </span>
@@ -237,13 +237,13 @@ function ParticipantRow({ participant }: { participant: Participant }) {
       <div className="flex items-center gap-1.5">
         {participant.paid ? (
           <>
-            <Check size={14} className="text-green-400" aria-hidden="true" />
-            <span className="text-xs text-green-400">Paid</span>
+            <Check size={14} className="text-green-600 dark:text-green-400" aria-hidden="true" />
+            <span className="text-xs text-green-600 dark:text-green-400">Paid</span>
           </>
         ) : (
           <>
-            <XIcon size={14} className="text-[#A1A1AA]" aria-hidden="true" />
-            <span className="text-xs text-[#A1A1AA]">Pending</span>
+            <XIcon size={14} className="text-[var(--muted)]" aria-hidden="true" />
+            <span className="text-xs text-[var(--muted)]">Pending</span>
           </>
         )}
       </div>
@@ -253,26 +253,26 @@ function ParticipantRow({ participant }: { participant: Participant }) {
 
 function RoundHistoryTable({ rows }: { rows: RoundHistoryRow[] }) {
   if (rows.length === 0) {
-    return <p className="text-[#A1A1AA] text-sm">No completed rounds yet.</p>;
+    return <p className="text-[var(--muted)] text-sm">No completed rounds yet.</p>;
   }
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#ffffff0a]">
+    <div className="overflow-x-auto rounded-xl border border-[var(--ov-0a)]">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[#ffffff0a]">
-            <th className="text-left text-xs text-[#A1A1AA] font-medium px-4 py-3">Round</th>
-            <th className="text-left text-xs text-[#A1A1AA] font-medium px-4 py-3">Recipient</th>
-            <th className="text-left text-xs text-[#A1A1AA] font-medium px-4 py-3">Payout</th>
-            <th className="text-left text-xs text-[#A1A1AA] font-medium px-4 py-3">Completed</th>
+          <tr className="border-b border-[var(--ov-0a)]">
+            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Round</th>
+            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Recipient</th>
+            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Payout</th>
+            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Completed</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.round} className="border-b border-[#ffffff05] last:border-0">
-              <td className="px-4 py-3 text-white font-medium">#{row.round}</td>
-              <td className="px-4 py-3 font-mono text-[#EBEBEB]">{fmt(row.recipient)}</td>
-              <td className="px-4 py-3 text-white">{row.amount}</td>
-              <td className="px-4 py-3 text-[#A1A1AA]">{row.completedAt}</td>
+            <tr key={row.round} className="border-b border-[var(--ov-05)] last:border-0">
+              <td className="px-4 py-3 text-[var(--text)] font-medium">#{row.round}</td>
+              <td className="px-4 py-3 font-mono text-[var(--text)]">{fmt(row.recipient)}</td>
+              <td className="px-4 py-3 text-[var(--text)]">{row.amount}</td>
+              <td className="px-4 py-3 text-[var(--muted)]">{row.completedAt}</td>
             </tr>
           ))}
         </tbody>
@@ -368,7 +368,7 @@ export default function CircleDetailPage({
   if (!circle) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
-        <p className="text-[#A1A1AA]">Circle not found.</p>
+        <p className="text-[var(--muted)]">Circle not found.</p>
         <Link href="/dashboard/circles" className="text-[#4B6B76] hover:underline text-sm">
           Back to Circles
         </Link>
@@ -386,69 +386,74 @@ export default function CircleDetailPage({
       <div className="flex flex-wrap items-center gap-3">
         <Link
           href="/dashboard/circles"
-          className="text-[#9A9A9A] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+          className="text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
           aria-label="Back to Circles"
         >
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold font-sora text-white">{circle.name}</h1>
+        <h1 className="text-2xl font-bold font-sora text-[var(--text)]">{circle.name}</h1>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[circle.status]}`}>
           {circle.status}
         </span>
-        <div className="h-px bg-[#ffffff1a] flex-1 hidden sm:block" aria-hidden="true" />
-        {circle.isOrganizer && <InviteLinkButton circleId={circle.id} />}
-        <ExportButton
-          getRows={getExportRows}
-          scope={circle.name}
-          prefix="contributions"
-          title={`${circle.name} — Contributions & Payouts`}
-        />
+        <div className="h-px bg-[var(--ov-1a)] flex-1 hidden sm:block" aria-hidden="true" />
+        {circle.isOrganizer && (
+          <>
+            <InviteLinkButton circleId={circle.id} />
+            <Link
+              href={`/dashboard/circles/${circle.id}/settings`}
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              <Settings size={14} aria-hidden="true" />
+              Settings
+            </Link>
+          </>
+        )}
       </div>
 
       {/* Circle Info */}
-      <div className="bg-[#212124] p-6 md:p-8 rounded-3xl space-y-6">
+      <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl space-y-6">
         <div>
-          <p className="text-xs text-[#A1A1AA] mb-0.5">Creator</p>
-          <p className="font-mono text-sm text-[#EBEBEB]">{fmt(circle.creator)}</p>
+          <p className="text-xs text-[var(--muted)] mb-0.5">Creator</p>
+          <p className="font-mono text-sm text-[var(--text)]">{fmt(circle.creator)}</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div>
-            <p className="text-[#A1A1AA] text-xs mb-2">Members</p>
-            <p className="text-lg font-semibold text-white">{circle.participants.length}/{circle.totalSlots}</p>
+            <p className="text-[var(--muted)] text-xs mb-2">Members</p>
+            <p className="text-lg font-semibold text-[var(--text)]">{circle.participants.length}/{circle.totalSlots}</p>
           </div>
           <div>
-            <p className="text-[#A1A1AA] text-xs mb-2">Contribution</p>
-            <p className="text-lg font-semibold text-white">{circle.contribution}</p>
+            <p className="text-[var(--muted)] text-xs mb-2">Contribution</p>
+            <p className="text-lg font-semibold text-[var(--text)]">{circle.contribution}</p>
           </div>
           <div>
-            <p className="text-[#A1A1AA] text-xs mb-2">Duration</p>
-            <p className="text-lg font-semibold text-white">{circle.duration}</p>
+            <p className="text-[var(--muted)] text-xs mb-2">Duration</p>
+            <p className="text-lg font-semibold text-[var(--text)]">{circle.duration}</p>
           </div>
           <div>
-            <p className="text-[#A1A1AA] text-xs mb-2">Round</p>
-            <p className="text-lg font-semibold text-white">{circle.currentRound} / {circle.totalRounds}</p>
+            <p className="text-[var(--muted)] text-xs mb-2">Round</p>
+            <p className="text-lg font-semibold text-[var(--text)]">{circle.currentRound} / {circle.totalRounds}</p>
           </div>
         </div>
-        <p className="text-xs text-[#A1A1AA]">Created {circle.createdAt}</p>
+        <p className="text-xs text-[var(--muted)]">Created {circle.createdAt}</p>
       </div>
 
       {/* Upcoming payout */}
-      <div className="bg-[#212124] p-6 rounded-2xl space-y-4">
+      <div className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold font-sora text-white">Upcoming Payout</h2>
+          <h2 className="text-lg font-bold font-sora text-[var(--text)]">Upcoming Payout</h2>
           <CountdownTimer deadline={circle.nextPayoutDeadline} />
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-[#A1A1AA] mb-1">Next Recipient</p>
-            <p className="font-mono text-sm text-[#EBEBEB]">
+            <p className="text-xs text-[var(--muted)] mb-1">Next Recipient</p>
+            <p className="font-mono text-sm text-[var(--text)]">
               {fmt(circle.nextPayoutRecipient)}
               {isNextRecipient && <span className="ml-2 text-xs text-[#4B6B76] font-sans">(you)</span>}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-[#A1A1AA] mb-1">Amount</p>
-            <p className="text-white font-semibold">
+            <p className="text-xs text-[var(--muted)] mb-1">Amount</p>
+            <p className="text-[var(--text)] font-semibold">
               {Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT
             </p>
           </div>
@@ -468,8 +473,8 @@ export default function CircleDetailPage({
             disabled={!isNextRecipient}
             className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
               isNextRecipient
-                ? "bg-green-500/20 hover:bg-green-500/30 text-green-400"
-                : "bg-[#ffffff0a] text-[#A1A1AA] cursor-not-allowed opacity-50"
+                ? "bg-green-500/20 hover:bg-green-500/30 text-green-600 dark:text-green-400"
+                : "bg-[var(--ov-0a)] text-[var(--muted)] cursor-not-allowed opacity-50"
             }`}
           >
             Claim Reward
@@ -487,19 +492,19 @@ export default function CircleDetailPage({
       {/* Participants */}
       <div>
         <div className="flex items-center mb-4">
-          <h2 className="text-lg font-bold font-sora text-white shrink-0">Participants</h2>
-          <div className="ml-4 h-px bg-[#ffffff1a] w-full" aria-hidden="true" />
+          <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Participants</h2>
+          <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
         </div>
         <div className="space-y-2">
           {circle.participants.map((p) => (
             <ParticipantRow key={p.address} participant={p} />
           ))}
           {circle.participants.length < circle.totalSlots && (
-            <div className="flex items-center gap-3 bg-[#ffffff05] border border-dashed border-[#ffffff1a] px-5 py-3 rounded-xl">
-              <div className="w-7 h-7 rounded-full bg-[#ffffff0a] flex items-center justify-center text-xs text-[#555]">
+            <div className="flex items-center gap-3 bg-[var(--ov-05)] border border-dashed border-[var(--ov-1a)] px-5 py-3 rounded-xl">
+              <div className="w-7 h-7 rounded-full bg-[var(--ov-0a)] flex items-center justify-center text-xs text-[var(--faint)]">
                 +
               </div>
-              <span className="text-xs text-[#555]">
+              <span className="text-xs text-[var(--faint)]">
                 {circle.totalSlots - circle.participants.length} open slot{circle.totalSlots - circle.participants.length !== 1 ? "s" : ""}
               </span>
             </div>
@@ -510,8 +515,8 @@ export default function CircleDetailPage({
       {/* Round History */}
       <div>
         <div className="flex items-center mb-4">
-          <h2 className="text-lg font-bold font-sora text-white shrink-0">Round History</h2>
-          <div className="ml-4 h-px bg-[#ffffff1a] w-full" aria-hidden="true" />
+          <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Round History</h2>
+          <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
         </div>
         <RoundHistoryTable rows={circle.roundHistory} />
       </div>
@@ -540,8 +545,8 @@ export default function CircleDetailPage({
       {/* Activity Feed */}
       <div>
         <div className="flex items-center mb-6">
-          <h2 className="text-lg font-bold font-sora text-white shrink-0">Activity</h2>
-          <div className="ml-4 h-px bg-[#ffffff1a] w-full" aria-hidden="true" />
+          <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Activity</h2>
+          <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
         </div>
         <ActivityFeed events={MOCK_EVENTS} pageSize={5} />
       </div>
