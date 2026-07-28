@@ -1,7 +1,13 @@
 "use client";
 import Link from "next/link";
 
-const footerLinks = ["Documentations", "Resources", "Securities", "Socials"];
+const footerLinks = [
+  { label: "Documentations", href: "#" },
+  { label: "Resources", href: "#" },
+  { label: "Securities", href: "#" },
+  { label: "Socials", href: "#" },
+  { label: "Terms of Service", href: "/terms" },
+];
 
 export default function Footer() {
   return (
@@ -33,7 +39,7 @@ export default function Footer() {
               href="#"
               className="text-[var(--muted)] no-underline text-[14px] font-medium transition-colors duration-200 hover:text-[var(--text)]"
             >
-              {l}
+              {l.label}
             </Link>
           ))}
         </nav>
