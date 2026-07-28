@@ -6,6 +6,7 @@ import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import OnboardingModal from "@/components/modals/OnboardingModal";
 import DashboardHeaderSearch from "@/components/layout/DashboardHeaderSearch";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import InstallPWAButton from "@/components/ui/InstallPWAButton";
 
 const WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 const WALLET_DISPLAY = "0x23g43gdaa...";
@@ -124,6 +125,7 @@ export default function DashboardLayout({
         {/* Top Header */}
         <header className="flex items-center justify-end p-6 md:px-10 py-5 gap-3">
           <DashboardHeaderSearch />
+          <InstallPWAButton />
           <ThemeToggle />
           <NotificationDropdown />
           <div
