@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, CheckCircle2, Clock3, ChevronDown } from "lucide-react";
+import ExportButton from "@/components/ui/ExportButton";
+import type { ExportRow } from "@/lib/export";
 
 type PayoutStatus = "completed" | "pending";
 
@@ -126,6 +128,20 @@ export default function PayoutsPage() {
   );
 
   const hasMore = visibleCount < MOCK_PAYOUT_HISTORY.length;
+
+  // Exports the full history, not just the rows currently paged into view.
+  const getExportRows = useCallback(
+    (): ExportRow[] =>
+      MOCK_PAYOUT_HISTORY.map((payout) => ({
+        date: formatDate(payout.payout_date),
+        circleName: payout.circle_name,
+        round: payout.round_number,
+        amount: formatAmount(payout.amount, payout.token_symbol),
+        type: payout.status === "completed" ? "Payout" : "Payout (pending)",
+        transactionHash: payout.transaction_hash,
+      })),
+    []
+  );
 
   return (
     <div className="space-y-8 pb-20 md:pb-0">

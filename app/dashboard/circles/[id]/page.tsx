@@ -5,7 +5,15 @@ import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Settings } from "lucide
 import Link from "next/link";
 import ActivityFeed from "@/components/circles/ActivityFeed";
 import CountdownTimer from "@/components/ui/CountdownTimer";
+import DisputeList from "@/components/circles/DisputeList";
+import ReportIssueModal, {
+  type ReportIssueSubmission,
+} from "@/components/modals/ReportIssueModal";
+import ExportButton from "@/components/ui/ExportButton";
+import { useToast } from "@/components/ui/Toast";
 import type { CircleEvent } from "@/types/circle";
+import type { Dispute } from "@/types/dispute";
+import type { ExportRow } from "@/lib/export";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -49,6 +57,43 @@ const MOCK_EVENTS: CircleEvent[] = [
   { id: "3", type: "contribution_made", actor: CURRENT_WALLET, timestamp: new Date(now - 45 * 60 * 1000), meta: { amount: "50 USDT" } },
   { id: "4", type: "contribution_made", actor: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f", timestamp: new Date(now - 30 * 60 * 1000), meta: { amount: "50 USDT" } },
   { id: "5", type: "payout_sent", actor: CURRENT_WALLET, timestamp: new Date(now - 10 * 60 * 1000), meta: { amount: "100 USDT" } },
+];
+
+// Mock disputes keyed by circle id; replace with a disputes API fetch.
+const MOCK_DISPUTES: Dispute[] = [
+  {
+    id: "d1",
+    circleId: "1",
+    round: 1,
+    reporter: CURRENT_WALLET,
+    subject: "0x111abc2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8",
+    reason: "missed_payment",
+    note: "Slot 3 didn't contribute before the round closed.",
+    status: "under_review",
+    createdAt: new Date(now - 26 * 60 * 60 * 1000),
+  },
+  {
+    id: "d2",
+    circleId: "1",
+    round: 1,
+    reporter: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f",
+    reason: "wrong_amount",
+    note: "Payout was 10 USDT short of the expected total.",
+    status: "resolved",
+    createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000),
+    resolutionNote: "Shortfall was a gas rounding error; difference re-sent.",
+    resolvedAt: new Date(now - 2 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: "d3",
+    circleId: "3",
+    round: 1,
+    reporter: "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8",
+    reason: "other",
+    note: "Requesting a schedule change for the next round.",
+    status: "open",
+    createdAt: new Date(now - 5 * 60 * 60 * 1000),
+  },
 ];
 
 const CIRCLES: Record<string, CircleDetail> = {
@@ -243,6 +288,82 @@ export default function CircleDetailPage({
 }) {
   const { id } = use(params);
   const circle = CIRCLES[id];
+  const { showToast } = useToast();
+
+  const [disputes, setDisputes] = useState<Dispute[]>(() =>
+    MOCK_DISPUTES.filter((d) => d.circleId === id)
+  );
+  const [reportOpen, setReportOpen] = useState(false);
+
+  const handleSubmitReport = useCallback(
+    async ({ round, reason, note }: ReportIssueSubmission) => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      setDisputes((current) => [
+        {
+          id: `d-${Date.now()}`,
+          circleId: id,
+          round,
+          reporter: CURRENT_WALLET,
+          reason,
+          note: note || undefined,
+          status: "open",
+          createdAt: new Date(),
+        },
+        ...current,
+      ]);
+      showToast({
+        title: "Issue reported",
+        message: "The organizer has been notified and will review it.",
+        variant: "success",
+      });
+    },
+    [id, showToast]
+  );
+
+  const handleResolveDispute = useCallback(
+    async (disputeId: string, resolutionNote: string) => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      setDisputes((current) =>
+        current.map((d) =>
+          d.id === disputeId
+            ? {
+                ...d,
+                status: "resolved",
+                resolutionNote,
+                resolvedAt: new Date(),
+              }
+            : d
+        )
+      );
+      showToast({ title: "Dispute marked as resolved", variant: "success" });
+    },
+    [showToast]
+  );
+
+  const getExportRows = useCallback((): ExportRow[] => {
+    if (!circle) return [];
+    const contributions: ExportRow[] = circle.participants
+      .filter((p) => p.paid)
+      .map((p) => ({
+        date: circle.createdAt,
+        circleName: circle.name,
+        round: circle.currentRound,
+        amount: circle.contribution,
+        type: "Contribution",
+        transactionHash: `0x${p.address.slice(2, 10)}${circle.id}${p.slot}`,
+      }));
+
+    const payouts: ExportRow[] = circle.roundHistory.map((row) => ({
+      date: row.completedAt,
+      circleName: circle.name,
+      round: row.round,
+      amount: row.amount,
+      type: "Payout",
+      transactionHash: `0x${row.recipient.slice(2, 10)}${circle.id}r${row.round}`,
+    }));
+
+    return [...contributions, ...payouts];
+  }, [circle]);
 
   if (!circle) {
     return (
@@ -358,6 +479,13 @@ export default function CircleDetailPage({
           >
             Claim Reward
           </button>
+          <button
+            onClick={() => setReportOpen(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#FF5B5B33] bg-[#FF5B5B12] hover:bg-[#FF5B5B22] text-[#FF5B5B] text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B]"
+          >
+            <Flag size={15} aria-hidden="true" />
+            Report an Issue
+          </button>
         </div>
       )}
 
@@ -393,6 +521,27 @@ export default function CircleDetailPage({
         <RoundHistoryTable rows={circle.roundHistory} />
       </div>
 
+      {/* Disputes */}
+      <div>
+        <div className="flex items-center mb-4">
+          <h2 className="text-lg font-bold font-sora text-white shrink-0">
+            {circle.isOrganizer ? "Disputes" : "Your Reports"}
+          </h2>
+          {circle.isOrganizer && disputes.length > 0 && (
+            <span className="ml-3 shrink-0 rounded-full bg-[#ffffff0a] px-2.5 py-1 text-xs text-[#A1A1AA]">
+              {disputes.filter((d) => d.status !== "resolved").length} unresolved
+            </span>
+          )}
+          <div className="ml-4 h-px bg-[#ffffff1a] w-full" aria-hidden="true" />
+        </div>
+        <DisputeList
+          disputes={disputes}
+          isOrganizer={circle.isOrganizer}
+          currentAddress={CURRENT_WALLET}
+          onResolve={handleResolveDispute}
+        />
+      </div>
+
       {/* Activity Feed */}
       <div>
         <div className="flex items-center mb-6">
@@ -401,6 +550,14 @@ export default function CircleDetailPage({
         </div>
         <ActivityFeed events={MOCK_EVENTS} pageSize={5} />
       </div>
+
+      <ReportIssueModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        circleName={circle.name}
+        round={circle.currentRound}
+        onSubmit={handleSubmitReport}
+      />
     </div>
   );
 }
