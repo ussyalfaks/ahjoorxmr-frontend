@@ -42,10 +42,10 @@ export default function WhyAhjoor() {
         <p className="text-[11px] tracking-[3.5px] uppercase text-[#8b7cf8] mb-3 font-medium">
           Features
         </p>
-        <h2 className="font-['Sora'] font-extrabold tracking-[-0.8px] text-white mb-[14px] text-[clamp(28px,4vw,42px)]">
+        <h2 className="font-['Sora'] font-extrabold tracking-[-0.8px] text-[var(--text)] mb-[14px] text-[clamp(28px,4vw,42px)]">
           Why Ahjoor?
         </h2>
-        <p className="text-[#7878a0] text-[16px] max-w-[500px] mx-auto mb-14">
+        <p className="text-[var(--muted)] text-[16px] max-w-[500px] mx-auto mb-14">
           Built for communities, powered by blockchain — savings made trustless and borderless.
         </p>
 
@@ -53,7 +53,7 @@ export default function WhyAhjoor() {
           {features.map((f) => (
             <article
               key={f.title}
-              className="bg-[#13131e] border border-white/[0.07] rounded-[18px] px-6 py-7 text-left transition-all duration-[250ms] relative overflow-hidden group hover:border-[rgba(108,92,231,0.4)] hover:-translate-y-[5px]"
+              className="bg-[var(--card)] border border-[var(--border)] rounded-[18px] px-6 py-7 text-left transition-all duration-[250ms] relative overflow-hidden group hover:border-[rgba(108,92,231,0.4)] hover:-translate-y-[5px]"
               onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.boxShadow = "0 20px 48px rgba(0,0,0,0.35)")}
               onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.boxShadow = "none")}
             >
@@ -67,17 +67,17 @@ export default function WhyAhjoor() {
               >
                 {f.icon}
               </div>
-              <h3 className="font-['Sora'] text-[16px] font-bold text-white mb-[10px] tracking-[-0.2px]">
+              <h3 className="font-['Sora'] text-[16px] font-bold text-[var(--text)] mb-[10px] tracking-[-0.2px]">
                 {f.title}
               </h3>
-              <p className="text-[14px] text-[#7878a0] leading-[1.75]">{f.desc}</p>
+              <p className="text-[14px] text-[var(--muted)] leading-[1.75]">{f.desc}</p>
             </article>
           ))}
         </div>
 
         <Link
           href="#"
-          className="inline-block text-white no-underline px-8 py-[13px] rounded-[12px] font-['Sora'] font-semibold text-[15px] transition-all duration-200 hover:-translate-y-0.5"
+          className="inline-block text-[var(--text)] no-underline px-8 py-[13px] rounded-[12px] font-['Sora'] font-semibold text-[15px] transition-all duration-200 hover:-translate-y-0.5"
           style={{
             background: "linear-gradient(135deg, #6c5ce7, #8b7cf8)",
             boxShadow: "0 4px 20px rgba(108,92,231,0.3)",

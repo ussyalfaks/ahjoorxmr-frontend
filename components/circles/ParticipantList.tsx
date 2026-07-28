@@ -94,24 +94,24 @@ export function ParticipantList({ participants }: ParticipantListProps) {
   }, [participants, sortKey]);
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3">
-        <h2 className="text-sm font-semibold text-gray-900">
+    <section className="rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-[var(--border)] px-4 py-3">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-[var(--text)]">
           Participants{" "}
-          <span className="font-normal text-gray-500">
+          <span className="font-normal text-gray-500 dark:text-[var(--muted)]">
             ({participants.length})
           </span>
         </h2>
 
         <div className="flex items-center gap-2 text-sm">
-          <label htmlFor="sortKey" className="text-gray-500">
+          <label htmlFor="sortKey" className="text-gray-500 dark:text-[var(--muted)]">
             Sort by
           </label>
           <select
             id="sortKey"
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="rounded-md border border-gray-300 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] text-gray-900 dark:text-[var(--text)] px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="address">Address</option>
             <option value="status">Status</option>
@@ -123,19 +123,19 @@ export function ParticipantList({ participants }: ParticipantListProps) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[480px] text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
+            <tr className="border-b border-gray-100 dark:border-[var(--border)] text-xs uppercase tracking-wide text-gray-400 dark:text-[var(--muted)]">
               <th className="px-4 py-2 font-medium">Participant</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium">Rounds paid</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-[var(--border)]">
             {sorted.map((participant) => (
               <tr key={participant.address}>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <Avatar address={participant.address} />
-                    <span className="font-mono text-sm text-gray-800">
+                    <span className="font-mono text-sm text-gray-800 dark:text-[var(--text)]">
                       {truncateAddress(participant.address)}
                     </span>
                   </div>
@@ -143,7 +143,7 @@ export function ParticipantList({ participants }: ParticipantListProps) {
                 <td className="px-4 py-3">
                   <StatusBadge status={participant.status} />
                 </td>
-                <td className="px-4 py-3 text-gray-700">
+                <td className="px-4 py-3 text-gray-700 dark:text-[var(--muted)]">
                   {participant.roundsPaid}
                 </td>
               </tr>
@@ -153,7 +153,7 @@ export function ParticipantList({ participants }: ParticipantListProps) {
       </div>
 
       {participants.length === 0 && (
-        <p className="px-4 py-6 text-center text-sm text-gray-500">
+        <p className="px-4 py-6 text-center text-sm text-gray-500 dark:text-[var(--muted)]">
           No participants yet.
         </p>
       )}

@@ -44,7 +44,7 @@ const EVENT_CONFIG: Record<
   contribution_made: {
     label: "made a contribution",
     icon: <ArrowUpRight size={16} />,
-    color: "text-[#4ADE80] bg-[#4ADE8015]",
+    color: "text-[var(--success)] bg-[#4ADE8015]",
   },
   payout_sent: {
     label: "received a payout",
@@ -80,11 +80,11 @@ export default function ActivityFeed({ events, pageSize = 10 }: Props) {
   if (events.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-12 h-12 rounded-full bg-[#ffffff0a] flex items-center justify-center mb-4">
-          <Activity size={24} className="text-[#A1A1AA]" aria-hidden="true" />
+        <div className="w-12 h-12 rounded-full bg-[var(--ov-0a)] flex items-center justify-center mb-4">
+          <Activity size={24} className="text-[var(--muted)]" aria-hidden="true" />
         </div>
-        <p className="text-[#A1A1AA] text-sm">No activity yet.</p>
-        <p className="text-[#555555] text-xs mt-1">
+        <p className="text-[var(--muted)] text-sm">No activity yet.</p>
+        <p className="text-[var(--faint)] text-xs mt-1">
           Events will appear here once the circle is active.
         </p>
       </div>
@@ -93,7 +93,7 @@ export default function ActivityFeed({ events, pageSize = 10 }: Props) {
 
   return (
     <div>
-      <ol className="relative border-l border-[#ffffff0f] ml-4 space-y-0" aria-label="Activity feed">
+      <ol className="relative border-l border-[var(--ov-0f)] ml-4 space-y-0" aria-label="Activity feed">
         {visible.map((event) => {
           const config = EVENT_CONFIG[event.type];
           const isSystemEvent =
@@ -102,32 +102,32 @@ export default function ActivityFeed({ events, pageSize = 10 }: Props) {
           return (
             <li key={event.id} className="mb-6 ml-6">
               <span
-                className={`absolute -left-3.5 flex h-7 w-7 items-center justify-center rounded-full ring-4 ring-[#111111] ${config.color}`}
+                className={`absolute -left-3.5 flex h-7 w-7 items-center justify-center rounded-full ring-4 ring-[var(--bg)] ${config.color}`}
                 aria-hidden="true"
               >
                 {config.icon}
               </span>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                <p className="text-sm text-[#EBEBEB]">
+                <p className="text-sm text-[var(--text)]">
                   {isSystemEvent ? (
                     <span className="font-medium">{config.label}</span>
                   ) : (
                     <>
-                      <span className="font-mono text-[#A1A1AA] text-xs">
+                      <span className="font-mono text-[var(--muted)] text-xs">
                         {truncateAddress(event.actor)}
                       </span>{" "}
-                      <span className="text-[#9A9A9A]">{config.label}</span>
+                      <span className="text-[var(--muted)]">{config.label}</span>
                     </>
                   )}
                   {!!event.meta?.amount && (
-                    <span className="ml-1 font-semibold text-white">
+                    <span className="ml-1 font-semibold text-[var(--text)]">
                       · {String(event.meta.amount)}
                     </span>
                   )}
                 </p>
                 <time
                   dateTime={event.timestamp.toISOString()}
-                  className="text-xs text-[#555555] shrink-0"
+                  className="text-xs text-[var(--faint)] shrink-0"
                 >
                   {getRelativeTime(event.timestamp)}
                 </time>
@@ -141,7 +141,7 @@ export default function ActivityFeed({ events, pageSize = 10 }: Props) {
         <div className="flex justify-center mt-2">
           <button
             onClick={() => setVisibleCount((c) => c + pageSize)}
-            className="px-5 py-2 text-sm font-medium text-[#A1A1AA] hover:text-white bg-[#ffffff0a] hover:bg-[#ffffff14] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            className="px-5 py-2 text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           >
             Load more
           </button>

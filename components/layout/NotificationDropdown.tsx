@@ -64,7 +64,7 @@ function relativeTime(date: Date): string {
 }
 
 const TYPE_CONFIG: Record<NotificationType, { icon: React.ComponentType<{ size?: number; className?: string }>; color: string }> = {
-  round_complete: { icon: CheckCircle2, color: "text-[#4ADE80]" },
+  round_complete: { icon: CheckCircle2, color: "text-[var(--success)]" },
   payout_ready:   { icon: DollarSign,   color: "text-[#FBBF24]" },
   missed_contribution: { icon: AlertCircle, color: "text-[#FF5B5B]" },
   your_turn:      { icon: Clock,         color: "text-[#4B6B76]" },
@@ -110,7 +110,7 @@ export default function NotificationDropdown() {
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative flex items-center justify-center w-9 h-9 rounded-lg bg-[#ffffff05] border border-[#ffffff1a] text-[#A1A1AA] hover:text-white hover:bg-[#ffffff0f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+        className="relative flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--ov-05)] border border-[var(--ov-1a)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0f)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         aria-haspopup="true"
         aria-expanded={open}
@@ -118,7 +118,7 @@ export default function NotificationDropdown() {
         <Bell size={18} aria-hidden="true" />
         {unreadCount > 0 && (
           <span
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-[#FF5B5B] text-white text-[10px] font-bold px-1 leading-none"
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-[#FF5B5B] text-[var(--text)] text-[10px] font-bold px-1 leading-none"
             aria-hidden="true"
           >
             {unreadCount > 9 ? "9+" : unreadCount}
@@ -128,26 +128,26 @@ export default function NotificationDropdown() {
 
       {open && (
         <div
-          className="absolute right-0 top-11 w-80 max-h-[420px] flex flex-col rounded-2xl border border-[#ffffff14] overflow-hidden shadow-xl z-50"
-          style={{ background: "#1C1C1E" }}
+          className="absolute right-0 top-11 w-80 max-h-[420px] flex flex-col rounded-2xl border border-[var(--ov-14)] overflow-hidden shadow-xl z-50"
+          style={{ background: "var(--modal)" }}
           role="dialog"
           aria-label="Notifications"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#ffffff0f] shrink-0">
-            <span className="text-sm font-semibold text-white">Notifications</span>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--ov-0f)] shrink-0">
+            <span className="text-sm font-semibold text-[var(--text)]">Notifications</span>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="text-xs text-[#4B6B76] hover:text-white transition-colors focus-visible:outline-none focus-visible:underline"
+                  className="text-xs text-[#4B6B76] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:underline"
                 >
                   Mark all as read
                 </button>
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="p-1 rounded-md text-[#A1A1AA] hover:text-white hover:bg-[#ffffff0f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                className="p-1 rounded-md text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0f)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 aria-label="Close notifications"
               >
                 <X size={14} />
@@ -159,8 +159,8 @@ export default function NotificationDropdown() {
           <div className="overflow-y-auto flex-1">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
-                <Bell size={28} className="text-[#ffffff1a]" aria-hidden="true" />
-                <p className="text-sm text-[#A1A1AA]">No notifications yet</p>
+                <Bell size={28} className="text-[var(--ov-1a)]" aria-hidden="true" />
+                <p className="text-sm text-[var(--muted)]">No notifications yet</p>
               </div>
             ) : (
               notifications.map((n) => {
@@ -170,22 +170,22 @@ export default function NotificationDropdown() {
                     key={n.id}
                     href={n.href}
                     onClick={() => handleNotificationClick(n.id)}
-                    className={`flex items-start gap-3 px-4 py-3.5 border-b border-[#ffffff07] hover:bg-[#ffffff05] transition-colors ${
-                      !n.read ? "bg-[#ffffff03]" : ""
+                    className={`flex items-start gap-3 px-4 py-3.5 border-b border-[var(--ov-07)] hover:bg-[var(--ov-05)] transition-colors ${
+                      !n.read ? "bg-[var(--ov-03)]" : ""
                     }`}
                   >
-                    <div className={`w-8 h-8 rounded-full bg-[#ffffff0a] flex items-center justify-center shrink-0 mt-0.5 ${color}`}>
+                    <div className={`w-8 h-8 rounded-full bg-[var(--ov-0a)] flex items-center justify-center shrink-0 mt-0.5 ${color}`}>
                       <Icon size={15} aria-hidden="true" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-white truncate">{n.title}</p>
+                        <p className="text-sm font-medium text-[var(--text)] truncate">{n.title}</p>
                         {!n.read && (
                           <span className="w-2 h-2 rounded-full bg-[#4B6B76] shrink-0" aria-label="Unread" />
                         )}
                       </div>
-                      <p className="text-xs text-[#A1A1AA] mt-0.5 line-clamp-2">{n.description}</p>
-                      <p className="text-xs text-[#666] mt-1">{relativeTime(n.timestamp)}</p>
+                      <p className="text-xs text-[var(--muted)] mt-0.5 line-clamp-2">{n.description}</p>
+                      <p className="text-xs text-[var(--faint)] mt-1">{relativeTime(n.timestamp)}</p>
                     </div>
                   </Link>
                 );

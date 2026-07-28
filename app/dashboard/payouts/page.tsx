@@ -131,32 +131,32 @@ export default function PayoutsPage() {
     <div className="space-y-8 pb-20 md:pb-0">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#9A9A9A]">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--muted)]">
             Trustless transparency
           </p>
-          <h1 className="mt-2 text-3xl font-bold font-sora text-white">
+          <h1 className="mt-2 text-3xl font-bold font-sora text-[var(--text)]">
             Payout history
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#C7C7C7]">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted2)]">
             Review every completed and pending payout from your circles. Each
             transaction links directly to the blockchain for independent
             verification.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-[#ffffff14] bg-[#1C1C1E] px-4 py-3 text-sm text-[#C7C7C7]">
-          <span className="font-semibold text-white">{MOCK_PAYOUT_HISTORY.length}</span> total payouts
+        <div className="rounded-2xl border border-[var(--ov-14)] bg-[var(--modal)] px-4 py-3 text-sm text-[var(--muted2)]">
+          <span className="font-semibold text-[var(--text)]">{MOCK_PAYOUT_HISTORY.length}</span> total payouts
         </div>
       </div>
 
-      <section className="overflow-hidden rounded-3xl border border-[#ffffff12] bg-[#18181A] shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+      <section className="overflow-hidden rounded-3xl border border-[var(--ov-12)] bg-[var(--modal)] shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
         {MOCK_PAYOUT_HISTORY.length === 0 ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#ffffff14] bg-[#ffffff08] text-white">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[var(--ov-14)] bg-[var(--ov-08)] text-[var(--text)]">
               <CheckCircle2 size={24} aria-hidden="true" />
             </div>
-            <h2 className="text-xl font-semibold text-white">No payouts yet</h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-[#A1A1AA]">
+            <h2 className="text-xl font-semibold text-[var(--text)]">No payouts yet</h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-[var(--muted)]">
               When your circles start distributing funds, the full payout
               history will appear here with transaction links for verification.
             </p>
@@ -164,8 +164,8 @@ export default function PayoutsPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-[#ffffff0f]">
-                <thead className="bg-[#ffffff05] text-left text-xs uppercase tracking-[0.18em] text-[#9A9A9A]">
+              <table className="min-w-full divide-y divide-[var(--ov-0f)]">
+                <thead className="bg-[var(--ov-05)] text-left text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
                   <tr>
                     <th scope="col" className="px-6 py-4 font-medium">
                       Circle Name
@@ -187,19 +187,19 @@ export default function PayoutsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#ffffff0f] bg-[#18181A]">
+                <tbody className="divide-y divide-[var(--ov-0f)] bg-[var(--modal)]">
                   {visiblePayouts.map((payout) => (
-                    <tr key={payout.transaction_hash} className="transition-colors hover:bg-[#ffffff06]">
-                      <td className="px-6 py-4 text-sm font-medium text-white">
+                    <tr key={payout.transaction_hash} className="transition-colors hover:bg-[var(--ov-06)]">
+                      <td className="px-6 py-4 text-sm font-medium text-[var(--text)]">
                         {payout.circle_name}
                       </td>
-                      <td className="px-6 py-4 text-sm text-[#E5E5E5]">
+                      <td className="px-6 py-4 text-sm text-[var(--text)]">
                         {formatAmount(payout.amount, payout.token_symbol)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-[#C7C7C7]">
+                      <td className="px-6 py-4 text-sm text-[var(--muted2)]">
                         {formatDate(payout.payout_date)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-[#C7C7C7]">
+                      <td className="px-6 py-4 text-sm text-[var(--muted2)]">
                         {payout.round_number}
                       </td>
                       <td className="px-6 py-4 text-sm">
@@ -207,7 +207,7 @@ export default function PayoutsPage() {
                           href={`https://starkscan.co/tx/${payout.transaction_hash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[#8FC7FF] transition-colors hover:text-white"
+                          className="inline-flex items-center gap-1 text-[var(--info)] transition-colors hover:text-[var(--text)]"
                           aria-label={`Open transaction ${payout.transaction_hash} in a new tab`}
                         >
                           <span className="font-mono">
@@ -236,8 +236,8 @@ export default function PayoutsPage() {
               </table>
             </div>
 
-            <div className="flex items-center justify-between gap-4 border-t border-[#ffffff0f] px-6 py-4">
-              <p className="text-sm text-[#A1A1AA]">
+            <div className="flex items-center justify-between gap-4 border-t border-[var(--ov-0f)] px-6 py-4">
+              <p className="text-sm text-[var(--muted)]">
                 Showing {visiblePayouts.length} of {MOCK_PAYOUT_HISTORY.length} payouts
               </p>
 
@@ -245,13 +245,13 @@ export default function PayoutsPage() {
                 <button
                   type="button"
                   onClick={() => setVisibleCount((current) => current + PAGE_SIZE)}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#ffffff16] bg-[#ffffff08] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#ffffff10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--ov-16)] bg-[var(--ov-08)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--ov-10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   Load more
                   <ChevronDown size={16} aria-hidden="true" />
                 </button>
               ) : (
-                <span className="text-sm text-[#A1A1AA]">All payouts loaded</span>
+                <span className="text-sm text-[var(--muted)]">All payouts loaded</span>
               )}
             </div>
           </>

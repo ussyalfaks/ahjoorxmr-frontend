@@ -25,15 +25,15 @@ export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="bg-[#0e0e16] px-6 py-24 text-center">
+    <section id="faq" className="bg-[var(--bg2)] px-6 py-24 text-center">
       <div className="max-w-[720px] mx-auto">
         <p className="text-[11px] tracking-[3.5px] uppercase text-[#8b7cf8] mb-3 font-medium">
           Support
         </p>
-        <h2 className="font-['Sora'] font-extrabold tracking-[-0.8px] text-white mb-[14px] text-[clamp(28px,4vw,42px)]">
+        <h2 className="font-['Sora'] font-extrabold tracking-[-0.8px] text-[var(--text)] mb-[14px] text-[clamp(28px,4vw,42px)]">
           Frequently Asked Questions
         </h2>
-        <p className="text-[#7878a0] text-[16px] mb-12">Got questions? We&apos;ve got answers.</p>
+        <p className="text-[var(--muted)] text-[16px] mb-12">Got questions? We&apos;ve got answers.</p>
 
         <div className="flex flex-col gap-3 text-left" role="list" aria-label="Frequently asked questions">
           {faqs.map((f, i) => {
@@ -41,14 +41,14 @@ export default function FAQSection() {
             return (
               <div
                 key={i}
-                className={`bg-[#13131e] border rounded-[14px] overflow-hidden transition-colors duration-200 ${
-                  isOpen ? "border-[rgba(108,92,231,0.35)]" : "border-white/[0.07]"
+                className={`bg-[var(--card)] border rounded-[14px] overflow-hidden transition-colors duration-200 ${
+                  isOpen ? "border-[rgba(108,92,231,0.35)]" : "border-[var(--border)]"
                 }`}
                 role="listitem"
               >
                 <button
-                  className={`flex justify-between items-center gap-4 w-full px-6 py-5 bg-transparent border-0 cursor-pointer font-['DM_Sans'] text-[15px] font-medium text-left transition-colors duration-200 hover:text-white ${
-                    isOpen ? "text-white" : "text-[#eeeef8]"
+                  className={`flex justify-between items-center gap-4 w-full px-6 py-5 bg-transparent border-0 cursor-pointer font-['DM_Sans'] text-[15px] font-medium text-left transition-colors duration-200 hover:text-[var(--text)] ${
+                    isOpen ? "text-[var(--text)]" : "text-[var(--text)]"
                   }`}
                   onClick={() => setOpenIndex(isOpen ? null : i)}
                   aria-expanded={isOpen}
@@ -57,7 +57,7 @@ export default function FAQSection() {
                   <span>{f.q}</span>
                   <span
                     className={`flex-shrink-0 flex transition-all duration-300 ${
-                      isOpen ? "rotate-180 text-[#8b7cf8]" : "text-[#7878a0]"
+                      isOpen ? "rotate-180 text-[#8b7cf8]" : "text-[var(--muted)]"
                     }`}
                     aria-hidden="true"
                   >
@@ -74,7 +74,7 @@ export default function FAQSection() {
                   }`}
                   role="region"
                 >
-                  <p className="px-6 pb-5 text-[14px] text-[#7878a0] leading-[1.75]">{f.a}</p>
+                  <p className="px-6 pb-5 text-[14px] text-[var(--muted)] leading-[1.75]">{f.a}</p>
                 </div>
               </div>
             );

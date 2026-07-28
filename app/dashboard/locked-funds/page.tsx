@@ -68,13 +68,13 @@ export default function LockedFundsPage() {
     <div className="space-y-8 pb-20 md:pb-0">
       {/* Page Title */}
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold font-sora text-white shrink-0">My Locked Funds</h1>
-        <div className="h-px bg-[#ffffff1a] w-full" aria-hidden="true" />
+        <h1 className="text-2xl font-bold font-sora text-[var(--text)] shrink-0">My Locked Funds</h1>
+        <div className="h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
       </div>
 
       {/* Action Bar */}
       <div className="flex items-center gap-3">
-        <button className="px-5 py-2 bg-[#2a2a2a] hover:bg-[#333] text-white text-sm font-medium rounded-lg transition-colors border border-[#ffffff1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]">
+        <button className="px-5 py-2 bg-[var(--elevated)] hover:bg-[var(--elevated-hover)] text-[var(--text)] text-sm font-medium rounded-lg transition-colors border border-[var(--ov-1a)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]">
           Commit
         </button>
 
@@ -85,7 +85,7 @@ export default function LockedFundsPage() {
             type="button"
             onClick={() => (tokenOpen ? closeDropdown() : openDropdown())}
             onKeyDown={handleTriggerKeyDown}
-            className="flex items-center gap-2 px-4 py-2 bg-[#2a2a2a] hover:bg-[#333] text-white text-sm font-medium rounded-lg border border-[#ffffff1a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--elevated)] hover:bg-[var(--elevated-hover)] text-[var(--text)] text-sm font-medium rounded-lg border border-[var(--ov-1a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             aria-haspopup="listbox"
             aria-expanded={tokenOpen}
             aria-label={`Select token, currently ${selectedToken}`}
@@ -105,7 +105,7 @@ export default function LockedFundsPage() {
               aria-label="Select token"
               onKeyDown={handleListKeyDown}
               tabIndex={-1}
-              className="absolute top-full mt-1 left-0 bg-[#1e1e1e] border border-[#ffffff1a] rounded-lg overflow-hidden z-10 min-w-full outline-none"
+              className="absolute top-full mt-1 left-0 bg-[var(--modal)] border border-[var(--ov-1a)] rounded-lg overflow-hidden z-10 min-w-full outline-none"
             >
               {TOKENS.map((t, idx) => (
                 <li key={t} role="option" aria-selected={selectedToken === t}>
@@ -113,9 +113,9 @@ export default function LockedFundsPage() {
                     type="button"
                     onClick={() => selectToken(t)}
                     data-index={idx}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:bg-[#ffffff1a] ${
-                      focusedIndex === idx ? "bg-[#ffffff1a]" : "hover:bg-[#ffffff0f]"
-                    } ${selectedToken === t ? "text-white font-semibold" : "text-[#9A9A9A]"}`}
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:bg-[var(--ov-1a)] ${
+                      focusedIndex === idx ? "bg-[var(--ov-1a)]" : "hover:bg-[var(--ov-0f)]"
+                    } ${selectedToken === t ? "text-[var(--text)] font-semibold" : "text-[var(--muted)]"}`}
                     tabIndex={tokenOpen ? 0 : -1}
                     autoFocus={focusedIndex === idx}
                   >
@@ -133,14 +133,14 @@ export default function LockedFundsPage() {
         {lockedFunds.map((fund) => (
           <article
             key={fund.name}
-            className="bg-[#212124] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[#26262a] transition-colors"
+            className="bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[var(--content-hover)] transition-colors"
           >
-            <p className="text-[#A1A1AA] text-sm font-medium">{fund.name}</p>
-            <h2 className="text-3xl font-bold font-sora text-white tracking-tight">
+            <p className="text-[var(--muted)] text-sm font-medium">{fund.name}</p>
+            <h2 className="text-3xl font-bold font-sora text-[var(--text)] tracking-tight">
               {fund.amount} {fund.token}
             </h2>
-            <p className="text-[#A1A1AA] text-sm">Locked until: {fund.lockedUntil}</p>
-            <button className="mt-auto px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212124]">
+            <p className="text-[var(--muted)] text-sm">Locked until: {fund.lockedUntil}</p>
+            <button className="mt-auto px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--content)]">
               View Details
             </button>
           </article>

@@ -27,11 +27,11 @@ export default function RoundProgressBar({ current, total }: Props) {
             >
               <div
                 className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                  isDone ? "bg-[#4B6B76]" : "bg-[#ffffff1a]"
+                  isDone ? "bg-[#4B6B76]" : "bg-[var(--ov-1a)]"
                 }`}
               />
               {tooltip === roundNum && (
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-xs text-white bg-[#2a2a2e] border border-[#ffffff14] pointer-events-none z-10">
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-xs text-[var(--text)] bg-[var(--elevated)] border border-[var(--ov-14)] pointer-events-none z-10">
                   Round {roundNum} of {total}
                 </div>
               )}
@@ -42,7 +42,7 @@ export default function RoundProgressBar({ current, total }: Props) {
 
       {/* Bar track */}
       <div
-        className="w-full h-1.5 rounded-full bg-[#ffffff1a] overflow-hidden"
+        className="w-full h-1.5 rounded-full bg-[var(--ov-1a)] overflow-hidden"
         role="progressbar"
         aria-valuenow={current}
         aria-valuemin={0}

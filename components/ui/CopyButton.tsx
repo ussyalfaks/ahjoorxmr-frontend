@@ -36,13 +36,13 @@ export default function CopyButton({ value, className = "" }: Props) {
     <button
       type="button"
       onClick={handleCopy}
-      className={`inline-flex items-center justify-center p-1 rounded transition-colors hover:bg-[#ffffff0f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${className}`}
+      className={`inline-flex items-center justify-center p-1 rounded transition-colors hover:bg-[var(--ov-0f)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${className}`}
       aria-label={copied ? "Copied!" : "Copy to clipboard"}
     >
       {copied ? (
-        <Check size={14} className="text-green-400" />
+        <Check size={14} className="text-green-600 dark:text-green-400" />
       ) : (
-        <Copy size={14} className="text-[#A1A1AA] hover:text-white" />
+        <Copy size={14} className="text-[var(--muted)] hover:text-[var(--text)]" />
       )}
     </button>
   );

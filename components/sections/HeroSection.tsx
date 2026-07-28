@@ -28,7 +28,7 @@ export default function HeroSection() {
       </div>
 
       {/* Headline */}
-      <h1 className="animate-fade-up delay-1 font-['Sora'] font-extrabold leading-[1.08] tracking-[-1.5px] text-white mb-[22px] text-[clamp(38px,6vw,72px)]">
+      <h1 className="animate-fade-up delay-1 font-['Sora'] font-extrabold leading-[1.08] tracking-[-1.5px] text-[var(--text)] mb-[22px] text-[clamp(38px,6vw,72px)]">
         Save With Friends..<br />
         <span
           className="bg-clip-text text-transparent"
@@ -39,7 +39,7 @@ export default function HeroSection() {
       </h1>
 
       {/* Subtitle */}
-      <p className="animate-fade-up delay-2 text-[#7878a0] max-w-[440px] mx-auto mb-[38px] leading-[1.6] text-[clamp(16px,2.5vw,19px)]">
+      <p className="animate-fade-up delay-2 text-[var(--muted)] max-w-[440px] mx-auto mb-[38px] leading-[1.6] text-[clamp(16px,2.5vw,19px)]">
         All on Your Decentralized Savings Group{" "}
         <br className="hidden sm:block" />
         In One Place
@@ -49,7 +49,7 @@ export default function HeroSection() {
       <div className="animate-fade-up delay-3 flex gap-[14px] justify-center flex-wrap mb-16">
         <Link
           href="#"
-          className="text-white no-underline px-7 py-[13px] rounded-[12px] font-['Sora'] font-semibold text-[15px] transition-all duration-200 hover:-translate-y-0.5"
+          className="text-[var(--text)] no-underline px-7 py-[13px] rounded-[12px] font-['Sora'] font-semibold text-[15px] transition-all duration-200 hover:-translate-y-0.5"
           style={{
             background: "linear-gradient(135deg, #6c5ce7, #8b7cf8)",
             boxShadow: "0 4px 20px rgba(108,92,231,0.3)",
@@ -61,7 +61,7 @@ export default function HeroSection() {
         </Link>
         <Link
           href="#how"
-          className="bg-transparent border border-white/[0.07] text-[#eeeef8] no-underline px-7 py-[13px] rounded-[12px] font-['Sora'] font-medium text-[15px] transition-all duration-200 hover:bg-[#13131e] hover:border-[#6c5ce7] hover:-translate-y-0.5"
+          className="bg-transparent border border-[var(--border)] text-[var(--text)] no-underline px-7 py-[13px] rounded-[12px] font-['Sora'] font-medium text-[15px] transition-all duration-200 hover:bg-[var(--card)] hover:border-[#6c5ce7] hover:-translate-y-0.5"
         >
           How it Works ↓
         </Link>

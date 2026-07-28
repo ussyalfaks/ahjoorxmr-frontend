@@ -4,6 +4,8 @@ import CopyButton from "@/components/ui/CopyButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import OnboardingModal from "@/components/modals/OnboardingModal";
+import DashboardHeaderSearch from "@/components/layout/DashboardHeaderSearch";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 const WALLET_DISPLAY = "0x23g43gdaa...";
@@ -14,9 +16,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-[#111111] text-white">
+    <div className="flex min-h-screen bg-[var(--bg)] text-[var(--text)]">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex w-[260px] flex-col border-r border-[#ffffff0f] bg-[#161616]">
+      <aside className="hidden md:flex w-[260px] flex-col border-r border-[var(--ov-0f)] bg-[var(--surface)]">
         <div className="p-8 flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-2 mb-12">
@@ -32,16 +34,16 @@ export default function DashboardLayout({
               <li>
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-3 px-4 py-3 text-[#EBEBEB] bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--text)] bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
-                  <LayoutGrid size={20} className="text-white" aria-hidden="true" />
+                  <LayoutGrid size={20} className="text-[var(--text)]" aria-hidden="true" />
                   <span className="font-medium">Overview</span>
                 </Link>
               </li>
               <li>
                 <Link
                   href="/dashboard/circles"
-                  className="flex items-center gap-3 px-4 py-3 text-[#9A9A9A] hover:text-[#EBEBEB] hover:bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   <Users size={20} aria-hidden="true" />
                   <span className="font-medium">Circles</span>
@@ -50,7 +52,7 @@ export default function DashboardLayout({
               <li>
                 <Link
                   href="/dashboard/locked-funds"
-                  className="flex items-center gap-3 px-4 py-3 text-[#9A9A9A] hover:text-[#EBEBEB] hover:bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   <Lock size={20} aria-hidden="true" />
                   <span className="font-medium">Locked Funds</span>
@@ -59,7 +61,7 @@ export default function DashboardLayout({
               <li>
                 <Link
                   href="/dashboard/payouts"
-                  className="flex items-center gap-3 px-4 py-3 text-[#9A9A9A] hover:text-[#EBEBEB] hover:bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   <Wallet size={20} aria-hidden="true" />
                   <span className="font-medium">Payouts</span>
@@ -68,7 +70,7 @@ export default function DashboardLayout({
               <li>
                 <Link
                   href="#"
-                  className="flex items-center gap-3 px-4 py-3 text-[#9A9A9A] hover:text-[#EBEBEB] hover:bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   <FileText size={20} aria-hidden="true" />
                   <span className="font-medium">Investments</span>
@@ -77,7 +79,7 @@ export default function DashboardLayout({
               <li>
                 <Link
                   href="#"
-                  className="flex items-center gap-3 px-4 py-3 text-[#9A9A9A] hover:text-[#EBEBEB] hover:bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   <User size={20} aria-hidden="true" />
                   <span className="font-medium">Profile</span>
@@ -86,7 +88,7 @@ export default function DashboardLayout({
               <li>
                 <Link
                   href="#"
-                  className="flex items-center gap-3 px-4 py-3 text-[#9A9A9A] hover:text-[#EBEBEB] hover:bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   <Settings size={20} aria-hidden="true" />
                   <span className="font-medium">Settings</span>
@@ -112,13 +114,15 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Top Header */}
         <header className="flex items-center justify-end p-6 md:px-10 py-5 gap-3">
+          <DashboardHeaderSearch />
+          <ThemeToggle />
           <NotificationDropdown />
           <div
-            className="flex items-center border border-[#ffffff1a] rounded-full px-4 py-2 gap-2 bg-[#ffffff05]"
+            className="flex items-center border border-[var(--ov-1a)] rounded-full px-4 py-2 gap-2 bg-[var(--ov-05)]"
             role="status"
             aria-label={`Connected wallet: ${WALLET_DISPLAY}`}
           >
-            <span className="text-sm font-medium text-[#c0c0c0]">{WALLET_DISPLAY}</span>
+            <span className="text-sm font-medium text-[var(--muted2)]">{WALLET_DISPLAY}</span>
             <CopyButton value={WALLET_ADDRESS} aria-label="Copy wallet address" />
           </div>
         </header>
