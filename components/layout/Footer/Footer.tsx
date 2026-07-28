@@ -6,12 +6,12 @@ const footerLinks = ["Documentations", "Resources", "Securities", "Socials"];
 export default function Footer() {
   return (
     <footer
-      className="border-t border-white/[0.07] px-10 pt-16 pb-10 max-sm:px-6 max-sm:pt-12 max-sm:pb-8"
+      className="border-t border-[var(--border)] px-10 pt-16 pb-10 max-sm:px-6 max-sm:pt-12 max-sm:pb-8"
       style={{ background: "linear-gradient(to top, rgba(108,92,231,0.04), transparent)" }}
     >
       <div className="max-w-[900px] mx-auto flex flex-col items-center gap-7 text-center">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-['Sora'] font-bold text-[18px] text-white no-underline">
+        <Link href="/" className="flex items-center gap-2 font-['Sora'] font-bold text-[18px] text-[var(--text)] no-underline">
           <span
             className="w-[30px] h-[30px] rounded-[8px] flex items-center justify-center flex-shrink-0"
             style={{ background: "linear-gradient(135deg, #6c5ce7, #8b7cf8)" }}
@@ -31,7 +31,7 @@ export default function Footer() {
             <Link
               key={l}
               href="#"
-              className="text-[#7878a0] no-underline text-[14px] font-medium transition-colors duration-200 hover:text-white"
+              className="text-[var(--muted)] no-underline text-[14px] font-medium transition-colors duration-200 hover:text-[var(--text)]"
             >
               {l}
             </Link>
@@ -48,7 +48,7 @@ export default function Footer() {
             id="footer-email"
             type="email"
             placeholder="Enter email address"
-            className="bg-[#13131e] border border-white/[0.07] text-[#eeeef8] px-[18px] py-[11px] rounded-[10px] text-[14px] outline-none w-60 transition-all duration-200 placeholder:text-[#7878a0] focus:border-[#6c5ce7] focus:shadow-[0_0_0_3px_rgba(108,92,231,0.12)] max-sm:w-full"
+            className="bg-[var(--card)] border border-[var(--border)] text-[var(--text)] px-[18px] py-[11px] rounded-[10px] text-[14px] outline-none w-60 transition-all duration-200 placeholder:text-[var(--muted)] focus:border-[#6c5ce7] focus:shadow-[0_0_0_3px_rgba(108,92,231,0.12)] max-sm:w-full"
           />
           <button
             type="submit"
@@ -58,7 +58,7 @@ export default function Footer() {
           </button>
         </form>
 
-        <p className="text-[13px] text-[#7878a0]">
+        <p className="text-[13px] text-[var(--muted)]">
           © {new Date().getFullYear()} Ahjoor. All rights reserved. Built with 💜 for communities worldwide.
         </p>
       </div>

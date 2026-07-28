@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
  */
 export function SavingsCardSkeleton() {
   return (
-    <div className="bg-[#212124] rounded-2xl p-6 flex flex-col gap-4">
+    <div className="bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4">
       <Skeleton className="h-5 w-2/3" />
       <Skeleton className="h-3 w-1/3" />
 

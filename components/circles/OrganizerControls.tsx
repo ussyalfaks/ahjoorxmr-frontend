@@ -107,20 +107,20 @@ export function OrganizerControls({
   }
 
   return (
-    <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-4">
+    <div className="rounded-lg border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-500/10 p-4 space-y-4">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+        <span className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
           Organizer Controls
         </span>
-        <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+        <span className="rounded-full bg-amber-200 dark:bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-300">
           You created this circle
         </span>
       </div>
 
       {/* Member management */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-gray-700">Participants</h3>
-        <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-[var(--text)]">Participants</h3>
+        <ul className="divide-y divide-gray-200 dark:divide-[var(--border)] rounded-md border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)]">
           {circle.members.map((member) => {
             const isCreator = isSameAddress(member.address, circle.creatorAddress);
             const confirmKey = `remove-${member.address}`;
@@ -130,11 +130,11 @@ export function OrganizerControls({
                 className="flex items-center justify-between px-3 py-2"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono text-gray-800">
+                  <span className="text-sm font-mono text-gray-800 dark:text-[var(--text)]">
                     {member.displayName ?? member.address}
                   </span>
                   {isCreator && (
-                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                    <span className="rounded-full bg-blue-100 dark:bg-blue-500/15 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
                       Organizer
                     </span>
                   )}
@@ -143,7 +143,7 @@ export function OrganizerControls({
                 {!isCreator &&
                   (removeConfirm.isArmed(confirmKey) ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-red-600">Remove this member?</span>
+                      <span className="text-xs text-red-600 dark:text-red-400">Remove this member?</span>
                       <button
                         type="button"
                         disabled={busy}
@@ -155,7 +155,7 @@ export function OrganizerControls({
                       <button
                         type="button"
                         onClick={removeConfirm.cancel}
-                        className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                        className="rounded border border-gray-300 dark:border-[var(--border)] px-2 py-1 text-xs text-gray-600 dark:text-[var(--muted)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)]"
                       >
                         Cancel
                       </button>
@@ -164,7 +164,7 @@ export function OrganizerControls({
                     <button
                       type="button"
                       onClick={() => removeConfirm.requestConfirm(confirmKey)}
-                      className="rounded border border-red-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                      className="rounded border border-red-300 dark:border-red-800/60 px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
                     >
                       Remove Member
                     </button>
@@ -177,15 +177,15 @@ export function OrganizerControls({
 
       {/* Extend round duration */}
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-medium text-gray-700">Extend Round</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-[var(--text)]">Extend Round</h3>
         <input
           type="number"
           min={1}
           value={extendDays}
           onChange={(e) => setExtendDays(Number(e.target.value))}
-          className="w-16 rounded border border-gray-300 px-2 py-1 text-sm"
+          className="w-16 rounded border border-gray-300 dark:border-[var(--border)] dark:bg-[var(--content)] dark:text-[var(--text)] px-2 py-1 text-sm"
         />
-        <span className="text-xs text-gray-500">days</span>
+        <span className="text-xs text-gray-500 dark:text-[var(--muted)]">days</span>
         <button
           type="button"
           disabled={busy}
@@ -214,11 +214,11 @@ export function OrganizerControls({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
         >
-          <div className="w-full max-w-sm rounded-lg bg-white p-5 shadow-lg">
-            <h4 className="text-base font-semibold text-gray-900">
+          <div className="w-full max-w-sm rounded-lg bg-white dark:bg-[var(--modal)] p-5 shadow-lg">
+            <h4 className="text-base font-semibold text-gray-900 dark:text-[var(--text)]">
               Close this circle early?
             </h4>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-gray-600 dark:text-[var(--muted)]">
               Closing the circle ends the current round immediately. Remaining
               contributions will be settled according to the circle&apos;s payout
               rules, and no further members can join or contribute. This action
@@ -228,7 +228,7 @@ export function OrganizerControls({
               <button
                 type="button"
                 onClick={() => setShowCloseModal(false)}
-                className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                className="rounded border border-gray-300 dark:border-[var(--border)] px-3 py-1.5 text-sm text-gray-700 dark:text-[var(--text)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)]"
               >
                 Cancel
               </button>

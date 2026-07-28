@@ -16,14 +16,14 @@ export default function ErrorFallback({
   return (
     <div
       role="alert"
-      className="flex flex-col items-center justify-center py-16 px-6 text-center bg-[#1C1C1E] rounded-2xl"
+      className="flex flex-col items-center justify-center py-16 px-6 text-center bg-[var(--modal)] rounded-2xl"
     >
       <div className="w-14 h-14 rounded-full bg-[#F8717115] flex items-center justify-center mb-5">
         <AlertTriangle size={28} className="text-[#F87171]" aria-hidden="true" />
       </div>
-      <p className="text-white font-semibold text-base mb-1">{message}</p>
+      <p className="text-[var(--text)] font-semibold text-base mb-1">{message}</p>
       {error?.message && (
-        <p className="text-[#9A9A9A] text-xs mb-6 max-w-sm">{error.message}</p>
+        <p className="text-[var(--muted)] text-xs mb-6 max-w-sm">{error.message}</p>
       )}
       {reset && (
         <button

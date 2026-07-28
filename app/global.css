@@ -1,6 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap');
 @import "tailwindcss";
 
+/* Manual, class-based dark mode (toggled by ThemeProvider) instead of the
+   media-query default, so light/dark/system can be chosen independently of
+   the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -8,20 +13,89 @@
 }
 
 :root {
-  --bg: #0a0a0f;
-  --bg2: #0e0e16;
-  --card: #13131e;
-  --card2: #18182a;
-  --border: rgba(255, 255, 255, 0.07);
+  /* Light theme (default) */
+  --bg: #ffffff;
+  --bg2: #f3f3f8;
+  --surface: #f7f7fb;
+  --card: #f7f7fb;
+  --card2: #eeeef5;
+  --modal: #ffffff;
+  --content: #f4f4f7;
+  --content-hover: #ececf2;
+  --elevated: #eceef0;
+  --elevated-hover: #e2e4e7;
+  --border: rgba(0, 0, 0, 0.08);
   --border-hover: rgba(108, 92, 231, 0.45);
   --accent: #6c5ce7;
   --accent2: #8b7cf8;
   --accent-soft: rgba(108, 92, 231, 0.15);
   --glow: rgba(108, 92, 231, 0.3);
-  --text: #eeeef8;
-  --muted: #7878a0;
-  --muted2: #a0a0c0;
+  --text: #101014;
+  --muted: #5b5b68;
+  --muted2: #3d3d47;
+  --faint: #a8a8b4;
+  --nav-bg: rgba(255, 255, 255, 0.82);
   --white: #ffffff;
+
+  /* Status text colors. The dark-theme values are bright and only legible on a
+     dark surface, so light theme uses darkened equivalents. */
+  --success: #15803d;
+  --info: #1d63c4;
+
+  /* Subtle tint overlays (hover states, dividers, faint fills) — black-based
+     in light theme, white-based in dark theme. Suffix matches the alpha hex
+     these replace (e.g. --ov-0a replaces the old #ffffff0a). */
+  --ov-03: rgba(0, 0, 0, 0.02);
+  --ov-05: rgba(0, 0, 0, 0.035);
+  --ov-06: rgba(0, 0, 0, 0.04);
+  --ov-07: rgba(0, 0, 0, 0.045);
+  --ov-08: rgba(0, 0, 0, 0.05);
+  --ov-0a: rgba(0, 0, 0, 0.06);
+  --ov-0f: rgba(0, 0, 0, 0.08);
+  --ov-10: rgba(0, 0, 0, 0.085);
+  --ov-12: rgba(0, 0, 0, 0.09);
+  --ov-14: rgba(0, 0, 0, 0.1);
+  --ov-16: rgba(0, 0, 0, 0.11);
+  --ov-1a: rgba(0, 0, 0, 0.13);
+
+  color-scheme: light;
+}
+
+.dark {
+  /* Dark theme — matches the app's original hardcoded palette. */
+  --bg: #0a0a0f;
+  --bg2: #0e0e16;
+  --surface: #161616;
+  --card: #13131e;
+  --card2: #18182a;
+  --modal: #1c1c1e;
+  --content: #212124;
+  --content-hover: #26262a;
+  --elevated: #2a2a2a;
+  --elevated-hover: #333333;
+  --border: rgba(255, 255, 255, 0.07);
+  --text: #eeeef8;
+  --muted: #a1a1aa;
+  --muted2: #c0c0c0;
+  --faint: #555555;
+  --nav-bg: rgba(10, 10, 15, 0.82);
+  --success: #4ADE80;
+  --info: #8FC7FF;
+
+  --ov-03: rgba(255, 255, 255, 0.012);
+  --ov-05: rgba(255, 255, 255, 0.02);
+  --ov-06: rgba(255, 255, 255, 0.024);
+  --ov-07: rgba(255, 255, 255, 0.027);
+  --ov-08: rgba(255, 255, 255, 0.031);
+  --ov-0a: rgba(255, 255, 255, 0.039);
+  --ov-0f: rgba(255, 255, 255, 0.059);
+  --ov-10: rgba(255, 255, 255, 0.063);
+  --ov-12: rgba(255, 255, 255, 0.071);
+  --ov-14: rgba(255, 255, 255, 0.078);
+  --ov-16: rgba(255, 255, 255, 0.086);
+  --ov-1a: rgba(255, 255, 255, 0.102);
+
+  color-scheme: dark;
 }
 
 html {

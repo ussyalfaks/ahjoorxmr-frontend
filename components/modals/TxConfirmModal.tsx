@@ -78,18 +78,18 @@ export default function TxConfirmModal({
       onClick={handleClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-[#1C1C1E] border border-[#ffffff14] p-6 shadow-xl font-sora"
+        className="w-full max-w-md rounded-2xl bg-[var(--modal)] border border-[var(--ov-14)] p-6 shadow-xl font-sora"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 id="tx-confirm-title" className="text-lg font-semibold text-white">
+          <h2 id="tx-confirm-title" className="text-lg font-semibold text-[var(--text)]">
             Confirm {actionLabel}
           </h2>
           {status !== "pending" && (
             <button
               onClick={handleClose}
               aria-label="Close"
-              className="text-[#A1A1AA] hover:text-white transition-colors"
+              className="text-[var(--muted)] hover:text-[var(--text)] transition-colors"
             >
               <X size={20} />
             </button>
@@ -101,20 +101,20 @@ export default function TxConfirmModal({
           <>
             <dl className="space-y-3 mb-6">
               <div className="flex justify-between text-sm">
-                <dt className="text-[#A1A1AA]">Action</dt>
-                <dd className="font-medium text-white">{actionLabel}</dd>
+                <dt className="text-[var(--muted)]">Action</dt>
+                <dd className="font-medium text-[var(--text)]">{actionLabel}</dd>
               </div>
               <div className="flex justify-between text-sm">
-                <dt className="text-[#A1A1AA]">Circle</dt>
-                <dd className="font-medium text-white">{circleName}</dd>
+                <dt className="text-[var(--muted)]">Circle</dt>
+                <dd className="font-medium text-[var(--text)]">{circleName}</dd>
               </div>
               <div className="flex justify-between text-sm">
-                <dt className="text-[#A1A1AA]">Amount</dt>
-                <dd className="font-medium text-white">{amount.toLocaleString()} USDT</dd>
+                <dt className="text-[var(--muted)]">Amount</dt>
+                <dd className="font-medium text-[var(--text)]">{amount.toLocaleString()} USDT</dd>
               </div>
               <div className="flex justify-between text-sm">
-                <dt className="text-[#A1A1AA]">Estimated gas fee</dt>
-                <dd className="font-medium text-white">{estimatedGasFee}</dd>
+                <dt className="text-[var(--muted)]">Estimated gas fee</dt>
+                <dd className="font-medium text-[var(--text)]">{estimatedGasFee}</dd>
               </div>
             </dl>
 
@@ -122,7 +122,7 @@ export default function TxConfirmModal({
               <button
                 onClick={handleClose}
                 disabled={status === "pending"}
-                className="flex-1 rounded-xl border border-[#ffffff1a] text-white py-2.5 font-medium hover:bg-[#ffffff0a] transition-colors disabled:opacity-50"
+                className="flex-1 rounded-xl border border-[var(--ov-1a)] text-[var(--text)] py-2.5 font-medium hover:bg-[var(--ov-0a)] transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -147,11 +147,11 @@ export default function TxConfirmModal({
         {/* SUCCESS STATE */}
         {status === "success" && (
           <div className="text-center py-2">
-            <CheckCircle2 className="mx-auto mb-3 text-[#4ADE80]" size={48} />
-            <p className="font-medium text-white mb-1">
+            <CheckCircle2 className="mx-auto mb-3 text-[var(--success)]" size={48} />
+            <p className="font-medium text-[var(--text)] mb-1">
               {type === "contribute" ? "Contribution successful" : "Reward claimed"}
             </p>
-            <p className="text-sm text-[#A1A1AA] mb-4">
+            <p className="text-sm text-[var(--muted)] mb-4">
               Your {actionVerb} of {amount.toLocaleString()} USDT to {circleName} was confirmed.
             </p>
             {txHash && (
@@ -159,7 +159,7 @@ export default function TxConfirmModal({
                 href={`${EXPLORER_BASE_URL}/${txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[#4ADE80] hover:underline text-sm"
+                className="inline-flex items-center gap-1 text-[var(--success)] hover:underline text-sm"
               >
                 View on Starkscan <ExternalLink size={14} />
               </a>
@@ -177,12 +177,12 @@ export default function TxConfirmModal({
         {status === "error" && (
           <div className="text-center py-2">
             <XCircle className="mx-auto mb-3 text-red-500" size={48} />
-            <p className="font-medium text-white mb-1">Transaction failed</p>
-            <p className="text-sm text-[#A1A1AA] mb-6">{errorMessage}</p>
+            <p className="font-medium text-[var(--text)] mb-1">Transaction failed</p>
+            <p className="text-sm text-[var(--muted)] mb-6">{errorMessage}</p>
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 rounded-xl border border-[#ffffff1a] text-white py-2.5 font-medium hover:bg-[#ffffff0a] transition-colors"
+                className="flex-1 rounded-xl border border-[var(--ov-1a)] text-[var(--text)] py-2.5 font-medium hover:bg-[var(--ov-0a)] transition-colors"
               >
                 Cancel
               </button>

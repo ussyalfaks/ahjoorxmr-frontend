@@ -27,10 +27,10 @@ export function Toggle({
       {(label || description) && (
         <span className="flex flex-col">
           {label && (
-            <span className="text-sm font-medium text-gray-800">{label}</span>
+            <span className="text-sm font-medium text-gray-800 dark:text-[var(--text)]">{label}</span>
           )}
           {description && (
-            <span className="text-xs text-gray-500">{description}</span>
+            <span className="text-xs text-gray-500 dark:text-[var(--muted)]">{description}</span>
           )}
         </span>
       )}
@@ -42,8 +42,8 @@ export function Toggle({
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
-          checked ? "bg-blue-600" : "bg-gray-300"
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[var(--bg)] ${
+          checked ? "bg-blue-600" : "bg-gray-300 dark:bg-white/15"
         }`}
       >
         <span

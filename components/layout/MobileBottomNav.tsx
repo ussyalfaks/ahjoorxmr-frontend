@@ -17,7 +17,7 @@ export default function MobileBottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-[#161616] border-t border-[#ffffff0f] flex justify-around p-4 z-50"
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)] border-t border-[var(--ov-0f)] flex justify-around p-4 z-50"
       aria-label="Mobile navigation"
     >
       {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
@@ -32,7 +32,7 @@ export default function MobileBottomNav() {
             href={href}
             aria-current={isActive ? "page" : undefined}
             className={`flex flex-col items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded transition-colors ${
-              isActive ? "text-white" : "text-[#9A9A9A] hover:text-[#EBEBEB]"
+              isActive ? "text-[var(--text)]" : "text-[var(--muted)] hover:text-[var(--text)]"
             }`}
           >
             <Icon size={20} aria-hidden="true" />

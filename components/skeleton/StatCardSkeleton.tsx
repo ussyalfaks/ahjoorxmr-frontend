@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
  */
 export function StatCardSkeleton() {
   return (
-    <div className="bg-[#212124] rounded-2xl p-6 flex flex-col gap-3">
+    <div className="bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-3">
       <Skeleton className="h-8 w-8 rounded-full" />
       <Skeleton className="h-3 w-20" />
       <Skeleton className="h-6 w-28" />

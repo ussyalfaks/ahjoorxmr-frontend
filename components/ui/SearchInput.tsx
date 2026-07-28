@@ -14,7 +14,7 @@ export function SearchInput({
   return (
     <div className="relative w-full sm:max-w-xs">
       <svg
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-[var(--muted)]"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -32,14 +32,14 @@ export function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label="Search circles"
-        className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-8 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-full rounded-md border border-gray-300 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] text-gray-900 dark:text-[var(--text)] py-2 pl-9 pr-8 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:placeholder:text-[var(--faint)]"
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange("")}
           aria-label="Clear search"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-[var(--muted)] dark:hover:text-[var(--text)]"
         >
           ×
         </button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Toggle } from "@/components/ui/Toggle";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 // --- Wallet address source: swap for your actual hook ---
 // import { useAccount } from "wagmi";
@@ -99,22 +100,22 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <h1 className="text-2xl font-semibold text-gray-900 dark:text-[var(--text)]">Settings</h1>
+      <p className="mt-1 text-sm text-gray-500 dark:text-[var(--muted)]">
         Manage your profile, notifications, and account.
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Profile section */}
-        <section className="rounded-lg border border-gray-200 bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-900">Profile</h2>
+        <section className="rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] p-5">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-[var(--text)]">Profile</h2>
 
           <div className="mt-4 space-y-4">
             <div>
-              <span className="block text-xs font-medium text-gray-500">
+              <span className="block text-xs font-medium text-gray-500 dark:text-[var(--muted)]">
                 Wallet address
               </span>
-              <span className="mt-1 block font-mono text-sm text-gray-800">
+              <span className="mt-1 block font-mono text-sm text-gray-800 dark:text-[var(--text)]">
                 {truncateAddress(connectedAddress)}
               </span>
             </div>
@@ -122,7 +123,7 @@ export default function SettingsPage() {
             <div>
               <label
                 htmlFor="displayName"
-                className="block text-xs font-medium text-gray-500"
+                className="block text-xs font-medium text-gray-500 dark:text-[var(--muted)]"
               >
                 Display name (optional)
               </label>
@@ -137,23 +138,37 @@ export default function SettingsPage() {
                   }))
                 }
                 placeholder="How others see you in your circles"
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 w-full rounded-md border border-gray-300 dark:border-[var(--border)] dark:bg-[var(--modal)] dark:text-[var(--text)] px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:placeholder:text-[var(--faint)]"
               />
             </div>
           </div>
         </section>
 
+        {/* Appearance */}
+        <section className="rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] p-5">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-[var(--text)]">Appearance</h2>
+          <div className="mt-4 flex items-center justify-between">
+            <div>
+              <span className="block text-sm font-medium text-gray-800 dark:text-[var(--text)]">Theme</span>
+              <span className="block text-xs text-gray-500 dark:text-[var(--muted)]">
+                Light, dark, or match your system setting
+              </span>
+            </div>
+            <ThemeToggle />
+          </div>
+        </section>
+
         {/* Notification preferences */}
-        <section className="rounded-lg border border-gray-200 bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-900">
+        <section className="rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] p-5 lg:col-span-2">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-[var(--text)]">
             Notifications
           </h2>
 
           <div className="mt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-[var(--muted)]">
               Email
             </h3>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-[var(--border)]">
               <Toggle
                 id="emailRoundCompletions"
                 label="Round completions"
@@ -178,10 +193,10 @@ export default function SettingsPage() {
           </div>
 
           <div className="mt-5">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-[var(--muted)]">
               In-app
             </h3>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-[var(--border)]">
               <Toggle
                 id="inAppRoundCompletions"
                 label="Round completions"
@@ -218,31 +233,31 @@ export default function SettingsPage() {
           {status === "saving" ? "Saving..." : "Save changes"}
         </button>
         {status === "success" && (
-          <span className="text-sm text-green-600">Settings saved.</span>
+          <span className="text-sm text-green-600 dark:text-green-400">Settings saved.</span>
         )}
         {status === "error" && (
-          <span className="text-sm text-red-600">
+          <span className="text-sm text-red-600 dark:text-red-400">
             Something went wrong. Try again.
           </span>
         )}
       </div>
 
       {/* Danger zone */}
-      <section className="mt-10 rounded-lg border border-red-200 bg-red-50 p-5">
-        <h2 className="text-base font-semibold text-red-800">Danger zone</h2>
-        <p className="mt-1 text-sm text-red-700">
+      <section className="mt-10 rounded-lg border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-500/10 p-5">
+        <h2 className="text-base font-semibold text-red-800 dark:text-red-300">Danger zone</h2>
+        <p className="mt-1 text-sm text-red-700 dark:text-red-400">
           Leaving all circles removes you from every active circle you've
           joined. Contributions already made are not refunded automatically;
           any pending payouts follow the circle's normal payout rules.
         </p>
 
         {leaveStatus === "done" ? (
-          <p className="mt-3 text-sm font-medium text-red-800">
+          <p className="mt-3 text-sm font-medium text-red-800 dark:text-red-300">
             You've left all circles.
           </p>
         ) : showLeaveConfirm ? (
           <div className="mt-3 flex items-center gap-2">
-            <span className="text-sm text-red-800">Are you sure?</span>
+            <span className="text-sm text-red-800 dark:text-red-300">Are you sure?</span>
             <button
               type="button"
               disabled={leaveStatus === "leaving"}
@@ -254,7 +269,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => setShowLeaveConfirm(false)}
-              className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+              className="rounded-md border border-gray-300 dark:border-[var(--border)] bg-white dark:bg-[var(--modal)] px-3 py-1.5 text-sm text-gray-700 dark:text-[var(--text)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)]"
             >
               Cancel
             </button>
@@ -263,7 +278,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => setShowLeaveConfirm(true)}
-            className="mt-3 rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+            className="mt-3 rounded-md border border-red-300 dark:border-red-800/60 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15"
           >
             Leave all circles
           </button>
