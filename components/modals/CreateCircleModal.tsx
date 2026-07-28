@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { X, ArrowRight, ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface Props {
@@ -17,6 +17,46 @@ interface FormData {
   roundDuration: string;
 }
 
+interface CircleTemplate {
+  id: string;
+  name: string;
+  frequency: string;
+  amount: number;
+  maxMembers: number;
+  roundDuration: number;
+  description: string;
+}
+
+const CIRCLE_TEMPLATES: CircleTemplate[] = [
+  {
+    id: "weekly-starter",
+    name: "Weekly Starter",
+    frequency: "Weekly",
+    amount: 5000,
+    maxMembers: 5,
+    roundDuration: 7,
+    description: "Best for close friends or family contributing small amounts every week.",
+  },
+  {
+    id: "monthly-builder",
+    name: "Monthly Builder",
+    frequency: "Monthly",
+    amount: 50000,
+    maxMembers: 6,
+    roundDuration: 30,
+    description: "Great for salary earners pooling a larger sum once a month.",
+  },
+  {
+    id: "biweekly-boost",
+    name: "Biweekly Boost",
+    frequency: "Bi-weekly",
+    amount: 20000,
+    maxMembers: 8,
+    roundDuration: 14,
+    description: "Fits groups that want faster payouts without waiting a full month.",
+  },
+];
+
 const EMPTY: FormData = {
   name: "",
   description: "",
@@ -25,7 +65,7 @@ const EMPTY: FormData = {
   roundDuration: "",
 };
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 export default function CreateCircleModal({ open, onClose }: Props) {
   const [step, setStep] = useState(0);
@@ -43,11 +83,25 @@ export default function CreateCircleModal({ open, onClose }: Props) {
     onClose();
   }
 
+  function selectTemplate(template: CircleTemplate) {
+    setForm((f) => ({
+      ...f,
+      contribution: String(template.amount),
+      maxMembers: String(template.maxMembers),
+      roundDuration: String(template.roundDuration),
+    }));
+    setStep(1);
+  }
+
+  function selectCustom() {
+    setStep(1);
+  }
+
   const set = (key: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const step0Valid = form.name.trim().length > 0;
-  const step1Valid =
+  const step1Valid = form.name.trim().length > 0;
+  const step2Valid =
     form.contribution.trim().length > 0 &&
     Number(form.contribution) > 0 &&
     form.maxMembers.trim().length > 0 &&
@@ -112,8 +166,60 @@ export default function CreateCircleModal({ open, onClose }: Props) {
               ))}
             </div>
 
-            {/* Step 0: Name & description */}
+            {/* Step 0: Template selection */}
             {step === 0 && (
+              <div className="space-y-5">
+                <div>
+                  <h2 id="create-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
+                    Choose a Template
+                  </h2>
+                  <p className="text-[var(--muted)] text-sm mt-1">
+                    Start from a preset or configure everything yourself.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {CIRCLE_TEMPLATES.map((template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => selectTemplate(template)}
+                      className="w-full text-left bg-[var(--ov-0a)] border border-[var(--ov-14)] hover:border-[#4B6B76] rounded-xl px-4 py-3.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold font-sora text-[var(--text)] text-sm">
+                          {template.name}
+                        </span>
+                        <span className="text-xs font-medium text-[var(--muted)]">
+                          {template.frequency}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[var(--text)] font-medium mt-1">
+                        ₦{template.amount.toLocaleString()} · {template.maxMembers} members
+                      </p>
+                      <p className="text-xs text-[var(--muted)] mt-1">{template.description}</p>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={selectCustom}
+                    className="w-full text-left bg-[var(--ov-0a)] border border-dashed border-[var(--ov-14)] hover:border-[#4B6B76] rounded-xl px-4 py-3.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] flex items-center gap-3"
+                  >
+                    <Sparkles size={18} className="text-[var(--muted)]" aria-hidden="true" />
+                    <span>
+                      <span className="font-semibold font-sora text-[var(--text)] text-sm block">
+                        Custom
+                      </span>
+                      <span className="text-xs text-[var(--muted)]">
+                        Configure amount, members, and duration manually.
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 1: Name & description */}
+            {step === 1 && (
               <div className="space-y-5">
                 <div>
                   <h2 id="create-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
@@ -152,8 +258,8 @@ export default function CreateCircleModal({ open, onClose }: Props) {
               </div>
             )}
 
-            {/* Step 1: Settings */}
-            {step === 1 && (
+            {/* Step 2: Settings */}
+            {step === 2 && (
               <div className="space-y-5">
                 <div>
                   <h2 id="create-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
@@ -208,8 +314,8 @@ export default function CreateCircleModal({ open, onClose }: Props) {
               </div>
             )}
 
-            {/* Step 2: Review */}
-            {step === 2 && (
+            {/* Step 3: Review */}
+            {step === 3 && (
               <div className="space-y-5">
                 <div>
                   <h2 id="create-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
@@ -252,10 +358,10 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                 </button>
               )}
 
-              {step < TOTAL_STEPS - 1 ? (
+              {step === 0 ? null : step < TOTAL_STEPS - 1 ? (
                 <button
                   onClick={() => setStep((s) => s + 1)}
-                  disabled={step === 0 ? !step0Valid : !step1Valid}
+                  disabled={step === 1 ? !step1Valid : !step2Valid}
                   className="flex items-center gap-2 px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   Next <ArrowRight size={16} aria-hidden="true" />

@@ -6,6 +6,7 @@ import { Copy, Check, ChevronDown, X, Search } from "lucide-react";
 import { useWallet, AVAILABLE_WALLETS, truncateAddress, type WalletId } from "@/contexts/WalletContext";
 import { OPEN_COMMAND_PALETTE_EVENT } from "@/components/ui/CommandPalette";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import InstallPWAButton from "@/components/ui/InstallPWAButton";
 
 const navLinks = [
   { label: "Home", href: "#" },
@@ -219,6 +220,7 @@ export default function Navbar() {
                 ⌘K
               </kbd>
             </button>
+            <InstallPWAButton />
             <ThemeToggle />
             {isConnected && address ? (
               <div className="relative">

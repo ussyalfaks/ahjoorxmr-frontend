@@ -36,6 +36,12 @@ export default function Footer() {
               {l}
             </Link>
           ))}
+          <Link
+            href="/privacy"
+            className="text-[var(--muted)] no-underline text-[14px] font-medium transition-colors duration-200 hover:text-[var(--text)]"
+          >
+            Privacy Policy
+          </Link>
         </nav>
 
         {/* Email subscribe */}

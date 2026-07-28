@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut, Wallet } from "lucide-react";
+import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut, Wallet, Gift } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import OnboardingModal from "@/components/modals/OnboardingModal";
 import DashboardHeaderSearch from "@/components/layout/DashboardHeaderSearch";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import InstallPWAButton from "@/components/ui/InstallPWAButton";
 
 const WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 const WALLET_DISPLAY = "0x23g43gdaa...";
@@ -69,6 +70,15 @@ export default function DashboardLayout({
               </li>
               <li>
                 <Link
+                  href="/dashboard/referrals"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <Gift size={20} aria-hidden="true" />
+                  <span className="font-medium">Referrals</span>
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="#"
                   className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
@@ -115,6 +125,7 @@ export default function DashboardLayout({
         {/* Top Header */}
         <header className="flex items-center justify-end p-6 md:px-10 py-5 gap-3">
           <DashboardHeaderSearch />
+          <InstallPWAButton />
           <ThemeToggle />
           <NotificationDropdown />
           <div
