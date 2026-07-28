@@ -1,7 +1,13 @@
 "use client";
 import Link from "next/link";
 
-const footerLinks = ["Documentations", "Resources", "Securities", "Socials"];
+const footerLinks = [
+  { label: "Documentations", href: "#" },
+  { label: "Resources", href: "#" },
+  { label: "Securities", href: "#" },
+  { label: "Socials", href: "#" },
+  { label: "Terms of Service", href: "/terms" },
+];
 
 export default function Footer() {
   return (
@@ -29,11 +35,11 @@ export default function Footer() {
         <nav aria-label="Footer navigation" className="flex gap-7 flex-wrap justify-center max-sm:gap-4">
           {footerLinks.map((l) => (
             <Link
-              key={l}
-              href="#"
+              key={l.label}
+              href={l.href}
               className="text-[#7878a0] no-underline text-[14px] font-medium transition-colors duration-200 hover:text-white"
             >
-              {l}
+              {l.label}
             </Link>
           ))}
         </nav>

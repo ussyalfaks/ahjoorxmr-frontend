@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, CheckCircle2, Clock3, ChevronDown } from "lucide-react";
+import ExportButton from "@/components/ui/ExportButton";
+import type { ExportRow } from "@/lib/export";
 
 type PayoutStatus = "completed" | "pending";
 
@@ -127,6 +129,20 @@ export default function PayoutsPage() {
 
   const hasMore = visibleCount < MOCK_PAYOUT_HISTORY.length;
 
+  // Exports the full history, not just the rows currently paged into view.
+  const getExportRows = useCallback(
+    (): ExportRow[] =>
+      MOCK_PAYOUT_HISTORY.map((payout) => ({
+        date: formatDate(payout.payout_date),
+        circleName: payout.circle_name,
+        round: payout.round_number,
+        amount: formatAmount(payout.amount, payout.token_symbol),
+        type: payout.status === "completed" ? "Payout" : "Payout (pending)",
+        transactionHash: payout.transaction_hash,
+      })),
+    []
+  );
+
   return (
     <div className="space-y-8 pb-20 md:pb-0">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -144,8 +160,17 @@ export default function PayoutsPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-[#ffffff14] bg-[#1C1C1E] px-4 py-3 text-sm text-[#C7C7C7]">
-          <span className="font-semibold text-white">{MOCK_PAYOUT_HISTORY.length}</span> total payouts
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl border border-[#ffffff14] bg-[#1C1C1E] px-4 py-3 text-sm text-[#C7C7C7]">
+            <span className="font-semibold text-white">{MOCK_PAYOUT_HISTORY.length}</span> total payouts
+          </div>
+          <ExportButton
+            getRows={getExportRows}
+            scope="All Circles"
+            prefix="payouts"
+            title="Payout History"
+            disabled={MOCK_PAYOUT_HISTORY.length === 0}
+          />
         </div>
       </div>
 

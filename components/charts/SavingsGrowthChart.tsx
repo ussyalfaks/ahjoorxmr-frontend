@@ -138,11 +138,13 @@ export default function SavingsGrowthChart() {
       </div>
 
       <div className="mt-6 relative">
-        <div className="absolute right-0 top-0 z-10 rounded-2xl border border-[#ffffff12] bg-[#111111] px-4 py-3 text-right shadow-lg">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-[#9A9A9A]">{activePoint.label}</p>
-          <p className="mt-1 text-lg font-semibold text-white">{activePoint.value.toLocaleString()} USDT</p>
-          <p className="text-xs text-[#A1A1AA]">{activePoint.tooltipDate}</p>
-        </div>
+        {activePoint && (
+          <div className="absolute right-0 top-0 z-10 rounded-2xl border border-[#ffffff12] bg-[#111111] px-4 py-3 text-right shadow-lg">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[#9A9A9A]">{activePoint.label}</p>
+            <p className="mt-1 text-lg font-semibold text-white">{activePoint.value.toLocaleString()} USDT</p>
+            <p className="text-xs text-[#A1A1AA]">{activePoint.tooltipDate}</p>
+          </div>
+        )}
 
         <div className="h-[320px] w-full overflow-hidden rounded-[1.5rem] border border-[#ffffff10] bg-[#151516] p-4 sm:p-6">
           <svg
