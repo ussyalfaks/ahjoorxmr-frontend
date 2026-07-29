@@ -3,18 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Bell, CheckCircle2, DollarSign, AlertCircle, Clock, X } from "lucide-react";
 import Link from "next/link";
-
-type NotificationType = "round_complete" | "payout_ready" | "missed_contribution" | "your_turn";
-
-interface Notification {
-  id: string;
-  type: NotificationType;
-  title: string;
-  description: string;
-  timestamp: Date;
-  href: string;
-  read: boolean;
-}
+import type { Notification, NotificationType } from "@/types/notification";
 
 const INITIAL_NOTIFICATIONS: Notification[] = [
   {
@@ -192,6 +181,19 @@ export default function NotificationDropdown() {
               })
             )}
           </div>
+
+          {/* Footer */}
+          {notifications.length > 0 && (
+            <div className="border-t border-[var(--ov-0f)] px-4 py-3 bg-[var(--ov-03)]">
+              <Link
+                href="/dashboard/notifications"
+                onClick={() => setOpen(false)}
+                className="text-sm font-medium text-[#4B6B76] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:underline"
+              >
+                View all notifications
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

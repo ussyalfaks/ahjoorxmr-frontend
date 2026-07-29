@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut, Wallet, Trophy } from "lucide-react";
+import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut, Wallet, Trophy, Bell } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
@@ -84,6 +84,15 @@ export default function DashboardLayout({
                 >
                   <Trophy size={20} aria-hidden="true" />
                   <span className="font-medium">Leaderboard</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/notifications"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <Bell size={20} aria-hidden="true" />
+                  <span className="font-medium">Notifications</span>
                 </Link>
               </li>
               <li>
