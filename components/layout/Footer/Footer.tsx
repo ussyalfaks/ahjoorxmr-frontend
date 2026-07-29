@@ -2,6 +2,7 @@
 import Link from "next/link";
 
 const footerLinks = [
+  { label: "Help Center", href: "/help" },
   { label: "Documentations", href: "#" },
   { label: "Resources", href: "#" },
   { label: "Securities", href: "#" },
@@ -35,8 +36,8 @@ export default function Footer() {
         <nav aria-label="Footer navigation" className="flex gap-7 flex-wrap justify-center max-sm:gap-4">
           {footerLinks.map((l) => (
             <Link
-              key={l}
-              href="#"
+              key={l.label}
+              href={l.href}
               className="text-[var(--muted)] no-underline text-[14px] font-medium transition-colors duration-200 hover:text-[var(--text)]"
             >
               {l.label}
