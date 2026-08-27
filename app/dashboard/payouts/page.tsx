@@ -2,101 +2,23 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, CheckCircle2, Clock3, ChevronDown } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Clock3, ChevronDown, FileText } from "lucide-react";
 import ExportButton from "@/components/ui/ExportButton";
+import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
 import type { ExportRow } from "@/lib/export";
+import type { MilestoneData } from "@/types/milestone";
+import {
+  MOCK_PAYOUT_HISTORY,
+  formatPayoutAmount,
+  type PayoutRecord,
+  type PayoutStatus,
+} from "@/data/payouts";
 
-type PayoutStatus = "completed" | "pending";
-
-interface PayoutRecord {
-  transaction_hash: string;
-  circle_name: string;
-  amount: number;
-  token_symbol: string;
-  payout_date: string;
-  round_number: number;
-  status: PayoutStatus;
-}
-
-const MOCK_PAYOUT_HISTORY: PayoutRecord[] = [
-  {
-    transaction_hash: "0x8f41a8dd0a13cc9c5f8d25c8e2f2f2a34e1d0b4f0a5a9d6c7b8c9d0e1f2a3b4c",
-    circle_name: "Family Growth",
-    amount: 50,
-    token_symbol: "USDT",
-    payout_date: "2026-07-25T16:20:00Z",
-    round_number: 3,
-    status: "completed",
-  },
-  {
-    transaction_hash: "0x4c2f19ab31d8f4e5c9b0d7a23e1f4a8b6c5d4e3f2a1b09876543210fedcba98",
-    circle_name: "School Fees",
-    amount: 120,
-    token_symbol: "USDC",
-    payout_date: "2026-07-22T10:05:00Z",
-    round_number: 2,
-    status: "completed",
-  },
-  {
-    transaction_hash: "0x19d3b7f5a8c1e2d4f6b7a9c0d1e3f4a5b6c7d8e9f0a1234567890abcdef1234",
-    circle_name: "Car Repairs",
-    amount: 75,
-    token_symbol: "STRK",
-    payout_date: "2026-07-18T08:45:00Z",
-    round_number: 1,
-    status: "completed",
-  },
-  {
-    transaction_hash: "0x7b6a5d4c3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3210ab9cd8ef7654",
-    circle_name: "Wedding Fund",
-    amount: 200,
-    token_symbol: "USDT",
-    payout_date: "2026-07-10T14:00:00Z",
-    round_number: 4,
-    status: "completed",
-  },
-  {
-    transaction_hash: "0x2d4f6b8a1c3e5f7a9d0b2c4e6f8a1d3c5e7f9b0a2c4e6f8a1d3c5e7f9b0a2c4",
-    circle_name: "Community Project",
-    amount: 35,
-    token_symbol: "USDC",
-    payout_date: "2026-07-02T11:30:00Z",
-    round_number: 2,
-    status: "pending",
-  },
-  {
-    transaction_hash: "0x6e5d4c3b2a1908f7e6d5c4b3a291807f6e5d4c3b2a1908f7e6d5c4b3a291807",
-    circle_name: "Savings Challenge",
-    amount: 90,
-    token_symbol: "USDT",
-    payout_date: "2026-06-28T09:15:00Z",
-    round_number: 5,
-    status: "completed",
-  },
-  {
-    transaction_hash: "0x9a8b7c6d5e4f3210ab9cd8ef7654c3b2a1908f7e6d5c4b3a291807f6e5d4c3b",
-    circle_name: "Travel Fund",
-    amount: 150,
-    token_symbol: "STRK",
-    payout_date: "2026-06-19T07:55:00Z",
-    round_number: 1,
-    status: "completed",
-  },
-  {
-    transaction_hash: "0x3c5e7f9b0a2c4e6f8a1d3c5e7f9b0a2c4e6f8a1d3c5e7f9b0a2c4e6f8a1d3c",
-    circle_name: "Emergency Fund",
-    amount: 60,
-    token_symbol: "USDC",
-    payout_date: "2026-06-11T18:40:00Z",
-    round_number: 6,
-    status: "pending",
-  },
-];
-
-const PAGE_SIZE = 5;
-
+// ---------------------------------------------------------------------------
+// Local formatting helpers (screen-only variants, keep in sync with data/payouts.ts)
+// ---------------------------------------------------------------------------
 function formatAmount(amount: number, tokenSymbol: string) {
-  return `${amount.toLocaleString()} ${tokenSymbol}`;
+  return formatPayoutAmount(amount, tokenSymbol);
 }
 
 function formatDate(dateValue: string) {
@@ -115,9 +37,10 @@ function statusStyles(status: PayoutStatus) {
   if (status === "completed") {
     return "bg-[#1f3b2d] text-[#8ef0b0] border-[#2d5c43]";
   }
-
   return "bg-[#3a2f18] text-[#ffd56a] border-[#665221]";
 }
+
+const PAGE_SIZE = 5;
 
 export default function PayoutsPage() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -201,6 +124,12 @@ export default function PayoutsPage() {
                     <th scope="col" className="px-6 py-4 font-medium">
                       Status
                     </th>
+                    <th scope="col" className="px-6 py-4 font-medium">
+                      <span className="sr-only">Share</span>
+                    </th>
+                    <th scope="col" className="px-6 py-4 font-medium">
+                      <span className="sr-only">Receipt</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--ov-0f)] bg-[var(--modal)]">
@@ -245,6 +174,31 @@ export default function PayoutsPage() {
                           )}
                           {payout.status === "completed" ? "Completed" : "Pending"}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        {payout.status === "completed" && (
+                          <ShareMilestoneButton
+                            milestone={{
+                              type: "payout_received",
+                              circleName: payout.circle_name,
+                              amount: formatAmount(payout.amount, payout.token_symbol),
+                              subtitle: `Round ${payout.round_number}`,
+                              date: formatDate(payout.payout_date),
+                            } satisfies MilestoneData}
+                            variant="icon"
+                          />
+                        )}
+                      </td>
+                      {/* Receipt button */}
+                      <td className="px-4 py-4 text-sm">
+                        <Link
+                          href={`/dashboard/payouts/receipt/${payout.transaction_hash}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--muted)] bg-[var(--ov-07)] hover:bg-[var(--ov-0f)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] whitespace-nowrap"
+                          aria-label={`View receipt for ${payout.circle_name} round ${payout.round_number}`}
+                        >
+                          <FileText size={13} aria-hidden="true" />
+                          Receipt
+                        </Link>
                       </td>
                     </tr>
                   ))}
