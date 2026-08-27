@@ -7,6 +7,7 @@ export interface Participant {
   address: string;
   status: "paid" | "pending" | "your_turn";
   roundsPaid: number;
+  role?: "organizer" | "co-organizer" | "participant";
 }
 
 interface ParticipantListProps {
@@ -142,7 +143,18 @@ export function ParticipantList({ participants }: ParticipantListProps) {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={participant.status} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge status={participant.status} />
+                    {participant.role && (
+                      <span className="rounded-full bg-[var(--ov-0a)] px-2.5 py-0.5 text-xs font-medium text-[var(--muted)]">
+                        {participant.role === "organizer"
+                          ? "Organizer"
+                          : participant.role === "co-organizer"
+                            ? "Co-Organizer"
+                            : "Participant"}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-gray-700 dark:text-[var(--muted)]">
                   {participant.roundsPaid}

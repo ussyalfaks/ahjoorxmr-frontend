@@ -171,3 +171,55 @@ body {
 .delay-3 { animation-delay: 0.3s; }
 .delay-4 { animation-delay: 0.4s; }
 .delay-5 { animation-delay: 0.5s; }
+
+/* ============================================================
+   Print styles — payout receipt
+   Scoped to .receipt-root so these rules only fire on the
+   dedicated receipt route, not anywhere else in the app.
+   ============================================================ */
+@media print {
+  /* Force white paper background regardless of OS dark mode */
+  .receipt-root {
+    background: #ffffff !important;
+    color: #111111 !important;
+    color-scheme: light !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide everything that isn't the receipt document */
+  .receipt-root .print\:hidden,
+  .receipt-root [data-print="hide"] {
+    display: none !important;
+  }
+
+  /* Remove page chrome injected by the browser */
+  @page {
+    size: A4 portrait;
+    margin: 18mm 16mm;
+  }
+
+  /* Keep the receipt on a single page where possible */
+  #receipt-document {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure links print their href as plain text (handled inline too) */
+  .receipt-root a[href]::after {
+    /* suppress the default "URL in parentheses" some browsers add */
+    content: none !important;
+  }
+
+  /* Restore legible colours for status badges on paper */
+  .receipt-root .bg-emerald-50 {
+    background-color: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+    color: #15803d !important;
+  }
+
+  .receipt-root .bg-amber-50 {
+    background-color: #fffbeb !important;
+    border-color: #fde68a !important;
+    color: #b45309 !important;
+  }
+}
