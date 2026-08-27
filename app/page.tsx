@@ -4,6 +4,7 @@ import HeroSection from "@/components/sections/HeroSection";
 import SupportedBy from "@/components/sections/SupportedBy";
 import DashboardPreview from "@/components/sections/DashboardPreview";
 import HowItWorks from "@/components/sections/HowItWorks";
+import CalculatorSection from "@/components/sections/CalculatorSection";
 import WhyAhjoor from "@/components/sections/WhyAhjoor";
 import FAQSection from "@/components/sections/FAQSection";
 
@@ -15,6 +16,7 @@ export default function Home() {
       <SupportedBy />
       <DashboardPreview />
       <HowItWorks />
+      <CalculatorSection />
       <WhyAhjoor />
       <FAQSection />
       <Footer />
