@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Trophy, Flame, PiggyBank, Medal } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import Link from "next/link";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -206,9 +207,9 @@ export default function LeaderboardPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-white">
+                            <Link href={`/dashboard/profile/${encodeURIComponent(entry.address)}`} className="text-sm font-medium text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]">
                               {entry.alias ?? shortAddress(entry.address)}
-                            </span>
+                            </Link>
                             {isYou && (
                               <span className="rounded-full bg-[#4B6B76] px-2 py-0.5 text-[10px] font-semibold text-white">
                                 You
@@ -258,9 +259,9 @@ export default function LeaderboardPage() {
                       <RankBadge rank={entry.rank} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="truncate text-sm font-medium text-white">
+                          <Link href={`/dashboard/profile/${encodeURIComponent(entry.address)}`} className="truncate text-sm font-medium text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]">
                             {entry.alias ?? shortAddress(entry.address)}
-                          </span>
+                          </Link>
                           {isYou && (
                             <span className="shrink-0 rounded-full bg-[#4B6B76] px-2 py-0.5 text-[10px] font-semibold text-white">
                               You

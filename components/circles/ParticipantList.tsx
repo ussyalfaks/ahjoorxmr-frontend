@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 export interface Participant {
   address: string;
@@ -136,9 +137,9 @@ export function ParticipantList({ participants }: ParticipantListProps) {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <Avatar address={participant.address} />
-                    <span className="font-mono text-sm text-gray-800 dark:text-[var(--text)]">
+                    <Link href={`/dashboard/profile/${encodeURIComponent(participant.address)}`} className="font-mono text-sm text-gray-800 hover:underline dark:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]">
                       {truncateAddress(participant.address)}
-                    </span>
+                    </Link>
                   </div>
                 </td>
                 <td className="px-4 py-3">

@@ -1,3 +1,6 @@
+import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
+import { getMockCircleHealth } from "@/lib/circleHealth";
+
 interface CircleCardProps {
   id: string;
   name: string;
@@ -22,7 +25,10 @@ export function CircleCard({
   return (
     <div className="flex flex-col justify-between rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] p-4">
       <div>
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--text)]">{name}</h3>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--text)]">{name}</h3>
+          <CircleHealthIndicator health={getMockCircleHealth(id)} />
+        </div>
 
         <dl className="mt-3 space-y-1.5 text-sm">
           <div className="flex justify-between">

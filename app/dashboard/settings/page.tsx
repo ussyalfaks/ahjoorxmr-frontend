@@ -63,6 +63,10 @@ export default function SettingsPage() {
     "idle"
   );
 
+  function openShortcuts() {
+    window.dispatchEvent(new Event(OPEN_SHORTCUTS_EVENT));
+  }
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -138,9 +142,12 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-[var(--text)]">Settings</h1>
-      <p className="mt-1 text-sm text-gray-500 dark:text-[var(--muted)]">
-        Manage your profile, notifications, and account.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="mt-1 text-sm text-gray-500 dark:text-[var(--muted)]">
+          Manage your profile, notifications, and account.
+        </p>
+        <button type="button" onClick={openShortcuts} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-[var(--border)] dark:text-[var(--text)] dark:hover:bg-[var(--ov-0a)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"><span aria-hidden="true">?</span> Keyboard shortcuts</button>
+      </div>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Profile section */}
