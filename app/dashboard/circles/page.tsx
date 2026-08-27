@@ -1,12 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Users, DollarSign, Clock, Plus } from "lucide-react";
 import Link from "next/link";
 import CopyButton from "@/components/ui/CopyButton";
-import CreateCircleModal from "@/components/modals/CreateCircleModal";
+import CreateCircleModal, { type CreateCircleData } from "@/components/modals/CreateCircleModal";
 import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
+import LiveActivityTicker from "@/components/ui/LiveActivityTicker";
+import { CIRCLE_CATEGORIES, CATEGORY_LABELS, type CircleCategory } from "@/lib/circles";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -18,6 +20,8 @@ interface Circle {
   totalSlots: number;
   contribution: string;
   duration: string;
+  category: CircleCategory;
+  status: "active" | "completed" | "pending";
 }
 
 const mockCircles: Circle[] = [
@@ -29,6 +33,8 @@ const mockCircles: Circle[] = [
     totalSlots: 5,
     contribution: "50 USDT",
     duration: "2 Days",
+    category: "family",
+    status: "active",
   },
   {
     id: "2",
@@ -38,6 +44,8 @@ const mockCircles: Circle[] = [
     totalSlots: 6,
     contribution: "40 USDT",
     duration: "12 Days",
+    category: "students",
+    status: "active",
   },
   {
     id: "3",
@@ -47,6 +55,8 @@ const mockCircles: Circle[] = [
     totalSlots: 10,
     contribution: "25 USDT",
     duration: "5 Days",
+    category: "community",
+    status: "active",
   },
   {
     id: "4",
@@ -56,6 +66,8 @@ const mockCircles: Circle[] = [
     totalSlots: 12,
     contribution: "200 USDT",
     duration: "30 Days",
+    category: "friends",
+    status: "active",
   },
   {
     id: "5",
@@ -68,6 +80,8 @@ const mockCircles: Circle[] = [
     totalSlots: 6,
     contribution: "75 USDT",
     duration: "10 Days",
+    category: "family",
+    status: "active",
   },
 ];
 
@@ -82,12 +96,14 @@ function CirclesContent() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [joinCircle, setJoinCircle] = useState<JoinCircleData | null>(null);
+  const [createdCircles, setCreatedCircles] = useState<Circle[]>([]);
+  const allCircles = useMemo(() => [...mockCircles, ...createdCircles], [createdCircles]);
 
   useEffect(() => {
     if (!inviteId) return;
-    const circle = mockCircles.find((c) => c.id === inviteId);
+    const circle = allCircles.find((c) => c.id === inviteId);
     if (circle) setJoinCircle(circle);
-  }, [inviteId]);
+  }, [inviteId, allCircles]);
 
   useEffect(() => {
     if (action === "create") {
@@ -96,8 +112,25 @@ function CirclesContent() {
     }
   }, [action, router]);
 
-  const myCircles = mockCircles.filter((c) => c.members.includes(CURRENT_WALLET));
-  const discoverCircles = mockCircles.filter((c) => !c.members.includes(CURRENT_WALLET));
+  const myCircles = allCircles.filter((c) => c.members.includes(CURRENT_WALLET));
+  const discoverCircles = allCircles.filter((c) => !c.members.includes(CURRENT_WALLET));
+
+  function handleCreate(data: CreateCircleData) {
+    setCreatedCircles((current) => [
+      ...current,
+      {
+        id: `created-${Date.now()}`,
+        name: data.name,
+        creator: CURRENT_WALLET,
+        members: [CURRENT_WALLET],
+        totalSlots: Number(data.maxMembers),
+        contribution: `${data.contribution} USDT`,
+        duration: `${data.roundDuration} Days`,
+        category: data.category,
+        status: "active",
+      },
+    ]);
+  }
   const displayCircles = tab === "my" ? myCircles : discoverCircles;
 
   const setTab = (t: Tab) => {
@@ -118,6 +151,12 @@ function CirclesContent() {
           <Plus size={16} aria-hidden="true" />
           Create Circle
         </button>
+        <Link
+          href="/dashboard/circles/archive"
+          className="shrink-0 rounded-lg bg-[var(--ov-0a)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--ov-14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+        >
+          Circle History
+        </Link>
       </div>
 
       {/* Tab Toggle */}
@@ -153,6 +192,29 @@ function CirclesContent() {
           Discover
         </button>
       </div>
+
+      <LiveActivityTicker />
+
+      <section aria-labelledby="category-heading" className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="category-heading" className="text-lg font-bold font-sora text-[var(--text)]">Browse by category</h2>
+          <span className="text-xs text-[var(--muted)]">Find a circle that fits your goal</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {CIRCLE_CATEGORIES.map((category) => (
+            <Link
+              key={category}
+              href={`/dashboard/circles/categories/${category}`}
+              className="rounded-xl border border-[var(--ov-14)] bg-[var(--content)] px-4 py-4 text-sm font-semibold text-[var(--text)] transition-colors hover:border-[#4B6B76] hover:bg-[var(--content-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              {CATEGORY_LABELS[category]}
+              <span className="mt-1 block text-xs font-normal text-[var(--muted)]">
+                {allCircles.filter((circle) => circle.category === category && circle.status === "active").length} active circles
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Panel */}
       <div id="circles-panel" role="tabpanel">
@@ -221,7 +283,7 @@ function CirclesContent() {
         )}
       </div>
 
-      <CreateCircleModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateCircleModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
       <JoinCircleModal
         open={joinCircle !== null}
         onClose={() => {
