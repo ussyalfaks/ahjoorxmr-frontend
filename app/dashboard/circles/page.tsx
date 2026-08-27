@@ -7,6 +7,8 @@ import Link from "next/link";
 import CopyButton from "@/components/ui/CopyButton";
 import CreateCircleModal from "@/components/modals/CreateCircleModal";
 import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
+import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
+import { getMockCircleHealth } from "@/lib/circleHealth";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -172,7 +174,10 @@ function CirclesContent() {
                 className="bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[var(--content-hover)] transition-colors"
               >
                 <Link href={`/dashboard/circles/${circle.id}`} className="hover:underline">
-                  <h2 className="text-lg font-bold font-sora text-[var(--text)]">{circle.name}</h2>
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-lg font-bold font-sora text-[var(--text)]">{circle.name}</h2>
+                    <CircleHealthIndicator health={getMockCircleHealth(circle.id)} />
+                  </div>
                 </Link>
 
                 <div className="flex items-center gap-1.5 text-xs text-[var(--muted)]">

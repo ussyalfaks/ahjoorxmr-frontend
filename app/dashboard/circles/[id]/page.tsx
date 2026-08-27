@@ -17,6 +17,8 @@ import type { CircleEvent } from "@/types/circle";
 import type { Dispute } from "@/types/dispute";
 import type { Comment } from "@/types/discussion";
 import type { ExportRow } from "@/lib/export";
+import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
+import { calculateCircleHealth } from "@/lib/circleHealth";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -273,10 +275,10 @@ function ParticipantRow({ participant }: { participant: Participant }) {
         <div className="w-7 h-7 rounded-full bg-[var(--ov-0a)] flex items-center justify-center text-xs font-bold text-[var(--muted)]">
           {participant.slot}
         </div>
-        <span className="font-mono text-sm text-[var(--text)]">
+        <Link href={`/dashboard/profile/${encodeURIComponent(participant.address)}`} className="font-mono text-sm text-[var(--text)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]">
           {fmt(participant.address)}
           {isCurrentUser && <span className="ml-2 text-xs text-[#4B6B76] font-sans">(you)</span>}
-        </span>
+        </Link>
       </div>
       <div className="flex items-center gap-1.5">
         {participant.paid ? (
@@ -448,6 +450,13 @@ export default function CircleDetailPage({
   const currentUserParticipant = circle.participants.find((p) => p.address === CURRENT_WALLET);
   const currentUserPaid = currentUserParticipant?.paid ?? false;
   const isNextRecipient = circle.nextPayoutRecipient === CURRENT_WALLET;
+  const health = calculateCircleHealth({
+    onTimeContributions: circle.participants.filter((participant) => participant.paid).length,
+    expectedContributions: circle.participants.length,
+    completedPayouts: circle.roundHistory.length,
+    expectedPayouts: Math.max(circle.currentRound - 1, circle.roundHistory.length),
+    disputes: disputes.length,
+  });
 
   return (
     <div className="space-y-10 pb-20 md:pb-0">
@@ -461,6 +470,7 @@ export default function CircleDetailPage({
           <ArrowLeft size={20} />
         </Link>
         <h1 className="text-2xl font-bold font-sora text-[var(--text)]">{circle.name}</h1>
+        <CircleHealthIndicator health={health} />
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[circle.status]}`}>
           {circle.status}
         </span>

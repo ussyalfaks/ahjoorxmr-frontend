@@ -8,6 +8,8 @@ import DashboardHeaderSearch from "@/components/layout/DashboardHeaderSearch";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import InstallPWAButton from "@/components/ui/InstallPWAButton";
 import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
+import FeedbackWidget from "@/components/ui/FeedbackWidget";
+import ShortcutsModal from "@/components/ui/ShortcutsModal";
 
 const WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 const WALLET_DISPLAY = "0x23g43gdaa...";
@@ -167,6 +169,8 @@ export default function DashboardLayout({
         <MobileBottomNav />
       </div>
       <OnboardingModal />
+      <FeedbackWidget />
+      <ShortcutsModal />
     </div>
   );
 }

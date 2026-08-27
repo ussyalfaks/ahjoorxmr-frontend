@@ -4,6 +4,8 @@ import { Users, DollarSign, Clock, Hourglass } from "lucide-react";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import RoundProgressBar from "@/components/ui/RoundProgressBar";
 import type { Circle } from "@/types/circle";
+import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
+import { getMockCircleHealth } from "@/lib/circleHealth";
 
 interface Props {
   circle: Circle;
@@ -21,6 +23,7 @@ export default function SavingsCard({ circle, onContribute, onClaim }: Props) {
           <div className="flex items-center gap-3 mb-1">
             <div className="w-2.5 h-2.5 rounded-full bg-white" aria-hidden="true" />
             <h3 className="text-xl font-bold text-[var(--text)] font-sora tracking-wide">{circle.name}</h3>
+            <CircleHealthIndicator health={getMockCircleHealth(circle.id)} />
             {circle.isYourTurn && (
               <span className="px-2.5 py-1 text-[10px] font-medium bg-[var(--ov-1a)] text-[var(--text)] rounded-full uppercase tracking-wider">
                 Your turn
