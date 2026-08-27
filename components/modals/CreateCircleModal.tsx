@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { X, ArrowRight, ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import SavingsCalculator from "@/components/calculator/SavingsCalculator";
 
 interface Props {
   open: boolean;
@@ -336,6 +337,18 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                       <span className="text-[var(--text)] font-medium max-w-[60%] text-right">{value}</span>
                     </div>
                   ))}
+                </div>
+
+                <div className="mt-6">
+                  <h3 className="text-sm font-semibold text-[var(--text)] mb-3">Simulation Preview</h3>
+                  <div className="max-h-[300px] overflow-y-auto custom-scrollbar -mx-2 px-2">
+                    <SavingsCalculator 
+                      isReadOnly={true}
+                      amount={Number(form.contribution) || 0}
+                      participants={Number(form.maxMembers) || 0}
+                      frequencyDays={Number(form.roundDuration) || 0}
+                    />
+                  </div>
                 </div>
               </div>
             )}
