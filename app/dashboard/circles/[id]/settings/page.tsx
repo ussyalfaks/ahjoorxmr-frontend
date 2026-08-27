@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ShieldAlert, Archive } from "lucide-react";
 import {
@@ -9,6 +9,10 @@ import {
   type CircleRole,
 } from "@/components/circles/OrganizerControls";
 import { useToast } from "@/components/ui/Toast";
+import type { CircleJoinRequest, PenaltyConfig } from "@/types/circle";
+
+const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
+const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -90,6 +94,9 @@ export default function CircleSettingsPage({
   const [roundDuration, setRoundDuration] = useState(circle?.duration.replace(/[^\d.]/g, "") ?? "");
   const [savingDetails, setSavingDetails] = useState(false);
   const [savingContribution, setSavingContribution] = useState(false);
+  const [penaltyEnabled, setPenaltyEnabled] = useState(false);
+  const [penaltyType, setPenaltyType] = useState<PenaltyConfig["type"]>("percentage");
+  const [penaltyValue, setPenaltyValue] = useState("");
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [status, setStatus] = useState<SettingsCircle["status"] | null>(circle?.status ?? null);
@@ -154,6 +161,7 @@ export default function CircleSettingsPage({
   }
 
   async function handleSaveContribution() {
+    if (!penaltyIsValid) return;
     setSavingContribution(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -202,6 +210,27 @@ export default function CircleSettingsPage({
       setArchiving(false);
       setShowArchiveModal(false);
     }
+  }
+
+  function updateRequest(request: CircleJoinRequest, nextStatus: "approved" | "rejected") {
+    const organizerNote = window.prompt("Optional note for the requester:")?.trim() ?? "";
+    const updated = { ...request, status: nextStatus, organizerNote, updatedAt: new Date().toISOString() };
+    const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) ?? "[]") as CircleJoinRequest[];
+    localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests.map((item) => item.id === request.id ? updated : item)));
+    setJoinRequests((current) => current.map((item) => item.id === request.id ? updated : item));
+    const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) ?? "[]");
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify([
+      ...notifications,
+      {
+        id: `join-request-${request.id}-${nextStatus}`,
+        type: "join_request",
+        title: `Join request ${nextStatus}`,
+        description: `${request.circleName} join request was ${nextStatus}.${organizerNote ? ` Note: ${organizerNote}` : ""}`,
+        timestamp: updated.updatedAt,
+        href: `/dashboard/circles/${request.circleId}`,
+        read: false,
+      },
+    ]));
   }
 
   return (
@@ -295,12 +324,67 @@ export default function CircleSettingsPage({
           </div>
           <button
             type="button"
-            disabled={savingContribution}
+            disabled={savingContribution || !penaltyIsValid}
             onClick={handleSaveContribution}
             className="px-4 py-2.5 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] disabled:opacity-60 text-[var(--text)] text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           >
             {savingContribution ? "Saving..." : "Save Round Settings"}
           </button>
+        </div>
+        <div className="border-t border-[var(--ov-14)] pt-4">
+          <label className="flex items-start gap-3 cursor-pointer" htmlFor="circle-penalty-enabled">
+            <input
+              id="circle-penalty-enabled"
+              type="checkbox"
+              checked={penaltyEnabled}
+              onChange={(e) => setPenaltyEnabled(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-[var(--ov-14)] text-[#4B6B76] focus:ring-[#4B6B76]"
+            />
+            <span>
+              <span className="block text-sm font-medium text-[var(--text)]">Late contribution penalty</span>
+              <span className="block text-xs text-[var(--muted)] mt-0.5">Apply a fee when a contribution misses its deadline.</span>
+            </span>
+          </label>
+          {penaltyEnabled && (
+            <div className="mt-3 grid max-w-md grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="circle-penalty-type" className="block text-xs text-[var(--muted)] mb-1.5">Penalty type</label>
+                <select
+                  id="circle-penalty-type"
+                  value={penaltyType}
+                  onChange={(e) => setPenaltyType(e.target.value as PenaltyConfig["type"])}
+                  className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-3 py-2.5 text-[var(--text)] text-sm focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                >
+                  <option value="percentage">Percentage</option>
+                  <option value="fixed">Fixed amount</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="circle-penalty-value" className="block text-xs text-[var(--muted)] mb-1.5">
+                  {penaltyType === "percentage" ? "Percentage" : "Amount (USDT)"}
+                </label>
+                <input
+                  id="circle-penalty-value"
+                  type="number"
+                  min="0.01"
+                  max={penaltyType === "percentage" ? 100 : contributionAmount || undefined}
+                  step="0.01"
+                  value={penaltyValue}
+                  onChange={(e) => setPenaltyValue(e.target.value)}
+                  placeholder={penaltyType === "percentage" ? "e.g. 5" : "e.g. 2"}
+                  className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-3 py-2.5 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                />
+              </div>
+            </div>
+          )}
+          {penaltyEnabled && !penaltyIsValid && (
+            <p className="mt-2 text-xs text-red-400">Enter a positive penalty up to 100%, or no more than the contribution amount.</p>
+          )}
+          <p className="mt-3 text-xs text-[var(--muted)]">
+            Participant terms: {penaltyEnabled && penaltyIsValid
+              ? penaltyType === "percentage" ? `${penaltyValue}% of the contribution is due when late.` : `${penaltyValue} USDT is due when late.`
+              : "No late contribution penalty."}
+          </p>
         </div>
       </section>
 
@@ -313,6 +397,39 @@ export default function CircleSettingsPage({
         onCloseCircle={handleCloseCircle}
         onExtendRound={handleExtendRound}
       />
+
+      <section className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
+        <div>
+          <h2 className="text-lg font-bold font-sora text-[var(--text)]">Join Requests</h2>
+          <p className="text-xs text-[var(--muted)] mt-1">Review requests from participants who want to join this private circle.</p>
+        </div>
+        {joinRequests.length === 0 ? (
+          <p className="text-sm text-[var(--muted)]">No join requests yet.</p>
+        ) : (
+          <ul className="divide-y divide-[var(--ov-14)] rounded-xl border border-[var(--ov-14)]">
+            {joinRequests.map((request) => (
+              <li key={request.id} className="space-y-3 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-sm text-[var(--text)]">{request.requester}</p>
+                    <p className="text-xs text-[var(--muted)]">{request.note || "No note provided"}</p>
+                  </div>
+                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${request.status === "pending" ? "bg-amber-500/15 text-amber-500" : request.status === "approved" ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500"}`}>
+                    {request.status}
+                  </span>
+                </div>
+                {request.status === "pending" && (
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => updateRequest(request, "approved")} className="rounded-lg bg-[#4B6B76] px-3 py-2 text-xs font-medium text-white">Approve</button>
+                    <button type="button" onClick={() => updateRequest(request, "rejected")} className="rounded-lg border border-red-400 px-3 py-2 text-xs font-medium text-red-400">Reject</button>
+                  </div>
+                )}
+                {request.organizerNote && <p className="text-xs text-[var(--muted)]">Organizer note: {request.organizerNote}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* Archive circle */}
       <section className="bg-[var(--content)] p-6 rounded-2xl space-y-3">

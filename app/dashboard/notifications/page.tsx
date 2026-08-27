@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -10,6 +10,7 @@ import {
   Clock,
   Trash2,
   MailOpen,
+  UserPlus,
 } from "lucide-react";
 import type { Notification, NotificationType, NotificationCategory } from "@/types/notification";
 import { NOTIFICATION_CATEGORIES } from "@/types/notification";
@@ -116,6 +117,7 @@ const TYPE_CONFIG: Record<
   payout_ready: { icon: DollarSign, color: "text-[#FBBF24]" },
   missed_contribution: { icon: AlertCircle, color: "text-[#FF5B5B]" },
   your_turn: { icon: Clock, color: "text-[#4B6B76]" },
+  join_request: { icon: UserPlus, color: "text-[#4B6B76]" },
 };
 
 function relativeTime(date: Date): string {
@@ -146,6 +148,15 @@ export default function NotificationsPage() {
   const [selectedFilter, setSelectedFilter] = useState<NotificationCategory>("all");
   const [itemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("ahjoorxmr:notifications") ?? "[]") as Array<Omit<Notification, "timestamp"> & { timestamp: string }>;
+    if (stored.length > 0) {
+      // Notifications are persisted client-side until the API is available.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNotifications((current) => [...stored.map((notification) => ({ ...notification, timestamp: new Date(notification.timestamp) })), ...current]);
+    }
+  }, []);
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
@@ -205,7 +216,7 @@ export default function NotificationsPage() {
             All caught up
           </h2>
           <p className="text-[var(--muted)] mb-8 max-w-md">
-            No notifications yet. You'll be notified about important circle events, payouts, and your turns.
+            No notifications yet. You&apos;ll be notified about important circle events, payouts, and your turns.
           </p>
           <Link
             href="/dashboard"

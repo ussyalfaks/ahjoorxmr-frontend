@@ -1,4 +1,4 @@
-export type NotificationType = "round_complete" | "payout_ready" | "missed_contribution" | "your_turn";
+export type NotificationType = "round_complete" | "payout_ready" | "missed_contribution" | "your_turn" | "join_request";
 export type NotificationCategory = "all" | "payouts" | "contributions" | "system";
 
 export interface Notification {
@@ -12,8 +12,8 @@ export interface Notification {
 }
 
 export const NOTIFICATION_CATEGORIES: Record<NotificationCategory, NotificationType[]> = {
-  all: ["round_complete", "payout_ready", "missed_contribution", "your_turn"],
+  all: ["round_complete", "payout_ready", "missed_contribution", "your_turn", "join_request"],
   payouts: ["payout_ready"],
   contributions: ["missed_contribution"],
-  system: ["round_complete", "your_turn"],
+  system: ["round_complete", "your_turn", "join_request"],
 };
