@@ -144,7 +144,7 @@ function CirclesContent() {
     if (!inviteId) return;
     const circle = MOCK_CIRCLES.find((c) => c.id === inviteId);
     if (circle) setJoinCircle(circle);
-  }, [inviteId]);
+  }, [inviteId, allCircles]);
 
   useEffect(() => {
     if (action === "create") {
@@ -321,7 +321,7 @@ function CirclesContent() {
         </div>
       </div>
 
-      <CreateCircleModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateCircleModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
       <JoinCircleModal
         open={joinCircle !== null}
         onClose={() => {

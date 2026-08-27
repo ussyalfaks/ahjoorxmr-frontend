@@ -26,6 +26,7 @@ interface Participant {
   address: string;
   slot: number;
   paid: boolean;
+  role: "organizer" | "co-organizer" | "participant";
 }
 
 interface RoundHistoryRow {
@@ -51,6 +52,7 @@ interface CircleDetail {
   nextPayoutRecipient: string;
   nextPayoutDeadline: Date | null;
   isOrganizer: boolean;
+  isCoOrganizer: boolean;
   isMember: boolean;
 }
 
@@ -141,9 +143,9 @@ const CIRCLES: Record<string, CircleDetail> = {
     status: "active",
     createdAt: "Jan 15, 2025",
     participants: [
-      { address: CURRENT_WALLET, slot: 1, paid: true },
-      { address: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f", slot: 2, paid: true },
-      { address: "0x111abc2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8", slot: 3, paid: false },
+      { address: CURRENT_WALLET, slot: 1, paid: true, role: "co-organizer" },
+      { address: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f", slot: 2, paid: true, role: "organizer" },
+      { address: "0x111abc2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8", slot: 3, paid: false, role: "participant" },
     ],
     totalSlots: 5,
     contribution: "50 USDT",
@@ -156,6 +158,7 @@ const CIRCLES: Record<string, CircleDetail> = {
     nextPayoutRecipient: CURRENT_WALLET,
     nextPayoutDeadline: new Date(now + 2 * 24 * 60 * 60 * 1000),
     isOrganizer: false,
+    isCoOrganizer: true,
     isMember: true,
   },
   "2": {
@@ -165,10 +168,10 @@ const CIRCLES: Record<string, CircleDetail> = {
     status: "active",
     createdAt: "Feb 3, 2025",
     participants: [
-      { address: CURRENT_WALLET, slot: 1, paid: false },
-      { address: "0x222def3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9", slot: 2, paid: true },
-      { address: "0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7", slot: 3, paid: true },
-      { address: "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8", slot: 4, paid: false },
+      { address: CURRENT_WALLET, slot: 1, paid: false, role: "participant" },
+      { address: "0x222def3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9", slot: 2, paid: true, role: "organizer" },
+      { address: "0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7", slot: 3, paid: true, role: "participant" },
+      { address: "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8", slot: 4, paid: false, role: "participant" },
     ],
     totalSlots: 6,
     contribution: "40 USDT",
@@ -182,6 +185,34 @@ const CIRCLES: Record<string, CircleDetail> = {
     nextPayoutRecipient: CURRENT_WALLET,
     nextPayoutDeadline: new Date(now + 18 * 60 * 60 * 1000),
     isOrganizer: false,
+    isCoOrganizer: false,
+    isMember: true,
+  },
+  "6": {
+    id: "6",
+    name: "Winter Giving Circle",
+    creator: "0xarchive8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6",
+    status: "completed",
+    createdAt: "May 20, 2025",
+    participants: [
+      { address: CURRENT_WALLET, slot: 1, paid: true, role: "participant" },
+      { address: "0x888archive2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8", slot: 2, paid: true, role: "organizer" },
+      { address: "0x999archive3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9", slot: 3, paid: true, role: "participant" },
+    ],
+    totalSlots: 3,
+    contribution: "100 USDT",
+    duration: "14 Days",
+    roundHistory: [
+      { round: 1, recipient: CURRENT_WALLET, amount: "300 USDT", completedAt: "Jun 3, 2025" },
+      { round: 2, recipient: "0x888archive2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8", amount: "300 USDT", completedAt: "Jun 17, 2025" },
+      { round: 3, recipient: "0x999archive3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9", amount: "300 USDT", completedAt: "Jul 1, 2025" },
+    ],
+    currentRound: 3,
+    totalRounds: 3,
+    nextPayoutRecipient: CURRENT_WALLET,
+    nextPayoutDeadline: null,
+    isOrganizer: false,
+    isCoOrganizer: false,
     isMember: true,
   },
   "3": {
@@ -191,9 +222,9 @@ const CIRCLES: Record<string, CircleDetail> = {
     status: "active",
     createdAt: "Mar 1, 2025",
     participants: [
-      { address: CURRENT_WALLET, slot: 1, paid: true },
-      { address: "0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7", slot: 2, paid: true },
-      { address: "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8", slot: 3, paid: false },
+      { address: CURRENT_WALLET, slot: 1, paid: true, role: "organizer" },
+      { address: "0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7", slot: 2, paid: true, role: "participant" },
+      { address: "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8", slot: 3, paid: false, role: "participant" },
     ],
     totalSlots: 10,
     contribution: "25 USDT",
@@ -204,6 +235,7 @@ const CIRCLES: Record<string, CircleDetail> = {
     nextPayoutRecipient: "0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7",
     nextPayoutDeadline: new Date(now + 5 * 24 * 60 * 60 * 1000),
     isOrganizer: true,
+    isCoOrganizer: false,
     isMember: true,
   },
 };
@@ -279,6 +311,15 @@ function ParticipantRow({ participant }: { participant: Participant }) {
         </span>
       </div>
       <div className="flex items-center gap-1.5">
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+          participant.role === "organizer"
+            ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+            : participant.role === "co-organizer"
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+              : "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-[var(--muted)]"
+        }`}>
+          {participant.role === "organizer" ? "Organizer" : participant.role === "co-organizer" ? "Co-Organizer" : "Participant"}
+        </span>
         {participant.paid ? (
           <>
             <Check size={14} className="text-green-600 dark:text-green-400" aria-hidden="true" />
@@ -450,6 +491,7 @@ export default function CircleDetailPage({
   const currentUserParticipant = circle.participants.find((p) => p.address === CURRENT_WALLET);
   const currentUserPaid = currentUserParticipant?.paid ?? false;
   const isNextRecipient = circle.nextPayoutRecipient === CURRENT_WALLET;
+  const canManageCircle = circle.isOrganizer || circle.isCoOrganizer;
 
   // Build milestone data for completed circles or when user is the next recipient
   const completedMilestone: MilestoneData | null =
@@ -490,16 +532,18 @@ export default function CircleDetailPage({
           {circle.status}
         </span>
         <div className="h-px bg-[var(--ov-1a)] flex-1 hidden sm:block" aria-hidden="true" />
-        {circle.isOrganizer && (
+        {canManageCircle && (
           <>
             <InviteLinkButton circleId={circle.id} />
-            <Link
-              href={`/dashboard/circles/${circle.id}/analytics`}
-              className="flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-            >
-              <BarChart3 size={14} aria-hidden="true" />
-              Analytics
-            </Link>
+            {circle.isOrganizer && (
+              <Link
+                href={`/dashboard/circles/${circle.id}/analytics`}
+                className="flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              >
+                <BarChart3 size={14} aria-hidden="true" />
+                Analytics
+              </Link>
+            )}
             <Link
               href={`/dashboard/circles/${circle.id}/settings`}
               className="flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
@@ -587,7 +631,7 @@ export default function CircleDetailPage({
         </div>
 
         {/* Upcoming payout */}
-        <div className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
+        {circle.status !== "completed" && <div className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold font-sora text-[var(--text)]">Upcoming Payout</h2>
             <CountdownTimer deadline={circle.nextPayoutDeadline} />
@@ -607,10 +651,10 @@ export default function CircleDetailPage({
               </p>
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Action buttons */}
-        {circle.isMember && (
+        {circle.isMember && circle.status !== "completed" && (
           <div className="flex gap-3 flex-wrap">
             <button
               disabled={currentUserPaid}
