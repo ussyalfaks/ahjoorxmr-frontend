@@ -327,6 +327,8 @@ function RoundHistoryTable({ rows }: { rows: RoundHistoryRow[] }) {
 
 import { useCallback } from "react";
 import { Flag } from "lucide-react";
+import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
+import type { MilestoneData } from "@/types/milestone";
 
 export default function CircleDetailPage({
   params,
@@ -449,6 +451,29 @@ export default function CircleDetailPage({
   const currentUserPaid = currentUserParticipant?.paid ?? false;
   const isNextRecipient = circle.nextPayoutRecipient === CURRENT_WALLET;
 
+  // Build milestone data for completed circles or when user is the next recipient
+  const completedMilestone: MilestoneData | null =
+    circle.status === "completed"
+      ? {
+          type: "circle_completed",
+          circleName: circle.name,
+          amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
+          subtitle: `${circle.totalRounds} rounds completed · ${circle.participants.length} members`,
+          date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+        }
+      : null;
+
+  const payoutMilestone: MilestoneData | null =
+    isNextRecipient
+      ? {
+          type: "payout_received",
+          circleName: circle.name,
+          amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
+          subtitle: `Round ${circle.currentRound} of ${circle.totalRounds}`,
+          date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+        }
+      : null;
+
   return (
     <div className="space-y-10 pb-20 md:pb-0">
       {/* Back + Title */}
@@ -483,6 +508,13 @@ export default function CircleDetailPage({
               Settings
             </Link>
           </>
+        )}
+        {/* Share button — visible whenever there is a shareable milestone */}
+        {(completedMilestone ?? payoutMilestone) && (
+          <ShareMilestoneButton
+            milestone={(completedMilestone ?? payoutMilestone)!}
+            variant="default"
+          />
         )}
       </div>
 
