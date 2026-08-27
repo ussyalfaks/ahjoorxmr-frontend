@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, CheckCircle2 } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import type { CircleJoinRequest, PenaltyConfig } from "@/types/circle";
+
+const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 
 export interface JoinCircleData {
   id: string;
@@ -11,6 +14,8 @@ export interface JoinCircleData {
   duration: string;
   members: string[];
   totalSlots: number;
+  penalty?: PenaltyConfig;
+  isPrivate?: boolean;
 }
 
 interface Props {
@@ -18,14 +23,30 @@ interface Props {
   onClose: () => void;
   circle: JoinCircleData | null;
   currentWallet: string;
+  onRequestSubmitted?: (request: CircleJoinRequest) => void;
 }
 
-export default function JoinCircleModal({ open, onClose, circle, currentWallet }: Props) {
+export default function JoinCircleModal({ open, onClose, circle, currentWallet, onRequestSubmitted }: Props) {
   const [joining, setJoining] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [requestNote, setRequestNote] = useState("");
+  const [requestStatus, setRequestStatus] = useState<CircleJoinRequest["status"] | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useFocusTrap(ref, open, handleClose);
+
+  useEffect(() => {
+    if (!open || !circle?.isPrivate) return;
+    const circleId = circle.id;
+    function refreshStatus() {
+      const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) ?? "[]") as CircleJoinRequest[];
+      const existing = requests.find((request) => request.circleId === circleId && request.requester === currentWallet);
+      setRequestStatus(existing?.status ?? null);
+    }
+    refreshStatus();
+    window.addEventListener("storage", refreshStatus);
+    return () => window.removeEventListener("storage", refreshStatus);
+  }, [circle, currentWallet, open]);
 
   function handleClose() {
     setSuccess(false);
@@ -39,10 +60,38 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet }
     setSuccess(true);
   }
 
+  function handleRequest() {
+    if (!circle) return;
+    const now = new Date().toISOString();
+    const request: CircleJoinRequest = {
+      id: `${circle.id}-${currentWallet}-${Date.now()}`,
+      circleId: circle.id,
+      circleName: circle.name,
+      requester: currentWallet,
+      note: requestNote.trim(),
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    };
+    const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) ?? "[]") as CircleJoinRequest[];
+    localStorage.setItem(REQUESTS_KEY, JSON.stringify([
+      ...requests.filter((item) => !(item.circleId === circle.id && item.requester === currentWallet)),
+      request,
+    ]));
+    setRequestStatus("pending");
+    onRequestSubmitted?.(request);
+  }
+
   if (!open || !circle) return null;
 
   const isMember = circle.members.includes(currentWallet);
   const isFull = circle.members.length >= circle.totalSlots;
+  const isPrivate = circle.isPrivate === true;
+  const penaltySummary = circle.penalty?.enabled
+    ? circle.penalty.type === "percentage"
+      ? `${circle.penalty.value}% of the contribution when late`
+      : `${circle.penalty.value} USDT when late`
+    : "No late contribution penalty";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
@@ -99,6 +148,16 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet }
               Done
             </button>
           </div>
+        ) : isPrivate && requestStatus ? (
+          <div className="space-y-4 py-4">
+            <h2 id="join-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
+              Join request {requestStatus}
+            </h2>
+            <p className="text-sm text-[var(--muted)]">
+              {requestStatus === "pending" ? "The organizer will review your request." : requestStatus === "approved" ? "Your request was approved. You can now join this circle." : "The organizer declined your request."}
+            </p>
+            <button onClick={handleClose} className="w-full py-2.5 bg-[var(--ov-0a)] text-[var(--text)] font-medium rounded-xl">Close</button>
+          </div>
         ) : (
           <div className="space-y-5">
             <h2 id="join-circle-title" className="text-xl font-bold font-sora text-[var(--text)]">
@@ -109,6 +168,7 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet }
                 { label: "Contribution", value: circle.contribution },
                 { label: "Duration", value: circle.duration },
                 { label: "Slots", value: `${circle.members.length} / ${circle.totalSlots}` },
+                { label: "Late penalty", value: penaltySummary },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between text-sm">
                   <span className="text-[var(--muted)]">{label}</span>
@@ -120,8 +180,17 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet }
               <p className="text-red-400 text-sm text-center">This circle is full.</p>
             ) : (
               <p className="text-[var(--muted)] text-xs">
-                By joining, you agree to contribute {circle.contribution} each round.
+                By joining, you agree to contribute {circle.contribution} each round and accept the listed late contribution terms.
               </p>
+            )}
+            {isPrivate && (
+              <textarea
+                value={requestNote}
+                onChange={(event) => setRequestNote(event.target.value)}
+                placeholder="Optional note to the organizer"
+                rows={3}
+                className="w-full rounded-lg border border-[var(--ov-14)] bg-[var(--ov-0a)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+              />
             )}
             <div className="flex gap-3">
               <button
@@ -131,11 +200,11 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet }
                 Cancel
               </button>
               <button
-                onClick={handleJoin}
+                onClick={isPrivate ? handleRequest : handleJoin}
                 disabled={joining || isFull}
                 className="flex-1 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
               >
-                {joining ? "Joining…" : "Confirm Join"}
+                {joining ? "Joining…" : isPrivate ? "Request to Join" : "Confirm Join"}
               </button>
             </div>
           </div>

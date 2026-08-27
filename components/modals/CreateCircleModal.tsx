@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { X, ArrowRight, ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import SavingsCalculator from "@/components/calculator/SavingsCalculator";
+import type { PenaltyConfig } from "@/types/circle";
 
 interface Props {
   open: boolean;
@@ -16,6 +17,10 @@ interface FormData {
   contribution: string;
   maxMembers: string;
   roundDuration: string;
+  isPrivate: boolean;
+  penaltyEnabled: boolean;
+  penaltyType: PenaltyConfig["type"];
+  penaltyValue: string;
 }
 
 interface CircleTemplate {
@@ -64,6 +69,10 @@ const EMPTY: FormData = {
   contribution: "",
   maxMembers: "",
   roundDuration: "",
+  isPrivate: false,
+  penaltyEnabled: false,
+  penaltyType: "percentage",
+  penaltyValue: "",
 };
 
 const TOTAL_STEPS = 4;
@@ -102,13 +111,29 @@ export default function CreateCircleModal({ open, onClose }: Props) {
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const step1Valid = form.name.trim().length > 0;
+  const contributionAmount = Number(form.contribution);
+  const penaltyAmount = Number(form.penaltyValue);
+  const penaltyIsValid =
+    !form.penaltyEnabled ||
+    (form.penaltyValue.trim().length > 0 &&
+      Number.isFinite(penaltyAmount) &&
+      penaltyAmount > 0 &&
+      (form.penaltyType === "percentage" ? penaltyAmount <= 100 : penaltyAmount <= contributionAmount));
   const step2Valid =
     form.contribution.trim().length > 0 &&
     Number(form.contribution) > 0 &&
     form.maxMembers.trim().length > 0 &&
     Number(form.maxMembers) >= 2 &&
     form.roundDuration.trim().length > 0 &&
-    Number(form.roundDuration) >= 1;
+    Number(form.roundDuration) >= 1 &&
+    (!form.penaltyEnabled || penaltyIsValid);
+
+  function formatPenalty() {
+    if (!form.penaltyEnabled) return "No late contribution penalty";
+    return form.penaltyType === "percentage"
+      ? `${form.penaltyValue}% of the contribution`
+      : `${form.penaltyValue} USDT fixed fee`;
+  }
 
   async function handleSubmit() {
     setSubmitting(true);
@@ -311,6 +336,69 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                       className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-3 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
                     />
                   </div>
+                  <label className="flex items-start gap-3 cursor-pointer border-t border-[var(--ov-14)] pt-4" htmlFor="circle-private">
+                    <input
+                      id="circle-private"
+                      type="checkbox"
+                      checked={form.isPrivate}
+                      onChange={(e) => setForm((current) => ({ ...current, isPrivate: e.target.checked }))}
+                      className="mt-0.5 h-4 w-4 rounded border-[var(--ov-14)] text-[#4B6B76] focus:ring-[#4B6B76]"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-[var(--text)]">Private circle</span>
+                      <span className="block text-xs text-[var(--muted)] mt-0.5">Only invited participants can request to join.</span>
+                    </span>
+                  </label>
+                  <div className="border-t border-[var(--ov-14)] pt-4">
+                    <label className="flex items-start gap-3 cursor-pointer" htmlFor="penalty-enabled">
+                      <input
+                        id="penalty-enabled"
+                        type="checkbox"
+                        checked={form.penaltyEnabled}
+                        onChange={(e) => setForm((current) => ({ ...current, penaltyEnabled: e.target.checked }))}
+                        className="mt-0.5 h-4 w-4 rounded border-[var(--ov-14)] text-[#4B6B76] focus:ring-[#4B6B76]"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-[var(--text)]">Late contribution penalty</span>
+                        <span className="block text-xs text-[var(--muted)] mt-0.5">Apply a fee when a contribution misses its deadline.</span>
+                      </span>
+                    </label>
+                    {form.penaltyEnabled && (
+                      <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
+                        <div>
+                          <label className="text-xs text-[var(--muted)] mb-1.5 block" htmlFor="penalty-type">Penalty type</label>
+                          <select
+                            id="penalty-type"
+                            value={form.penaltyType}
+                            onChange={(e) => setForm((current) => ({ ...current, penaltyType: e.target.value as PenaltyConfig["type"] }))}
+                            className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-3 py-3 text-[var(--text)] text-sm focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                          >
+                            <option value="percentage">Percentage</option>
+                            <option value="fixed">Fixed amount</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-[var(--muted)] mb-1.5 block" htmlFor="penalty-value">
+                            {form.penaltyType === "percentage" ? "Percentage" : "Amount (USDT)"}
+                          </label>
+                          <input
+                            id="penalty-value"
+                            type="number"
+                            min="0.01"
+                            max={form.penaltyType === "percentage" ? "100" : contributionAmount || undefined}
+                            step="0.01"
+                            value={form.penaltyValue}
+                            onChange={set("penaltyValue")}
+                            placeholder={form.penaltyType === "percentage" ? "e.g. 5" : "e.g. 2"}
+                            className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-3 py-3 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {form.penaltyEnabled && !penaltyIsValid && (
+                      <p className="mt-2 text-xs text-red-400">Enter a positive penalty up to 100%, or no more than the contribution amount.</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -331,6 +419,8 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                     { label: "Contribution", value: `${form.contribution} USDT` },
                     { label: "Max Members", value: form.maxMembers },
                     { label: "Round Duration", value: `${form.roundDuration} days` },
+                    { label: "Visibility", value: form.isPrivate ? "Private (request to join)" : "Public (direct join)" },
+                    { label: "Late penalty", value: formatPenalty() },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex justify-between text-sm">
                       <span className="text-[var(--muted)]">{label}</span>

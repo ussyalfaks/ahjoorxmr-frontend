@@ -14,6 +14,28 @@ export interface Circle {
   claimButtonVariant: "primary" | "secondary" | "disabled";
 }
 
+export type PenaltyType = "fixed" | "percentage";
+
+export interface PenaltyConfig {
+  enabled: boolean;
+  type: PenaltyType;
+  value: string;
+}
+
+export type JoinRequestStatus = "pending" | "approved" | "rejected";
+
+export interface CircleJoinRequest {
+  id: string;
+  circleId: string;
+  circleName: string;
+  requester: string;
+  note: string;
+  organizerNote?: string;
+  status: JoinRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type EventType =
   | "contribution_made"
   | "payout_sent"

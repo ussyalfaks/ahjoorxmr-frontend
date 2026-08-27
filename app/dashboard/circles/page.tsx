@@ -7,6 +7,7 @@ import Link from "next/link";
 import CopyButton from "@/components/ui/CopyButton";
 import CreateCircleModal from "@/components/modals/CreateCircleModal";
 import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
+import type { PenaltyConfig } from "@/types/circle";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -18,6 +19,8 @@ interface Circle {
   totalSlots: number;
   contribution: string;
   duration: string;
+  penalty?: PenaltyConfig;
+  isPrivate?: boolean;
 }
 
 const mockCircles: Circle[] = [
@@ -47,6 +50,8 @@ const mockCircles: Circle[] = [
     totalSlots: 10,
     contribution: "25 USDT",
     duration: "5 Days",
+    isPrivate: true,
+    penalty: { enabled: true, type: "percentage", value: "5" },
   },
   {
     id: "4",
@@ -56,6 +61,8 @@ const mockCircles: Circle[] = [
     totalSlots: 12,
     contribution: "200 USDT",
     duration: "30 Days",
+    isPrivate: true,
+    penalty: { enabled: true, type: "fixed", value: "10" },
   },
   {
     id: "5",
@@ -68,6 +75,7 @@ const mockCircles: Circle[] = [
     totalSlots: 6,
     contribution: "75 USDT",
     duration: "10 Days",
+    penalty: { enabled: false, type: "percentage", value: "" },
   },
 ];
 

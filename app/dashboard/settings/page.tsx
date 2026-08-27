@@ -17,6 +17,7 @@ interface NotificationPrefs {
   inAppRoundCompletions: boolean;
   inAppPayoutReminders: boolean;
   inAppMissedContributions: boolean;
+  reminderOffsets: number[];
 }
 
 interface StoredSettings {
@@ -33,8 +34,15 @@ const defaultSettings: StoredSettings = {
     inAppRoundCompletions: true,
     inAppPayoutReminders: true,
     inAppMissedContributions: true,
+    reminderOffsets: [3, 1],
   },
 };
+
+const reminderOptions = [
+  { offset: 3, label: "3 days before", description: "A heads-up before the deadline" },
+  { offset: 1, label: "1 day before", description: "A reminder the day before" },
+  { offset: 0, label: "On the day", description: "A reminder when the contribution is due" },
+];
 
 function truncateAddress(address?: string | null) {
   if (!address) return "Not connected";
@@ -58,7 +66,22 @@ export default function SettingsPage() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        setSettings({ ...defaultSettings, ...JSON.parse(raw) });
+        const stored = JSON.parse(raw) as Partial<StoredSettings>;
+        const storedReminderOffsets = stored.notifications?.reminderOffsets;
+        const reminderOffsets = Array.isArray(storedReminderOffsets)
+          ? [...new Set(storedReminderOffsets.filter((offset) => [0, 1, 3].includes(offset)))]
+          : defaultSettings.notifications.reminderOffsets;
+        // Hydrate client-only preferences after the initial server render.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSettings({
+          ...defaultSettings,
+          ...stored,
+          notifications: {
+            ...defaultSettings.notifications,
+            ...stored.notifications,
+            reminderOffsets,
+          },
+        });
       }
     } catch {
       // ignore malformed storage
@@ -70,6 +93,19 @@ export default function SettingsPage() {
       ...prev,
       notifications: { ...prev.notifications, [key]: value },
     }));
+  }
+
+  function updateReminderOffset(offset: number, checked: boolean) {
+    setSettings((prev) => {
+      const offsets = checked
+        ? [...prev.notifications.reminderOffsets, offset]
+        : prev.notifications.reminderOffsets.filter((value) => value !== offset);
+
+      return {
+        ...prev,
+        notifications: { ...prev.notifications, reminderOffsets: offsets.sort((a, b) => b - a) },
+      };
+    });
   }
 
   async function handleSave() {
@@ -219,6 +255,42 @@ export default function SettingsPage() {
               />
             </div>
           </div>
+
+          <div className="mt-6 border-t border-gray-100 pt-5 dark:border-[var(--border)]">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-[var(--muted)]">
+                Contribution reminders
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-[var(--muted)]">
+                Choose when to be reminded about upcoming contributions. You can select more than one.
+              </p>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {reminderOptions.map(({ offset, label, description }) => (
+                <label
+                  key={offset}
+                  htmlFor={`reminder-${offset}`}
+                  className="flex cursor-pointer items-start gap-3 rounded-md border border-gray-200 p-3 transition-colors hover:border-blue-400 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:border-[var(--border)] dark:hover:border-blue-400 dark:has-[:checked]:bg-blue-500/10"
+                >
+                  <input
+                    id={`reminder-${offset}`}
+                    type="checkbox"
+                    checked={settings.notifications.reminderOffsets.includes(offset)}
+                    onChange={(event) => updateReminderOffset(offset, event.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border)] dark:bg-[var(--modal)]"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-gray-800 dark:text-[var(--text)]">
+                      {label}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-gray-500 dark:text-[var(--muted)]">
+                      {description}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
         </section>
       </div>
 
@@ -246,14 +318,14 @@ export default function SettingsPage() {
       <section className="mt-10 rounded-lg border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-500/10 p-5">
         <h2 className="text-base font-semibold text-red-800 dark:text-red-300">Danger zone</h2>
         <p className="mt-1 text-sm text-red-700 dark:text-red-400">
-          Leaving all circles removes you from every active circle you've
+          Leaving all circles removes you from every active circle you&apos;ve
           joined. Contributions already made are not refunded automatically;
-          any pending payouts follow the circle's normal payout rules.
+          any pending payouts follow the circle&apos;s normal payout rules.
         </p>
 
         {leaveStatus === "done" ? (
           <p className="mt-3 text-sm font-medium text-red-800 dark:text-red-300">
-            You've left all circles.
+            You&apos;ve left all circles.
           </p>
         ) : showLeaveConfirm ? (
           <div className="mt-3 flex items-center gap-2">
