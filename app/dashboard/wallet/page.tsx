@@ -16,7 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
-import { useWallet, truncateAddress } from "@/contexts/WalletContext";
+import { useWallet, truncateAddress, AVAILABLE_WALLETS } from "@/contexts/WalletContext";
 
 type TransactionType = "contribution" | "payout" | "join";
 
@@ -145,9 +145,9 @@ function getExplorerUrl(txHash: string, network = "starknet"): string {
 }
 
 export default function WalletPage() {
-  const { address, walletName, isConnected, disconnect, connect } = useWallet();
+  const { linkedWallets, activeWalletAddress, setActiveWallet, isConnected, disconnect, connect } = useWallet();
   const [selectedFilter, setSelectedFilter] = useState<TransactionType | "all">("all");
-  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+  const [walletToRemove, setWalletToRemove] = useState<string | null>(null);
 
   const filteredTransactions = useMemo(() => {
     if (selectedFilter === "all") return MOCK_TRANSACTIONS;
@@ -170,9 +170,11 @@ export default function WalletPage() {
   }, []);
 
   const handleDisconnect = useCallback(() => {
-    disconnect();
-    setShowDisconnectConfirm(false);
-  }, [disconnect]);
+    if (walletToRemove) {
+      disconnect(walletToRemove);
+      setWalletToRemove(null);
+    }
+  }, [disconnect, walletToRemove]);
 
   if (!isConnected) {
     return (
@@ -216,31 +218,66 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Wallet Info Card */}
+      {/* Linked Wallets Card */}
       <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl">
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-[var(--muted)] text-sm font-medium mb-2">Connected Wallet</p>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[var(--ov-0a)] flex items-center justify-center">
-                <Wallet size={20} className="text-[var(--text)]" aria-hidden="true" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold font-sora text-[var(--text)] flex items-center gap-2">
-                  {address}
-                  <CopyButton value={address} />
-                </p>
-                <p className="text-xs text-[var(--muted)]">{walletName}</p>
-              </div>
-            </div>
+            <p className="text-[var(--text)] text-lg font-bold font-sora">Linked Wallets</p>
+            <p className="text-[var(--muted)] text-sm">Manage your connected accounts</p>
           </div>
           <button
-            onClick={() => setShowDisconnectConfirm(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--text)] bg-[var(--ov-0a)] hover:bg-[var(--ov-1a)] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            onClick={() => connect("argent")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-black bg-white hover:bg-gray-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           >
-            <LogOut size={16} aria-hidden="true" />
-            Disconnect
+            <Plus size={16} aria-hidden="true" />
+            Link New Wallet
           </button>
+        </div>
+
+        <div className="space-y-4 mb-8">
+          {linkedWallets.map((wallet) => (
+            <div key={wallet.address} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border gap-4 ${activeWalletAddress === wallet.address ? 'border-[#4B6B76] bg-[#4B6B76]/5' : 'border-[var(--ov-1a)] bg-[var(--ov-05)]'}`}>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-[var(--ov-0a)] flex items-center justify-center shrink-0">
+                  <Wallet size={20} className={activeWalletAddress === wallet.address ? 'text-[#4B6B76]' : 'text-[var(--text)]'} aria-hidden="true" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-base font-semibold font-sora text-[var(--text)] flex items-center gap-2">
+                      {truncateAddress(wallet.address)}
+                      <CopyButton value={wallet.address} />
+                    </p>
+                    {activeWalletAddress === wallet.address && (
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#4B6B76] text-white">Active</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-[var(--muted)]">
+                    <span>{AVAILABLE_WALLETS.find(w => w.id === wallet.walletId)?.name || wallet.walletId}</span>
+                    <span className="w-1 h-1 rounded-full bg-[var(--ov-1a)]"></span>
+                    <span>${wallet.balance?.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                {activeWalletAddress !== wallet.address && (
+                  <button
+                    onClick={() => setActiveWallet(wallet.address)}
+                    className="px-3 py-1.5 text-xs font-medium text-[#4B6B76] hover:bg-[#4B6B76]/10 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                  >
+                    Make Active
+                  </button>
+                )}
+                <button
+                  onClick={() => setWalletToRemove(wallet.address)}
+                  className="p-2 text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  aria-label="Remove wallet"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Stats Grid */}
@@ -365,21 +402,21 @@ export default function WalletPage() {
       </div>
 
       {/* Disconnect Confirmation Modal */}
-      {showDisconnectConfirm && (
+      {walletToRemove && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-[var(--content)] p-8 rounded-2xl max-w-sm mx-4 shadow-lg">
             <h3 className="text-xl font-bold font-sora text-[var(--text)] mb-3">
               Disconnect Wallet?
             </h3>
             <p className="text-[var(--muted)] mb-8">
-              You can reconnect anytime. Your transaction history will be preserved.
+              Are you sure you want to disconnect {truncateAddress(walletToRemove)}? You can reconnect it later.
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => setShowDisconnectConfirm(false)}
+                onClick={() => setWalletToRemove(null)}
                 className="flex-1 px-4 py-3 bg-[var(--ov-0a)] text-[var(--text)] rounded-lg font-medium hover:bg-[var(--ov-1a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
               >
-                Keep Connected
+                Cancel
               </button>
               <button
                 onClick={handleDisconnect}

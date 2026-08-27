@@ -6,6 +6,8 @@ import Link from "next/link";
 import ActivityFeed from "@/components/circles/ActivityFeed";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import DisputeList from "@/components/circles/DisputeList";
+import DiscussionThread from "@/components/circles/DiscussionThread";
+import CommentComposer from "@/components/circles/CommentComposer";
 import ReportIssueModal, {
   type ReportIssueSubmission,
 } from "@/components/modals/ReportIssueModal";
@@ -13,6 +15,7 @@ import ExportButton from "@/components/ui/ExportButton";
 import { useToast } from "@/components/ui/Toast";
 import type { CircleEvent } from "@/types/circle";
 import type { Dispute } from "@/types/dispute";
+import type { Comment } from "@/types/discussion";
 import type { ExportRow } from "@/lib/export";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
@@ -96,6 +99,40 @@ const MOCK_DISPUTES: Dispute[] = [
   },
 ];
 
+// Mock comments keyed by circle id; replace with a fetch / real-time
+// subscription (e.g. socket.on("comment")) without touching the components.
+const MOCK_COMMENTS: Comment[] = [
+  {
+    id: "c1",
+    circleId: "1",
+    author: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f",
+    displayName: "Emeka",
+    body: "Hey everyone! Just a reminder that round 2 contributions are due by end of week.",
+    createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: "c2",
+    circleId: "1",
+    author: CURRENT_WALLET,
+    body: "Thanks for the heads up! I already made my contribution earlier today.",
+    createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: "c3",
+    circleId: "1",
+    author: "0x111abc2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8",
+    body: "Will the payout go out on Friday or Saturday this round?",
+    createdAt: new Date(now - 6 * 60 * 60 * 1000),
+  },
+  {
+    id: "c4",
+    circleId: "3",
+    author: CURRENT_WALLET,
+    body: "Welcome everyone to the Community Fund circle! Feel free to use this thread for updates and questions.",
+    createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000),
+  },
+];
+
 const CIRCLES: Record<string, CircleDetail> = {
   "1": {
     id: "1",
@@ -176,6 +213,13 @@ const STATUS_STYLES: Record<CircleDetail["status"], string> = {
   pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   completed: "bg-[var(--ov-0a)] text-[var(--muted)]",
 };
+
+type TabId = "overview" | "discussion";
+
+const TAB_LIST: { id: TabId; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "discussion", label: "Discussion" },
+];
 
 function fmt(address: string) {
   return `${address.slice(0, 8)}…${address.slice(-6)}`;
@@ -299,6 +343,10 @@ export default function CircleDetailPage({
     MOCK_DISPUTES.filter((d) => d.circleId === id)
   );
   const [reportOpen, setReportOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [comments, setComments] = useState<Comment[]>(() =>
+    MOCK_COMMENTS.filter((c) => c.circleId === id)
+  );
 
   const handleSubmitReport = useCallback(
     async ({ round, reason, note }: ReportIssueSubmission) => {
@@ -343,6 +391,24 @@ export default function CircleDetailPage({
       showToast({ title: "Dispute marked as resolved", variant: "success" });
     },
     [showToast]
+  );
+
+  const handlePostComment = useCallback(
+    async (body: string) => {
+      // Simulate network latency; swap for a real POST/mutation here.
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      setComments((current) => [
+        ...current,
+        {
+          id: `comment-${Date.now()}`,
+          circleId: id,
+          author: CURRENT_WALLET,
+          body,
+          createdAt: new Date(),
+        },
+      ]);
+    },
+    [id]
   );
 
   const getExportRows = useCallback((): ExportRow[] => {
@@ -452,148 +518,209 @@ export default function CircleDetailPage({
         )}
       </div>
 
-      {/* Circle Info */}
-      <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl space-y-6">
-        <div>
-          <p className="text-xs text-[var(--muted)] mb-0.5">Creator</p>
-          <p className="font-mono text-sm text-[var(--text)]">{fmt(circle.creator)}</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div>
-            <p className="text-[var(--muted)] text-xs mb-2">Members</p>
-            <p className="text-lg font-semibold text-[var(--text)]">{circle.participants.length}/{circle.totalSlots}</p>
-          </div>
-          <div>
-            <p className="text-[var(--muted)] text-xs mb-2">Contribution</p>
-            <p className="text-lg font-semibold text-[var(--text)]">{circle.contribution}</p>
-          </div>
-          <div>
-            <p className="text-[var(--muted)] text-xs mb-2">Duration</p>
-            <p className="text-lg font-semibold text-[var(--text)]">{circle.duration}</p>
-          </div>
-          <div>
-            <p className="text-[var(--muted)] text-xs mb-2">Round</p>
-            <p className="text-lg font-semibold text-[var(--text)]">{circle.currentRound} / {circle.totalRounds}</p>
-          </div>
-        </div>
-        <p className="text-xs text-[var(--muted)]">Created {circle.createdAt}</p>
+      {/* Tab bar */}
+      <div
+        role="tablist"
+        aria-label="Circle sections"
+        className="flex gap-1 border-b border-[var(--ov-0f)]"
+      >
+        {TAB_LIST.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              id={`tab-${tab.id}`}
+              aria-selected={isActive}
+              aria-controls={`tabpanel-${tab.id}`}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
+                isActive
+                  ? "text-[var(--text)] border-b-2 border-[#4B6B76] -mb-px"
+                  : "text-[var(--muted)] hover:text-[var(--text)]"
+              }`}
+            >
+              {tab.label}
+              {tab.id === "discussion" && comments.length > 0 && (
+                <span className="ml-2 rounded-full bg-[var(--ov-0a)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
+                  {comments.length}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Upcoming payout */}
-      <div className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold font-sora text-[var(--text)]">Upcoming Payout</h2>
-          <CountdownTimer deadline={circle.nextPayoutDeadline} />
-        </div>
-        <div className="flex items-center justify-between">
+      {/* ── Overview tab ── */}
+      <div
+        role="tabpanel"
+        id="tabpanel-overview"
+        aria-labelledby="tab-overview"
+        hidden={activeTab !== "overview"}
+        className={activeTab === "overview" ? "space-y-10" : ""}
+      >
+        {/* Circle Info */}
+        <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl space-y-6">
           <div>
-            <p className="text-xs text-[var(--muted)] mb-1">Next Recipient</p>
-            <p className="font-mono text-sm text-[var(--text)]">
-              {fmt(circle.nextPayoutRecipient)}
-              {isNextRecipient && <span className="ml-2 text-xs text-[#4B6B76] font-sans">(you)</span>}
-            </p>
+            <p className="text-xs text-[var(--muted)] mb-0.5">Creator</p>
+            <p className="font-mono text-sm text-[var(--text)]">{fmt(circle.creator)}</p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-[var(--muted)] mb-1">Amount</p>
-            <p className="text-[var(--text)] font-semibold">
-              {Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Action buttons */}
-      {circle.isMember && (
-        <div className="flex gap-3 flex-wrap">
-          <button
-            disabled={currentUserPaid}
-            className="px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-          >
-            {currentUserPaid ? "Contribution Made" : `Make Contribution (${circle.contribution})`}
-          </button>
-          <button
-            disabled={!isNextRecipient}
-            className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-              isNextRecipient
-                ? "bg-green-500/20 hover:bg-green-500/30 text-green-600 dark:text-green-400"
-                : "bg-[var(--ov-0a)] text-[var(--muted)] cursor-not-allowed opacity-50"
-            }`}
-          >
-            Claim Reward
-          </button>
-          <button
-            onClick={() => setReportOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#FF5B5B33] bg-[#FF5B5B12] hover:bg-[#FF5B5B22] text-[#FF5B5B] text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B]"
-          >
-            <Flag size={15} aria-hidden="true" />
-            Report an Issue
-          </button>
-          {payoutMilestone && (
-            <ShareMilestoneButton milestone={payoutMilestone} variant="subtle" />
-          )}
-        </div>
-      )}
-
-      {/* Participants */}
-      <div>
-        <div className="flex items-center mb-4">
-          <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Participants</h2>
-          <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
-        </div>
-        <div className="space-y-2">
-          {circle.participants.map((p) => (
-            <ParticipantRow key={p.address} participant={p} />
-          ))}
-          {circle.participants.length < circle.totalSlots && (
-            <div className="flex items-center gap-3 bg-[var(--ov-05)] border border-dashed border-[var(--ov-1a)] px-5 py-3 rounded-xl">
-              <div className="w-7 h-7 rounded-full bg-[var(--ov-0a)] flex items-center justify-center text-xs text-[var(--faint)]">
-                +
-              </div>
-              <span className="text-xs text-[var(--faint)]">
-                {circle.totalSlots - circle.participants.length} open slot{circle.totalSlots - circle.participants.length !== 1 ? "s" : ""}
-              </span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div>
+              <p className="text-[var(--muted)] text-xs mb-2">Members</p>
+              <p className="text-lg font-semibold text-[var(--text)]">{circle.participants.length}/{circle.totalSlots}</p>
             </div>
-          )}
+            <div>
+              <p className="text-[var(--muted)] text-xs mb-2">Contribution</p>
+              <p className="text-lg font-semibold text-[var(--text)]">{circle.contribution}</p>
+            </div>
+            <div>
+              <p className="text-[var(--muted)] text-xs mb-2">Duration</p>
+              <p className="text-lg font-semibold text-[var(--text)]">{circle.duration}</p>
+            </div>
+            <div>
+              <p className="text-[var(--muted)] text-xs mb-2">Round</p>
+              <p className="text-lg font-semibold text-[var(--text)]">{circle.currentRound} / {circle.totalRounds}</p>
+            </div>
+          </div>
+          <p className="text-xs text-[var(--muted)]">Created {circle.createdAt}</p>
         </div>
-      </div>
 
-      {/* Round History */}
-      <div>
-        <div className="flex items-center mb-4">
-          <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Round History</h2>
-          <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
+        {/* Upcoming payout */}
+        <div className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold font-sora text-[var(--text)]">Upcoming Payout</h2>
+            <CountdownTimer deadline={circle.nextPayoutDeadline} />
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-[var(--muted)] mb-1">Next Recipient</p>
+              <p className="font-mono text-sm text-[var(--text)]">
+                {fmt(circle.nextPayoutRecipient)}
+                {isNextRecipient && <span className="ml-2 text-xs text-[#4B6B76] font-sans">(you)</span>}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-[var(--muted)] mb-1">Amount</p>
+              <p className="text-[var(--text)] font-semibold">
+                {Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT
+              </p>
+            </div>
+          </div>
         </div>
-        <RoundHistoryTable rows={circle.roundHistory} />
-      </div>
 
-      {/* Disputes */}
-      <div>
-        <div className="flex items-center mb-4">
-          <h2 className="text-lg font-bold font-sora text-white shrink-0">
-            {circle.isOrganizer ? "Disputes" : "Your Reports"}
-          </h2>
-          {circle.isOrganizer && disputes.length > 0 && (
-            <span className="ml-3 shrink-0 rounded-full bg-[#ffffff0a] px-2.5 py-1 text-xs text-[#A1A1AA]">
-              {disputes.filter((d) => d.status !== "resolved").length} unresolved
-            </span>
-          )}
-          <div className="ml-4 h-px bg-[#ffffff1a] w-full" aria-hidden="true" />
+        {/* Action buttons */}
+        {circle.isMember && (
+          <div className="flex gap-3 flex-wrap">
+            <button
+              disabled={currentUserPaid}
+              className="px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              {currentUserPaid ? "Contribution Made" : `Make Contribution (${circle.contribution})`}
+            </button>
+            <button
+              disabled={!isNextRecipient}
+              className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
+                isNextRecipient
+                  ? "bg-green-500/20 hover:bg-green-500/30 text-green-600 dark:text-green-400"
+                  : "bg-[var(--ov-0a)] text-[var(--muted)] cursor-not-allowed opacity-50"
+              }`}
+            >
+              Claim Reward
+            </button>
+            <button
+              onClick={() => setReportOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#FF5B5B33] bg-[#FF5B5B12] hover:bg-[#FF5B5B22] text-[#FF5B5B] text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B]"
+            >
+              <Flag size={15} aria-hidden="true" />
+              Report an Issue
+            </button>
+          </div>
+        )}
+
+        {/* Participants */}
+        <div>
+          <div className="flex items-center mb-4">
+            <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Participants</h2>
+            <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
+          </div>
+          <div className="space-y-2">
+            {circle.participants.map((p) => (
+              <ParticipantRow key={p.address} participant={p} />
+            ))}
+            {circle.participants.length < circle.totalSlots && (
+              <div className="flex items-center gap-3 bg-[var(--ov-05)] border border-dashed border-[var(--ov-1a)] px-5 py-3 rounded-xl">
+                <div className="w-7 h-7 rounded-full bg-[var(--ov-0a)] flex items-center justify-center text-xs text-[var(--faint)]">
+                  +
+                </div>
+                <span className="text-xs text-[var(--faint)]">
+                  {circle.totalSlots - circle.participants.length} open slot{circle.totalSlots - circle.participants.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-        <DisputeList
-          disputes={disputes}
-          isOrganizer={circle.isOrganizer}
-          currentAddress={CURRENT_WALLET}
-          onResolve={handleResolveDispute}
+
+        {/* Round History */}
+        <div>
+          <div className="flex items-center mb-4">
+            <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Round History</h2>
+            <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
+          </div>
+          <RoundHistoryTable rows={circle.roundHistory} />
+        </div>
+
+        {/* Disputes */}
+        <div>
+          <div className="flex items-center mb-4">
+            <h2 className="text-lg font-bold font-sora text-white shrink-0">
+              {circle.isOrganizer ? "Disputes" : "Your Reports"}
+            </h2>
+            {circle.isOrganizer && disputes.length > 0 && (
+              <span className="ml-3 shrink-0 rounded-full bg-[#ffffff0a] px-2.5 py-1 text-xs text-[#A1A1AA]">
+                {disputes.filter((d) => d.status !== "resolved").length} unresolved
+              </span>
+            )}
+            <div className="ml-4 h-px bg-[#ffffff1a] w-full" aria-hidden="true" />
+          </div>
+          <DisputeList
+            disputes={disputes}
+            isOrganizer={circle.isOrganizer}
+            currentAddress={CURRENT_WALLET}
+            onResolve={handleResolveDispute}
+          />
+        </div>
+
+        {/* Activity Feed */}
+        <div>
+          <div className="flex items-center mb-6">
+            <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Activity</h2>
+            <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
+          </div>
+          <ActivityFeed events={MOCK_EVENTS} pageSize={5} />
+        </div>
+
+        <ExportButton
+          getRows={getExportRows}
+          scope={circle.name}
+          prefix="circle"
+          title={`${circle.name} — Transaction History`}
         />
       </div>
 
-      {/* Activity Feed */}
-      <div>
-        <div className="flex items-center mb-6">
-          <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Activity</h2>
-          <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
-        </div>
-        <ActivityFeed events={MOCK_EVENTS} pageSize={5} />
+      {/* ── Discussion tab ── */}
+      <div
+        role="tabpanel"
+        id="tabpanel-discussion"
+        aria-labelledby="tab-discussion"
+        hidden={activeTab !== "discussion"}
+        className={activeTab === "discussion" ? "space-y-6" : ""}
+      >
+        <DiscussionThread comments={comments} currentAddress={CURRENT_WALLET} />
+        <CommentComposer
+          onSubmit={handlePostComment}
+          disabled={!circle.isMember}
+        />
       </div>
 
       <ReportIssueModal
