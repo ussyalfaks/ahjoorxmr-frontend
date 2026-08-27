@@ -2,106 +2,147 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Users, DollarSign, Clock, Plus } from "lucide-react";
-import Link from "next/link";
-import CopyButton from "@/components/ui/CopyButton";
-import CreateCircleModal, { type CreateCircleData } from "@/components/modals/CreateCircleModal";
+import { Plus, LayoutGrid, List, Search, X } from "lucide-react";
+import CreateCircleModal from "@/components/modals/CreateCircleModal";
 import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
-import LiveActivityTicker from "@/components/ui/LiveActivityTicker";
-import { CIRCLE_CATEGORIES, CATEGORY_LABELS, type CircleCategory } from "@/lib/circles";
+import CircleGridCard from "@/components/circles/CircleGridCard";
+import CircleListRow from "@/components/circles/CircleListRow";
+import { useCircleViewPreference } from "@/hooks/useCircleViewPreference";
+import {
+  MOCK_CIRCLES,
+  CURRENT_WALLET,
+  filterCirclesByQuery,
+  type DiscoverCircle,
+} from "@/data/circles";
 
-const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
-
-interface Circle {
-  id: string;
-  name: string;
-  creator: string;
-  members: string[];
-  totalSlots: number;
-  contribution: string;
-  duration: string;
-  category: CircleCategory;
-  status: "active" | "completed" | "pending";
+// ---------------------------------------------------------------------------
+// View toggle button
+// ---------------------------------------------------------------------------
+function ViewToggle({
+  view,
+  onChange,
+}: {
+  view: "grid" | "list";
+  onChange: (v: "grid" | "list") => void;
+}) {
+  return (
+    <div
+      className="flex items-center rounded-lg border border-[var(--ov-14)] bg-[var(--ov-05)] p-0.5 gap-0.5"
+      role="group"
+      aria-label="Circle display view"
+    >
+      <button
+        type="button"
+        onClick={() => onChange("grid")}
+        aria-pressed={view === "grid"}
+        aria-label="Grid view"
+        className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
+          view === "grid"
+            ? "bg-[var(--ov-14)] text-[var(--text)]"
+            : "text-[var(--muted)] hover:text-[var(--text)]"
+        }`}
+      >
+        <LayoutGrid size={15} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("list")}
+        aria-pressed={view === "list"}
+        aria-label="List view"
+        className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
+          view === "list"
+            ? "bg-[var(--ov-14)] text-[var(--text)]"
+            : "text-[var(--muted)] hover:text-[var(--text)]"
+        }`}
+      >
+        <List size={15} aria-hidden="true" />
+      </button>
+    </div>
+  );
 }
 
-const mockCircles: Circle[] = [
-  {
-    id: "1",
-    name: "Family savings",
-    creator: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f",
-    members: [CURRENT_WALLET, "0x111abc2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8"],
-    totalSlots: 5,
-    contribution: "50 USDT",
-    duration: "2 Days",
-    category: "family",
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "School fees",
-    creator: "0xemmanuel9c3d5e7f1a2b4c6d8e0f2a3b5c7d9e1",
-    members: [CURRENT_WALLET, "0x222def3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9"],
-    totalSlots: 6,
-    contribution: "40 USDT",
-    duration: "12 Days",
-    category: "students",
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Community Fund",
-    creator: "0xjohn1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8",
-    members: ["0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7", "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8"],
-    totalSlots: 10,
-    contribution: "25 USDT",
-    duration: "5 Days",
-    category: "community",
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "Holiday Savings",
-    creator: "0xamina5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
-    members: ["0x555ghi3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9"],
-    totalSlots: 12,
-    contribution: "200 USDT",
-    duration: "30 Days",
-    category: "friends",
-    status: "active",
-  },
-  {
-    id: "5",
-    name: "Emergency Pool",
-    creator: "0xkola7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4",
-    members: [
-      "0x666jkl4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
-      "0x777mno5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
-    ],
-    totalSlots: 6,
-    contribution: "75 USDT",
-    duration: "10 Days",
-    category: "family",
-    status: "active",
-  },
-];
+// ---------------------------------------------------------------------------
+// List view column header row
+// ---------------------------------------------------------------------------
+function ListHeader() {
+  return (
+    <div
+      className="hidden sm:grid items-center gap-x-4 px-4 py-2 rounded-lg bg-[var(--ov-05)] mb-1
+        grid-cols-[minmax(180px,2fr)_120px_100px_80px_110px_auto]"
+      role="rowgroup"
+      aria-label="Circle list column headers"
+    >
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+        Circle
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+        Contribution
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+        Members
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+        Round
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+        Next payout
+      </span>
+      <span className="sr-only">Action</span>
+    </div>
+  );
+}
 
+// ---------------------------------------------------------------------------
+// Empty state
+// ---------------------------------------------------------------------------
+function EmptyState({
+  tab,
+  hasQuery,
+}: {
+  tab: "my" | "discover";
+  hasQuery: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+      {hasQuery ? (
+        <>
+          <Search size={32} className="text-[var(--muted)]" aria-hidden="true" />
+          <p className="text-[var(--muted)] text-base">No circles match your search.</p>
+        </>
+      ) : (
+        <p className="text-[var(--muted)] text-base">
+          {tab === "my"
+            ? "You haven't joined any circles yet."
+            : "No open circles available to join right now."}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main content (inside Suspense for useSearchParams)
+// ---------------------------------------------------------------------------
 type Tab = "my" | "discover";
 
 function CirclesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+
   const tab: Tab = (searchParams.get("tab") as Tab) ?? "my";
   const inviteId = searchParams.get("invite");
   const action = searchParams.get("action");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [joinCircle, setJoinCircle] = useState<JoinCircleData | null>(null);
-  const [createdCircles, setCreatedCircles] = useState<Circle[]>([]);
-  const allCircles = useMemo(() => [...mockCircles, ...createdCircles], [createdCircles]);
+  const [query, setQuery] = useState("");
 
+  const { view, setView } = useCircleViewPreference();
+
+  // Handle invite / create deep-link params
   useEffect(() => {
     if (!inviteId) return;
-    const circle = allCircles.find((c) => c.id === inviteId);
+    const circle = MOCK_CIRCLES.find((c) => c.id === inviteId);
     if (circle) setJoinCircle(circle);
   }, [inviteId, allCircles]);
 
@@ -112,175 +153,172 @@ function CirclesContent() {
     }
   }, [action, router]);
 
-  const myCircles = allCircles.filter((c) => c.members.includes(CURRENT_WALLET));
-  const discoverCircles = allCircles.filter((c) => !c.members.includes(CURRENT_WALLET));
-
-  function handleCreate(data: CreateCircleData) {
-    setCreatedCircles((current) => [
-      ...current,
-      {
-        id: `created-${Date.now()}`,
-        name: data.name,
-        creator: CURRENT_WALLET,
-        members: [CURRENT_WALLET],
-        totalSlots: Number(data.maxMembers),
-        contribution: `${data.contribution} USDT`,
-        duration: `${data.roundDuration} Days`,
-        category: data.category,
-        status: "active",
-      },
-    ]);
-  }
-  const displayCircles = tab === "my" ? myCircles : discoverCircles;
-
   const setTab = (t: Tab) => {
+    setQuery(""); // clear search when switching tabs
     router.push(`/dashboard/circles?tab=${t}`);
   };
 
+  // Derive filtered list — memo keeps it cheap on re-render
+  const baseCircles = useMemo<DiscoverCircle[]>(
+    () =>
+      tab === "my"
+        ? MOCK_CIRCLES.filter((c) => c.members.includes(CURRENT_WALLET))
+        : MOCK_CIRCLES.filter((c) => !c.members.includes(CURRENT_WALLET)),
+    [tab]
+  );
+
+  const displayCircles = useMemo(
+    () => filterCirclesByQuery(baseCircles, query),
+    [baseCircles, query]
+  );
+
+  const isDiscover = tab === "discover";
+
   return (
     <>
-    <div className="space-y-8 pb-20 md:pb-0">
-      {/* Page Title + Create button */}
-      <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold font-sora text-[var(--text)] shrink-0">Circles</h1>
-        <div className="h-px bg-[var(--ov-1a)] w-full" />
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 shrink-0 px-4 py-2 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-        >
-          <Plus size={16} aria-hidden="true" />
-          Create Circle
-        </button>
-        <Link
-          href="/dashboard/circles/archive"
-          className="shrink-0 rounded-lg bg-[var(--ov-0a)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--ov-14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-        >
-          Circle History
-        </Link>
-      </div>
-
-      {/* Tab Toggle */}
-      <div
-        className="flex border-b border-[var(--ov-1a)]"
-        role="tablist"
-        aria-label="Circle views"
-      >
-        <button
-          role="tab"
-          aria-selected={tab === "my"}
-          aria-controls="circles-panel"
-          onClick={() => setTab("my")}
-          className={`px-6 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-inset -mb-px ${
-            tab === "my"
-              ? "text-[var(--text)] border-b-2 border-white"
-              : "text-[var(--muted)] hover:text-[var(--text)] border-b-2 border-transparent"
-          }`}
-        >
-          My Circles
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "discover"}
-          aria-controls="circles-panel"
-          onClick={() => setTab("discover")}
-          className={`px-6 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-inset -mb-px ${
-            tab === "discover"
-              ? "text-[var(--text)] border-b-2 border-white"
-              : "text-[var(--muted)] hover:text-[var(--text)] border-b-2 border-transparent"
-          }`}
-        >
-          Discover
-        </button>
-      </div>
-
-      <LiveActivityTicker />
-
-      <section aria-labelledby="category-heading" className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="category-heading" className="text-lg font-bold font-sora text-[var(--text)]">Browse by category</h2>
-          <span className="text-xs text-[var(--muted)]">Find a circle that fits your goal</span>
+      <div className="space-y-6 pb-20 md:pb-0">
+        {/* ---- Page title row ---- */}
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold font-sora text-[var(--text)] shrink-0">
+            Circles
+          </h1>
+          <div className="h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-2 shrink-0 px-4 py-2 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+          >
+            <Plus size={16} aria-hidden="true" />
+            Create Circle
+          </button>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {CIRCLE_CATEGORIES.map((category) => (
-            <Link
-              key={category}
-              href={`/dashboard/circles/categories/${category}`}
-              className="rounded-xl border border-[var(--ov-14)] bg-[var(--content)] px-4 py-4 text-sm font-semibold text-[var(--text)] transition-colors hover:border-[#4B6B76] hover:bg-[var(--content-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+
+        {/* ---- Tabs + search + view toggle ---- */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Tabs */}
+          <div
+            className="flex border-b border-[var(--ov-1a)] sm:border-b-0"
+            role="tablist"
+            aria-label="Circle views"
+          >
+            <button
+              role="tab"
+              aria-selected={tab === "my"}
+              aria-controls="circles-panel"
+              onClick={() => setTab("my")}
+              className={`px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-inset -mb-px sm:mb-0 sm:rounded-lg ${
+                tab === "my"
+                  ? "text-[var(--text)] border-b-2 border-white sm:border-0 sm:bg-[var(--ov-0a)]"
+                  : "text-[var(--muted)] hover:text-[var(--text)] border-b-2 border-transparent sm:border-0 sm:hover:bg-[var(--ov-07)]"
+              }`}
             >
-              {CATEGORY_LABELS[category]}
-              <span className="mt-1 block text-xs font-normal text-[var(--muted)]">
-                {allCircles.filter((circle) => circle.category === category && circle.status === "active").length} active circles
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Panel */}
-      <div id="circles-panel" role="tabpanel">
-        {displayCircles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <p className="text-[var(--muted)] text-base">
-              {tab === "my"
-                ? "You haven't joined any circles yet."
-                : "No open circles available to join right now."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {displayCircles.map((circle) => (
-              <article
-                key={circle.id}
-                className="bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[var(--content-hover)] transition-colors"
+              My Circles
+              <span
+                className="ml-2 text-xs text-[var(--muted)] tabular-nums"
+                aria-label={`${MOCK_CIRCLES.filter((c) => c.members.includes(CURRENT_WALLET)).length} circles`}
               >
-                <Link href={`/dashboard/circles/${circle.id}`} className="hover:underline">
-                  <h2 className="text-lg font-bold font-sora text-[var(--text)]">{circle.name}</h2>
-                </Link>
-
-                <div className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
-                  <span>by</span>
-                  <span className="font-mono truncate max-w-[140px]">{circle.creator}</span>
-                  <CopyButton value={circle.creator} />
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <p className="text-[var(--muted)] text-xs mb-1.5">Members</p>
-                    <div className="flex items-center gap-1.5">
-                      <Users size={14} className="text-[var(--muted)] shrink-0" aria-hidden="true" />
-                      <span className="text-sm font-semibold text-[var(--text)]">
-                        {circle.members.length}/{circle.totalSlots}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[var(--muted)] text-xs mb-1.5">Contribution</p>
-                    <div className="flex items-center gap-1.5">
-                      <DollarSign size={14} className="text-[var(--muted)] shrink-0" aria-hidden="true" />
-                      <span className="text-sm font-semibold text-[var(--text)]">{circle.contribution}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[var(--muted)] text-xs mb-1.5">Duration</p>
-                    <div className="flex items-center gap-1.5">
-                      <Clock size={14} className="text-[var(--muted)] shrink-0" aria-hidden="true" />
-                      <span className="text-sm font-semibold text-[var(--text)]">{circle.duration}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {tab === "discover" && (
-                  <button
-                    onClick={() => setJoinCircle(circle)}
-                    className="mt-auto px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--content)]"
-                  >
-                    Join Circle
-                  </button>
-                )}
-              </article>
-            ))}
+                {MOCK_CIRCLES.filter((c) => c.members.includes(CURRENT_WALLET)).length}
+              </span>
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === "discover"}
+              aria-controls="circles-panel"
+              onClick={() => setTab("discover")}
+              className={`px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-inset -mb-px sm:mb-0 sm:rounded-lg ${
+                tab === "discover"
+                  ? "text-[var(--text)] border-b-2 border-white sm:border-0 sm:bg-[var(--ov-0a)]"
+                  : "text-[var(--muted)] hover:text-[var(--text)] border-b-2 border-transparent sm:border-0 sm:hover:bg-[var(--ov-07)]"
+              }`}
+            >
+              Discover
+              <span
+                className="ml-2 text-xs text-[var(--muted)] tabular-nums"
+                aria-label={`${MOCK_CIRCLES.filter((c) => !c.members.includes(CURRENT_WALLET)).length} circles`}
+              >
+                {MOCK_CIRCLES.filter((c) => !c.members.includes(CURRENT_WALLET)).length}
+              </span>
+            </button>
           </div>
+
+          {/* Search + view toggle */}
+          <div className="flex items-center gap-2">
+            {/* Search input */}
+            <div className="relative flex-1 sm:flex-none sm:w-52">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search circles…"
+                aria-label="Search circles"
+                className="w-full h-9 pl-8 pr-8 rounded-lg border border-[var(--ov-14)] bg-[var(--ov-05)] text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76] transition-colors"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)] focus-visible:outline-none"
+                  aria-label="Clear search"
+                >
+                  <X size={13} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+
+            {/* View toggle */}
+            <ViewToggle view={view} onChange={setView} />
+          </div>
+        </div>
+
+        {/* ---- Results count (when filtering) ---- */}
+        {query && (
+          <p className="text-xs text-[var(--muted)]" role="status" aria-live="polite">
+            {displayCircles.length === 0
+              ? "No results"
+              : `${displayCircles.length} result${displayCircles.length !== 1 ? "s" : ""} for "${query}"`}
+          </p>
         )}
+
+        {/* ---- Panel ---- */}
+        <div id="circles-panel" role="tabpanel">
+          {displayCircles.length === 0 ? (
+            <EmptyState tab={tab} hasQuery={query.length > 0} />
+          ) : view === "grid" ? (
+            /* Grid view */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {displayCircles.map((circle) => (
+                <CircleGridCard
+                  key={circle.id}
+                  circle={circle}
+                  showJoin={isDiscover}
+                  onJoin={setJoinCircle}
+                />
+              ))}
+            </div>
+          ) : (
+            /* List view */
+            <div
+              className="flex flex-col gap-0.5"
+              role="table"
+              aria-label={tab === "my" ? "My circles" : "Discover circles"}
+            >
+              <ListHeader />
+              {displayCircles.map((circle, i) => (
+                <CircleListRow
+                  key={circle.id}
+                  circle={circle}
+                  showJoin={isDiscover}
+                  onJoin={setJoinCircle}
+                  even={i % 2 === 1}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <CreateCircleModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
@@ -293,7 +331,6 @@ function CirclesContent() {
         circle={joinCircle}
         currentWallet={CURRENT_WALLET}
       />
-    </div>
     </>
   );
 }
