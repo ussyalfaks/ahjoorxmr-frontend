@@ -3,7 +3,11 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ShieldAlert, Archive } from "lucide-react";
-import { OrganizerControls, type Circle as OrganizerCircle } from "@/components/circles/OrganizerControls";
+import {
+  OrganizerControls,
+  type Circle as OrganizerCircle,
+  type CircleRole,
+} from "@/components/circles/OrganizerControls";
 import { useToast } from "@/components/ui/Toast";
 import type { CircleJoinRequest, PenaltyConfig } from "@/types/circle";
 
@@ -18,7 +22,7 @@ interface SettingsCircle {
   description: string;
   creator: string;
   status: "active" | "completed" | "pending";
-  participants: { address: string; displayName?: string }[];
+  participants: { address: string; displayName?: string; role: CircleRole }[];
   contribution: string;
   duration: string;
 }
@@ -33,9 +37,9 @@ const CIRCLES: Record<string, SettingsCircle> = {
     creator: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f",
     status: "active",
     participants: [
-      { address: CURRENT_WALLET },
-      { address: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f" },
-      { address: "0x111abc2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8" },
+      { address: CURRENT_WALLET, role: "co-organizer" },
+      { address: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f", role: "organizer" },
+      { address: "0x111abc2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8", role: "participant" },
     ],
     contribution: "50 USDT",
     duration: "2 Days",
@@ -47,10 +51,10 @@ const CIRCLES: Record<string, SettingsCircle> = {
     creator: "0xemmanuel9c3d5e7f1a2b4c6d8e0f2a3b5c7d9e1",
     status: "active",
     participants: [
-      { address: CURRENT_WALLET },
-      { address: "0x222def3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9" },
-      { address: "0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7" },
-      { address: "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8" },
+      { address: CURRENT_WALLET, role: "participant" },
+      { address: "0x222def3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9", role: "organizer" },
+      { address: "0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7", role: "participant" },
+      { address: "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8", role: "participant" },
     ],
     contribution: "40 USDT",
     duration: "12 Days",
@@ -62,9 +66,9 @@ const CIRCLES: Record<string, SettingsCircle> = {
     creator: CURRENT_WALLET,
     status: "active",
     participants: [
-      { address: CURRENT_WALLET },
-      { address: "0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7" },
-      { address: "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8" },
+      { address: CURRENT_WALLET, role: "organizer" },
+      { address: "0x333abc1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7", role: "participant" },
+      { address: "0x444def2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8", role: "participant" },
     ],
     contribution: "25 USDT",
     duration: "5 Days",
@@ -96,22 +100,9 @@ export default function CircleSettingsPage({
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [status, setStatus] = useState<SettingsCircle["status"] | null>(circle?.status ?? null);
-  const [joinRequests, setJoinRequests] = useState<CircleJoinRequest[]>([]);
-  const contributionAmount = Number(contribution);
-  const parsedPenalty = Number(penaltyValue);
-  const penaltyIsValid =
-    !penaltyEnabled ||
-    (penaltyValue.trim().length > 0 &&
-      Number.isFinite(parsedPenalty) &&
-      parsedPenalty > 0 &&
-      (penaltyType === "percentage" ? parsedPenalty <= 100 : parsedPenalty <= contributionAmount));
-
-  useEffect(() => {
-    const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) ?? "[]") as CircleJoinRequest[];
-    // Request state is persisted client-side until the API is available.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setJoinRequests(requests.filter((request) => request.circleId === id));
-  }, [id]);
+  const [roles, setRoles] = useState<Record<string, CircleRole>>(() =>
+    Object.fromEntries(circle?.participants.map((participant) => [participant.address, participant.role]) ?? [])
+  );
 
   if (!circle) {
     return (
@@ -124,9 +115,11 @@ export default function CircleSettingsPage({
     );
   }
 
+  const currentRole = roles[CURRENT_WALLET] ?? "participant";
   const isOrganizer = circle.creator.toLowerCase() === CURRENT_WALLET.toLowerCase();
+  const canManageCircle = isOrganizer || currentRole === "co-organizer";
 
-  if (!isOrganizer) {
+  if (!canManageCircle) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-24 px-6">
         <div className="mb-7 w-16 h-16 rounded-2xl flex items-center justify-center bg-[var(--ov-0a)] border border-[var(--ov-14)]">
@@ -134,7 +127,7 @@ export default function CircleSettingsPage({
         </div>
         <h1 className="font-sora font-bold text-2xl text-[var(--text)] mb-2">Access denied</h1>
         <p className="text-[var(--muted)] text-sm max-w-sm mb-8">
-          Only the organizer of &ldquo;{circle.name}&rdquo; can view its settings.
+          Only the organizer or a co-organizer of &ldquo;{circle.name}&rdquo; can view its settings.
         </p>
         <Link
           href={`/dashboard/circles/${circle.id}`}
@@ -150,7 +143,10 @@ export default function CircleSettingsPage({
   const organizerCircle: OrganizerCircle = {
     id: circle.id,
     creatorAddress: circle.creator,
-    members: circle.participants,
+    members: circle.participants.map((participant) => ({
+      ...participant,
+      role: roles[participant.address] ?? participant.role,
+    })),
     status: status === "active" ? "active" : "closed",
   };
 
@@ -182,6 +178,16 @@ export default function CircleSettingsPage({
   async function handleRemoveMember(address: string) {
     await new Promise((resolve) => setTimeout(resolve, 400));
     showToast({ title: "Member removed", message: truncate(address), variant: "success" });
+  }
+
+  async function handleChangeRole(address: string, role: CircleRole) {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    setRoles((current) => ({ ...current, [address]: role }));
+    showToast({
+      title: role === "co-organizer" ? "Co-organizer promoted" : "Co-organizer demoted",
+      message: truncate(address),
+      variant: "success",
+    });
   }
 
   async function handleCloseCircle() {
@@ -240,7 +246,7 @@ export default function CircleSettingsPage({
         </Link>
         <h1 className="text-2xl font-bold font-sora text-[var(--text)]">Circle Settings</h1>
         <span className="rounded-full bg-[#4B6B7622] px-2.5 py-1 text-[10px] font-medium text-[#4B6B76] uppercase tracking-wide">
-          Organizer
+          {currentRole === "co-organizer" ? "Co-Organizer" : "Organizer"}
         </span>
       </div>
 
@@ -387,6 +393,7 @@ export default function CircleSettingsPage({
         circle={organizerCircle}
         connectedAddress={CURRENT_WALLET}
         onRemoveMember={handleRemoveMember}
+        onChangeRole={handleChangeRole}
         onCloseCircle={handleCloseCircle}
         onExtendRound={handleExtendRound}
       />

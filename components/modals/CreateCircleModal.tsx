@@ -4,23 +4,21 @@ import { useState, useRef } from "react";
 import { X, ArrowRight, ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import SavingsCalculator from "@/components/calculator/SavingsCalculator";
-import type { PenaltyConfig } from "@/types/circle";
+import { CIRCLE_CATEGORIES, CATEGORY_LABELS, type CircleCategory } from "@/lib/circles";
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  onCreate?: (circle: CreateCircleData) => void;
 }
 
-interface FormData {
+export interface CreateCircleData {
   name: string;
   description: string;
   contribution: string;
   maxMembers: string;
   roundDuration: string;
-  isPrivate: boolean;
-  penaltyEnabled: boolean;
-  penaltyType: PenaltyConfig["type"];
-  penaltyValue: string;
+  category: CircleCategory;
 }
 
 interface CircleTemplate {
@@ -63,23 +61,20 @@ const CIRCLE_TEMPLATES: CircleTemplate[] = [
   },
 ];
 
-const EMPTY: FormData = {
+const EMPTY: CreateCircleData = {
   name: "",
   description: "",
   contribution: "",
   maxMembers: "",
   roundDuration: "",
-  isPrivate: false,
-  penaltyEnabled: false,
-  penaltyType: "percentage",
-  penaltyValue: "",
+  category: "family",
 };
 
 const TOTAL_STEPS = 4;
 
-export default function CreateCircleModal({ open, onClose }: Props) {
+export default function CreateCircleModal({ open, onClose, onCreate }: Props) {
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<FormData>(EMPTY);
+  const [form, setForm] = useState<CreateCircleData>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -107,7 +102,7 @@ export default function CreateCircleModal({ open, onClose }: Props) {
     setStep(1);
   }
 
-  const set = (key: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const set = (key: keyof CreateCircleData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const step1Valid = form.name.trim().length > 0;
@@ -138,6 +133,7 @@ export default function CreateCircleModal({ open, onClose }: Props) {
   async function handleSubmit() {
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 1200));
+    onCreate?.(form);
     setSubmitting(false);
     setSuccess(true);
   }
@@ -279,6 +275,21 @@ export default function CreateCircleModal({ open, onClose }: Props) {
                       rows={3}
                       className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-3 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76] resize-none"
                     />
+                  </div>
+                  <div>
+                    <label className="text-sm text-[var(--muted)] mb-1.5 block" htmlFor="circle-category">
+                      Category <span className="text-red-400">*</span>
+                    </label>
+                    <select
+                      id="circle-category"
+                      value={form.category}
+                      onChange={(e) => setForm((current) => ({ ...current, category: e.target.value as CircleCategory }))}
+                      className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-3 text-[var(--text)] text-sm focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                    >
+                      {CIRCLE_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>{CATEGORY_LABELS[category]}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>

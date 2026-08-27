@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Toggle } from "@/components/ui/Toggle";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import PushNotificationPreferences from "@/components/settings/PushNotificationPreferences";
 
 // --- Wallet address source: swap for your actual hook ---
 // import { useAccount } from "wagmi";
@@ -292,6 +293,9 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {/* Browser push notification opt-in & preferences */}
+        <PushNotificationPreferences />
       </div>
 
       {/* Save */}

@@ -10,7 +10,10 @@ import { useState } from "react";
 export interface CircleMember {
   address: string;
   displayName?: string;
+  role?: CircleRole;
 }
+
+export type CircleRole = "organizer" | "co-organizer" | "participant";
 
 export interface Circle {
   id: string;
@@ -23,6 +26,7 @@ interface OrganizerControlsProps {
   circle: Circle;
   connectedAddress?: string | null;
   onRemoveMember: (address: string) => Promise<void> | void;
+  onChangeRole: (address: string, role: CircleRole) => Promise<void> | void;
   onCloseCircle: () => Promise<void> | void;
   onExtendRound: (extraDays: number) => Promise<void> | void;
 }
@@ -62,18 +66,22 @@ export function OrganizerControls({
   circle,
   connectedAddress,
   onRemoveMember,
+  onChangeRole,
   onCloseCircle,
   onExtendRound,
 }: OrganizerControlsProps) {
+  const currentMember = circle.members.find((member) => isSameAddress(member.address, connectedAddress));
   const isOrganizer = isSameAddress(connectedAddress, circle.creatorAddress);
+  const canManageCircle = isOrganizer || currentMember?.role === "co-organizer";
 
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [extendDays, setExtendDays] = useState(7);
   const [busy, setBusy] = useState(false);
   const removeConfirm = useConfirm();
+  const roleConfirm = useConfirm();
 
   // Read-only participants see nothing from this component.
-  if (!isOrganizer) {
+  if (!canManageCircle) {
     return null;
   }
 
@@ -84,6 +92,16 @@ export function OrganizerControls({
     } finally {
       setBusy(false);
       removeConfirm.cancel();
+    }
+  }
+
+  async function handleRoleChange(address: string, role: CircleRole) {
+    setBusy(true);
+    try {
+      await onChangeRole(address, role);
+    } finally {
+      setBusy(false);
+      roleConfirm.cancel();
     }
   }
 
@@ -113,17 +131,29 @@ export function OrganizerControls({
           Organizer Controls
         </span>
         <span className="rounded-full bg-amber-200 dark:bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-300">
-          You created this circle
+          {isOrganizer ? "You created this circle" : "You help manage this circle"}
         </span>
       </div>
 
       {/* Member management */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-[var(--text)]">Participants</h3>
+        <div>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-[var(--text)]">
+            {isOrganizer ? "Manage Roles" : "Participants"}
+          </h3>
+          {isOrganizer && (
+            <p className="mt-1 text-xs text-gray-500 dark:text-[var(--muted)]">
+              Promote a trusted participant to help manage this circle.
+            </p>
+          )}
+        </div>
         <ul className="divide-y divide-gray-200 dark:divide-[var(--border)] rounded-md border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)]">
           {circle.members.map((member) => {
             const isCreator = isSameAddress(member.address, circle.creatorAddress);
             const confirmKey = `remove-${member.address}`;
+            const role = isCreator ? "organizer" : member.role ?? "participant";
+            const nextRole: CircleRole = role === "co-organizer" ? "participant" : "co-organizer";
+            const roleConfirmKey = `role-${member.address}-${nextRole}`;
             return (
               <li
                 key={member.address}
@@ -138,8 +168,49 @@ export function OrganizerControls({
                       Organizer
                     </span>
                   )}
+                  {!isCreator && (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      role === "co-organizer"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                        : "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-[var(--muted)]"
+                    }`}>
+                      {role === "co-organizer" ? "Co-Organizer" : "Participant"}
+                    </span>
+                  )}
                 </div>
 
+                <div className="flex items-center gap-2">
+                {!isCreator && isOrganizer &&
+                  (roleConfirm.isArmed(roleConfirmKey) ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-amber-700 dark:text-amber-400">
+                        {nextRole === "co-organizer" ? "Promote?" : "Demote?"}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => handleRoleChange(member.address, nextRole)}
+                        className="rounded bg-[#4B6B76] px-2 py-1 text-xs font-medium text-white hover:bg-[#3D5A64] disabled:opacity-50"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={roleConfirm.cancel}
+                        className="rounded border border-gray-300 dark:border-[var(--border)] px-2 py-1 text-xs text-gray-600 dark:text-[var(--muted)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)]"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => roleConfirm.requestConfirm(roleConfirmKey)}
+                      className="rounded border border-[#4B6B76]/50 px-2 py-1 text-xs font-medium text-[#4B6B76] hover:bg-[#4B6B76]/10"
+                    >
+                      {nextRole === "co-organizer" ? "Promote" : "Demote"}
+                    </button>
+                  ))}
                 {!isCreator &&
                   (removeConfirm.isArmed(confirmKey) ? (
                     <div className="flex items-center gap-2">
@@ -169,6 +240,7 @@ export function OrganizerControls({
                       Remove Member
                     </button>
                   ))}
+                </div>
               </li>
             );
           })}
