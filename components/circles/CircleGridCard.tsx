@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Users, DollarSign, Clock } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { truncateAddress, type DiscoverCircle } from "@/data/circles";
+import AutoPayStatusBadge from "@/components/circles/AutoPayStatusBadge";
 
 interface CircleGridCardProps {
   circle: DiscoverCircle;
@@ -32,12 +33,15 @@ export default function CircleGridCard({
           </h2>
         </Link>
         {/* Slot fill badge */}
-        <span
-          className="shrink-0 mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--ov-0a)] text-[var(--muted)]"
-          aria-label={`${fillPct}% full`}
-        >
-          {fillPct}%
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5 mt-0.5">
+          <AutoPayStatusBadge circleId={circle.id} />
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--ov-0a)] text-[var(--muted)]"
+            aria-label={`${fillPct}% full`}
+          >
+            {fillPct}%
+          </span>
+        </div>
       </div>
 
       {/* Creator */}

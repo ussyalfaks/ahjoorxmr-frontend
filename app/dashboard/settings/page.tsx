@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Toggle } from "@/components/ui/Toggle";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import PushNotificationPreferences from "@/components/settings/PushNotificationPreferences";
+import TwoFactorSetup from "@/components/settings/TwoFactorSetup";
 
 // --- Wallet address source: swap for your actual hook ---
 // import { useAccount } from "wagmi";
@@ -303,6 +304,9 @@ export default function SettingsPage() {
 
         {/* Browser push notification opt-in & preferences */}
         <PushNotificationPreferences />
+
+        {/* Two-factor authentication */}
+        <TwoFactorSetup accountLabel={connectedAddress ?? "wallet"} />
       </div>
 
       {/* Save */}
