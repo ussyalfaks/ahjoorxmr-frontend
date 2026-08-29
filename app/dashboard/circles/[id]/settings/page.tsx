@@ -13,6 +13,7 @@ import type { CircleJoinRequest, PenaltyConfig } from "@/types/circle";
 import PayoutDrawModal from "@/components/circles/PayoutDrawModal";
 import { getPayoutDraw, type PayoutDraw } from "@/lib/payoutDraw";
 import AutoPaySection from "@/components/circles/AutoPaySection";
+import AnnouncementComposer from "@/components/circles/AnnouncementComposer";
 
 const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
@@ -407,6 +408,9 @@ export default function CircleSettingsPage({
         onCloseCircle={handleCloseCircle}
         onExtendRound={handleExtendRound}
       />
+
+      {/* Broadcast announcement tool */}
+      <AnnouncementComposer circleId={circle.id} circleName={circle.name} organizerAddress={CURRENT_WALLET} />
 
       {/* Auto-Pay management */}
       <AutoPaySection

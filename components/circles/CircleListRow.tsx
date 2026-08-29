@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Users, DollarSign, Clock, ArrowRight } from "lucide-react";
 import { truncateAddress, type DiscoverCircle } from "@/data/circles";
 import AutoPayStatusBadge from "@/components/circles/AutoPayStatusBadge";
+import BookmarkButton from "@/components/circles/BookmarkButton";
 
 interface CircleListRowProps {
   circle: DiscoverCircle;
@@ -45,6 +46,17 @@ export default function CircleListRow({
             {circle.name}
           </Link>
           <AutoPayStatusBadge circleId={circle.id} />
+          {(circle.closed || slotsLeft <= 0) && (
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                circle.closed
+                  ? "bg-[var(--ov-0a)] text-[var(--muted)]"
+                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              }`}
+            >
+              {circle.closed ? "Closed" : "Full"}
+            </span>
+          )}
         </div>
         <span className="text-xs text-[var(--muted)] font-mono truncate">
           {truncateAddress(circle.creator)}
@@ -52,7 +64,8 @@ export default function CircleListRow({
       </div>
 
       {/* ---- Action (always visible, right column on mobile) ---- */}
-      <div className="flex items-center justify-end sm:order-last">
+      <div className="flex items-center justify-end gap-1.5 sm:order-last">
+        <BookmarkButton circleId={circle.id} circleName={circle.name} />
         {showJoin ? (
           <button
             type="button"

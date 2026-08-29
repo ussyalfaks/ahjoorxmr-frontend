@@ -41,7 +41,8 @@ export type EventType =
   | "payout_sent"
   | "member_joined"
   | "round_started"
-  | "circle_closed";
+  | "circle_closed"
+  | "announcement_sent";
 
 export interface CircleEvent {
   id: string;
