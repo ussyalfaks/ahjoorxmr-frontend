@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Users, DollarSign, Clock, ArrowRight } from "lucide-react";
 import { truncateAddress, type DiscoverCircle } from "@/data/circles";
+import AutoPayStatusBadge from "@/components/circles/AutoPayStatusBadge";
 
 interface CircleListRowProps {
   circle: DiscoverCircle;
@@ -36,12 +37,15 @@ export default function CircleListRow({
     >
       {/* ---- Name + creator (always visible) ---- */}
       <div className="flex flex-col gap-0.5 min-w-0">
-        <Link
-          href={`/dashboard/circles/${circle.id}`}
-          className="text-sm font-semibold text-[var(--text)] hover:underline truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
-        >
-          {circle.name}
-        </Link>
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href={`/dashboard/circles/${circle.id}`}
+            className="text-sm font-semibold text-[var(--text)] hover:underline truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+          >
+            {circle.name}
+          </Link>
+          <AutoPayStatusBadge circleId={circle.id} />
+        </div>
         <span className="text-xs text-[var(--muted)] font-mono truncate">
           {truncateAddress(circle.creator)}
         </span>

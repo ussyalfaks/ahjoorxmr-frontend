@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ShieldAlert, Archive } from "lucide-react";
+import { ArrowLeft, Archive, RotateCcw, Shuffle, ShieldAlert } from "lucide-react";
 import {
   OrganizerControls,
   type Circle as OrganizerCircle,
@@ -10,6 +10,9 @@ import {
 } from "@/components/circles/OrganizerControls";
 import { useToast } from "@/components/ui/Toast";
 import type { CircleJoinRequest, PenaltyConfig } from "@/types/circle";
+import PayoutDrawModal from "@/components/circles/PayoutDrawModal";
+import { getPayoutDraw, type PayoutDraw } from "@/lib/payoutDraw";
+import AutoPaySection from "@/components/circles/AutoPaySection";
 
 const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
@@ -25,6 +28,8 @@ interface SettingsCircle {
   participants: { address: string; displayName?: string; role: CircleRole }[];
   contribution: string;
   duration: string;
+  /** Whether any round has taken a contribution yet — gates the payout draw. */
+  hasContributions: boolean;
 }
 
 // Mirrors the mock circles used elsewhere in the dashboard (same ids/creators),
@@ -43,6 +48,7 @@ const CIRCLES: Record<string, SettingsCircle> = {
     ],
     contribution: "50 USDT",
     duration: "2 Days",
+    hasContributions: true,
   },
   "2": {
     id: "2",
@@ -58,6 +64,7 @@ const CIRCLES: Record<string, SettingsCircle> = {
     ],
     contribution: "40 USDT",
     duration: "12 Days",
+    hasContributions: true,
   },
   "3": {
     id: "3",
@@ -72,6 +79,7 @@ const CIRCLES: Record<string, SettingsCircle> = {
     ],
     contribution: "25 USDT",
     duration: "5 Days",
+    hasContributions: false,
   },
 };
 
@@ -103,6 +111,8 @@ export default function CircleSettingsPage({
   const [roles, setRoles] = useState<Record<string, CircleRole>>(() =>
     Object.fromEntries(circle?.participants.map((participant) => [participant.address, participant.role]) ?? [])
   );
+  const [showDrawModal, setShowDrawModal] = useState(false);
+  const [payoutDraw, setPayoutDraw] = useState<PayoutDraw | null>(() => (circle ? getPayoutDraw(circle.id) : null));
 
   if (!circle) {
     return (
@@ -398,6 +408,62 @@ export default function CircleSettingsPage({
         onExtendRound={handleExtendRound}
       />
 
+      {/* Auto-Pay management */}
+      <AutoPaySection
+        circleId={circle.id}
+        defaultAmount={circle.contribution}
+        roundDuration={circle.duration}
+        variant="manage"
+      />
+
+      {/* Payout order draw */}
+      {!circle.hasContributions && (
+        <section className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
+          <div>
+            <h2 className="text-lg font-bold font-sora text-[var(--text)]">Payout Order</h2>
+            <p className="text-xs text-[var(--muted)] mt-1">
+              Randomly assign each participant&apos;s payout round with a transparent, auditable
+              draw. Only available before the circle&apos;s first contribution.
+            </p>
+          </div>
+          {payoutDraw ? (
+            <div className="space-y-3">
+              <ol className="space-y-1.5">
+                {payoutDraw.order.map((address, i) => (
+                  <li
+                    key={address}
+                    className="flex items-center justify-between rounded-lg bg-[var(--ov-05)] px-3 py-2 text-sm"
+                  >
+                    <span className="text-[var(--faint)] text-xs">Round {i + 1}</span>
+                    <span className="font-mono text-[var(--text)]">{truncate(address)}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="text-[10px] text-[var(--faint)] font-mono">
+                Seed {payoutDraw.seed} · {new Date(payoutDraw.timestamp).toLocaleString()}
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowDrawModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors"
+              >
+                <RotateCcw size={14} aria-hidden="true" />
+                Re-run Draw
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDrawModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <Shuffle size={16} aria-hidden="true" />
+              Run Payout Draw
+            </button>
+          )}
+        </section>
+      )}
+
       <section className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
         <div>
           <h2 className="text-lg font-bold font-sora text-[var(--text)]">Join Requests</h2>
@@ -489,6 +555,14 @@ export default function CircleSettingsPage({
           </div>
         </div>
       )}
+
+      <PayoutDrawModal
+        open={showDrawModal}
+        onClose={() => setShowDrawModal(false)}
+        circleId={circle.id}
+        participantAddresses={circle.participants.map((p) => p.address)}
+        onDrawFinalized={setPayoutDraw}
+      />
     </div>
   );
 }

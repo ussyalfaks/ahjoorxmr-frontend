@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Settings, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import ActivityFeed from "@/components/circles/ActivityFeed";
@@ -19,6 +19,10 @@ import type { Comment } from "@/types/discussion";
 import type { ExportRow } from "@/lib/export";
 import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
 import { calculateCircleHealth } from "@/lib/circleHealth";
+import { getPayoutDraw, type PayoutDraw } from "@/lib/payoutDraw";
+import { Lock } from "lucide-react";
+import AutoPaySection from "@/components/circles/AutoPaySection";
+import { enableAutoPay, getAutoPayConfig, recordAutoPayAttempt } from "@/lib/autoPay";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -390,6 +394,25 @@ export default function CircleDetailPage({
   const [comments, setComments] = useState<Comment[]>(() =>
     MOCK_COMMENTS.filter((c) => c.circleId === id)
   );
+  const [payoutDraw, setPayoutDraw] = useState<PayoutDraw | null>(null);
+
+  useEffect(() => {
+    setPayoutDraw(getPayoutDraw(id));
+  }, [id]);
+
+  useEffect(() => {
+    // Demo seed: circle "2" starts with auto-pay already on but its latest
+    // attempt failed, to demonstrate the manual-contribution fallback below.
+    // Replace with real attempt events once auto-pay has a backend to report them.
+    if (id === "2" && !getAutoPayConfig(id)) {
+      enableAutoPay({ circleId: id, authorizedAmount: "40 USDT", frequency: "Every round (every 12 Days)" });
+      recordAutoPayAttempt(id, {
+        status: "failed",
+        date: new Date().toISOString(),
+        reason: "Wallet balance was insufficient to cover this round's contribution.",
+      });
+    }
+  }, [id]);
 
   const handleSubmitReport = useCallback(
     async ({ round, reason, note }: ReportIssueSubmission) => {
@@ -656,6 +679,11 @@ export default function CircleDetailPage({
           </div>
         </div>}
 
+        {/* Auto-Pay */}
+        {circle.isMember && circle.status !== "completed" && (
+          <AutoPaySection circleId={circle.id} defaultAmount={circle.contribution} roundDuration={circle.duration} />
+        )}
+
         {/* Action buttons */}
         {circle.isMember && circle.status !== "completed" && (
           <div className="flex gap-3 flex-wrap">
@@ -707,6 +735,37 @@ export default function CircleDetailPage({
             )}
           </div>
         </div>
+
+        {/* Payout Order (fair draw result) */}
+        {payoutDraw && (
+          <div>
+            <div className="flex items-center mb-4">
+              <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Payout Order</h2>
+              <span className="ml-3 inline-flex items-center gap-1 rounded-full bg-[var(--ov-0a)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+                <Lock size={10} aria-hidden="true" />
+                Locked
+              </span>
+              <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
+            </div>
+            <ol className="space-y-1.5">
+              {payoutDraw.order.map((address, i) => (
+                <li
+                  key={address}
+                  className="flex items-center justify-between bg-[var(--content)] px-5 py-3 rounded-xl text-sm"
+                >
+                  <span className="text-[var(--faint)] text-xs">Round {i + 1}</span>
+                  <span className="font-mono text-[var(--text)]">
+                    {fmt(address)}
+                    {address === CURRENT_WALLET && <span className="ml-2 text-xs text-[#4B6B76] font-sans">(you)</span>}
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-2 text-[10px] text-[var(--faint)] font-mono">
+              Seed {payoutDraw.seed} · drawn {new Date(payoutDraw.timestamp).toLocaleString()}
+            </p>
+          </div>
+        )}
 
         {/* Round History */}
         <div>

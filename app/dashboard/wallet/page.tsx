@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { useWallet, truncateAddress, AVAILABLE_WALLETS } from "@/contexts/WalletContext";
+import AddressBookSection from "@/components/wallet/AddressBookSection";
+import SendTransferModal from "@/components/wallet/SendTransferModal";
+import TwoFactorChallengeModal from "@/components/settings/TwoFactorChallengeModal";
+import { isTwoFactorEnabled } from "@/lib/twoFactor";
 
 type TransactionType = "contribution" | "payout" | "join";
 
@@ -148,6 +152,19 @@ export default function WalletPage() {
   const { linkedWallets, activeWalletAddress, setActiveWallet, isConnected, disconnect, connect } = useWallet();
   const [selectedFilter, setSelectedFilter] = useState<TransactionType | "all">("all");
   const [walletToRemove, setWalletToRemove] = useState<string | null>(null);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [pendingConnectWallet, setPendingConnectWallet] = useState<Parameters<typeof connect>[0] | null>(null);
+
+  const requestConnect = useCallback(
+    (walletId: Parameters<typeof connect>[0]) => {
+      if (isTwoFactorEnabled()) {
+        setPendingConnectWallet(walletId);
+      } else {
+        connect(walletId);
+      }
+    },
+    [connect]
+  );
 
   const filteredTransactions = useMemo(() => {
     if (selectedFilter === "all") return MOCK_TRANSACTIONS;
@@ -197,13 +214,22 @@ export default function WalletPage() {
             contributions, payouts, and memberships.
           </p>
           <button
-            onClick={() => connect("argent")}
+            onClick={() => requestConnect("argent")}
             className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           >
             <LogIn size={18} aria-hidden="true" />
             Connect Wallet
           </button>
         </div>
+
+        <TwoFactorChallengeModal
+          open={pendingConnectWallet !== null}
+          onClose={() => setPendingConnectWallet(null)}
+          onVerified={() => {
+            if (pendingConnectWallet) connect(pendingConnectWallet);
+            setPendingConnectWallet(null);
+          }}
+        />
       </div>
     );
   }
@@ -225,13 +251,22 @@ export default function WalletPage() {
             <p className="text-[var(--text)] text-lg font-bold font-sora">Linked Wallets</p>
             <p className="text-[var(--muted)] text-sm">Manage your connected accounts</p>
           </div>
-          <button
-            onClick={() => connect("argent")}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-black bg-white hover:bg-gray-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-          >
-            <Plus size={16} aria-hidden="true" />
-            Link New Wallet
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSendOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--text)] bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              <Send size={16} aria-hidden="true" />
+              Send
+            </button>
+            <button
+              onClick={() => requestConnect("argent")}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-black bg-white hover:bg-gray-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              <Plus size={16} aria-hidden="true" />
+              Link New Wallet
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4 mb-8">
@@ -300,6 +335,9 @@ export default function WalletPage() {
           </div>
         </div>
       </div>
+
+      {/* Saved Contacts / Address Book */}
+      <AddressBookSection />
 
       {/* Transactions Section */}
       <div>
@@ -428,6 +466,21 @@ export default function WalletPage() {
           </div>
         </div>
       )}
+
+      <SendTransferModal
+        open={sendOpen}
+        onClose={() => setSendOpen(false)}
+        fromAddress={activeWalletAddress ?? ""}
+      />
+
+      <TwoFactorChallengeModal
+        open={pendingConnectWallet !== null}
+        onClose={() => setPendingConnectWallet(null)}
+        onVerified={() => {
+          if (pendingConnectWallet) connect(pendingConnectWallet);
+          setPendingConnectWallet(null);
+        }}
+      />
     </div>
   );
 }
