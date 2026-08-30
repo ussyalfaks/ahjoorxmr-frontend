@@ -1,62 +1,53 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Toggle } from "@/components/ui/Toggle";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import {
+  User,
+  Bell,
+  Shield,
+  Palette,
+  AlertTriangle,
+  HelpCircle,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import PushNotificationPreferences from "@/components/settings/PushNotificationPreferences";
 import TwoFactorSetup from "@/components/settings/TwoFactorSetup";
-
-// --- Wallet address source: swap for your actual hook ---
-// import { useAccount } from "wagmi";
-// import { useWallet } from "@/context/WalletContext";
+import EmailNotificationPreferences from "@/components/settings/EmailNotificationPreferences";
+import ActiveSessionsManager from "@/components/settings/ActiveSessionsManager";
+import { OPEN_SHORTCUTS_EVENT } from "@/components/ui/ShortcutsModal";
 
 const STORAGE_KEY = "ahjoorxmr:settings";
 
-interface NotificationPrefs {
-  emailRoundCompletions: boolean;
-  emailPayoutReminders: boolean;
-  emailMissedContributions: boolean;
-  inAppRoundCompletions: boolean;
-  inAppPayoutReminders: boolean;
-  inAppMissedContributions: boolean;
-  reminderOffsets: number[];
-}
-
-interface StoredSettings {
+interface StoredProfileSettings {
   displayName: string;
-  notifications: NotificationPrefs;
 }
 
-const defaultSettings: StoredSettings = {
+const defaultProfileSettings: StoredProfileSettings = {
   displayName: "",
-  notifications: {
-    emailRoundCompletions: true,
-    emailPayoutReminders: true,
-    emailMissedContributions: true,
-    inAppRoundCompletions: true,
-    inAppPayoutReminders: true,
-    inAppMissedContributions: true,
-    reminderOffsets: [3, 1],
-  },
 };
 
-const reminderOptions = [
-  { offset: 3, label: "3 days before", description: "A heads-up before the deadline" },
-  { offset: 1, label: "1 day before", description: "A reminder the day before" },
-  { offset: 0, label: "On the day", description: "A reminder when the contribution is due" },
-];
-
 function truncateAddress(address?: string | null) {
-  if (!address) return "Not connected";
+  if (!address) return "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-export default function SettingsPage() {
-  // Replace with your real connected address.
-  const connectedAddress: string | null = null;
+type SettingsTab = "general" | "notifications" | "security" | "danger";
 
-  const [settings, setSettings] = useState<StoredSettings>(defaultSettings);
-  const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">(
+function SettingsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const tabParam = searchParams.get("tab") as SettingsTab | null;
+  const [activeTab, setActiveTab] = useState<SettingsTab>(tabParam || "general");
+
+  const connectedAddress: string = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
+
+  const [profile, setProfile] = useState<StoredProfileSettings>(defaultProfileSettings);
+  const [profileStatus, setProfileStatus] = useState<"idle" | "saving" | "success" | "error">(
     "idle"
   );
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -64,71 +55,49 @@ export default function SettingsPage() {
     "idle"
   );
 
-  function openShortcuts() {
-    window.dispatchEvent(new Event(OPEN_SHORTCUTS_EVENT));
-  }
+  useEffect(() => {
+    if (tabParam && ["general", "notifications", "security", "danger"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const stored = JSON.parse(raw) as Partial<StoredSettings>;
-        const storedReminderOffsets = stored.notifications?.reminderOffsets;
-        const reminderOffsets = Array.isArray(storedReminderOffsets)
-          ? [...new Set(storedReminderOffsets.filter((offset) => [0, 1, 3].includes(offset)))]
-          : defaultSettings.notifications.reminderOffsets;
-        // Hydrate client-only preferences after the initial server render.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSettings({
-          ...defaultSettings,
-          ...stored,
-          notifications: {
-            ...defaultSettings.notifications,
-            ...stored.notifications,
-            reminderOffsets,
-          },
-        });
+        const stored = JSON.parse(raw);
+        if (stored.displayName !== undefined) {
+          setProfile({ displayName: stored.displayName });
+        }
       }
     } catch {
-      // ignore malformed storage
+      // ignore
     }
   }, []);
 
-  function updateNotification(key: keyof NotificationPrefs, value: boolean) {
-    setSettings((prev) => ({
-      ...prev,
-      notifications: { ...prev.notifications, [key]: value },
-    }));
-  }
+  const handleTabChange = (t: SettingsTab) => {
+    setActiveTab(t);
+    router.push(`/dashboard/settings?tab=${t}`);
+  };
 
-  function updateReminderOffset(offset: number, checked: boolean) {
-    setSettings((prev) => {
-      const offsets = checked
-        ? [...prev.notifications.reminderOffsets, offset]
-        : prev.notifications.reminderOffsets.filter((value) => value !== offset);
+  const openShortcuts = () => {
+    window.dispatchEvent(new Event(OPEN_SHORTCUTS_EVENT));
+  };
 
-      return {
-        ...prev,
-        notifications: { ...prev.notifications, reminderOffsets: offsets.sort((a, b) => b - a) },
-      };
-    });
-  }
-
-  async function handleSave() {
-    setStatus("saving");
+  const handleSaveProfile = async () => {
+    setProfileStatus("saving");
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-      // If/when a backend endpoint exists, call it here instead/also:
-      // await fetch("/api/settings", { method: "PUT", body: JSON.stringify(settings) });
-      setStatus("success");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      setProfileStatus("success");
     } catch {
-      setStatus("error");
+      setProfileStatus("error");
     } finally {
-      setTimeout(() => setStatus("idle"), 3000);
+      setTimeout(() => setProfileStatus("idle"), 3000);
     }
-  }
+  };
 
-  async function handleLeaveAllCircles() {
+  const handleLeaveAllCircles = async () => {
     setLeaveStatus("leaving");
     try {
       await fetch("/api/circles/leave-all", { method: "POST" });
@@ -138,239 +107,266 @@ export default function SettingsPage() {
     } finally {
       setShowLeaveConfirm(false);
     }
-  }
+  };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-[var(--text)]">Settings</h1>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="mt-1 text-sm text-gray-500 dark:text-[var(--muted)]">
-          Manage your profile, notifications, and account.
-        </p>
-        <button type="button" onClick={openShortcuts} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-[var(--border)] dark:text-[var(--text)] dark:hover:bg-[var(--ov-0a)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"><span aria-hidden="true">?</span> Keyboard shortcuts</button>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* Profile section */}
-        <section className="rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] p-5">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-[var(--text)]">Profile</h2>
-
-          <div className="mt-4 space-y-4">
-            <div>
-              <span className="block text-xs font-medium text-gray-500 dark:text-[var(--muted)]">
-                Wallet address
-              </span>
-              <span className="mt-1 block font-mono text-sm text-gray-800 dark:text-[var(--text)]">
-                {truncateAddress(connectedAddress)}
-              </span>
-            </div>
-
-            <div>
-              <label
-                htmlFor="displayName"
-                className="block text-xs font-medium text-gray-500 dark:text-[var(--muted)]"
-              >
-                Display name (optional)
-              </label>
-              <input
-                id="displayName"
-                type="text"
-                value={settings.displayName}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    displayName: e.target.value,
-                  }))
-                }
-                placeholder="How others see you in your circles"
-                className="mt-1 w-full rounded-md border border-gray-300 dark:border-[var(--border)] dark:bg-[var(--modal)] dark:text-[var(--text)] px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:placeholder:text-[var(--faint)]"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Appearance */}
-        <section className="rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] p-5">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-[var(--text)]">Appearance</h2>
-          <div className="mt-4 flex items-center justify-between">
-            <div>
-              <span className="block text-sm font-medium text-gray-800 dark:text-[var(--text)]">Theme</span>
-              <span className="block text-xs text-gray-500 dark:text-[var(--muted)]">
-                Light, dark, or match your system setting
-              </span>
-            </div>
-            <ThemeToggle />
-          </div>
-        </section>
-
-        {/* Notification preferences */}
-        <section className="rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] p-5 lg:col-span-2">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-[var(--text)]">
-            Notifications
-          </h2>
-
-          <div className="mt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-[var(--muted)]">
-              Email
-            </h3>
-            <div className="divide-y divide-gray-100 dark:divide-[var(--border)]">
-              <Toggle
-                id="emailRoundCompletions"
-                label="Round completions"
-                checked={settings.notifications.emailRoundCompletions}
-                onChange={(v) => updateNotification("emailRoundCompletions", v)}
-              />
-              <Toggle
-                id="emailPayoutReminders"
-                label="Payout reminders"
-                checked={settings.notifications.emailPayoutReminders}
-                onChange={(v) => updateNotification("emailPayoutReminders", v)}
-              />
-              <Toggle
-                id="emailMissedContributions"
-                label="Missed contributions"
-                checked={settings.notifications.emailMissedContributions}
-                onChange={(v) =>
-                  updateNotification("emailMissedContributions", v)
-                }
-              />
-            </div>
-          </div>
-
-          <div className="mt-5">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-[var(--muted)]">
-              In-app
-            </h3>
-            <div className="divide-y divide-gray-100 dark:divide-[var(--border)]">
-              <Toggle
-                id="inAppRoundCompletions"
-                label="Round completions"
-                checked={settings.notifications.inAppRoundCompletions}
-                onChange={(v) => updateNotification("inAppRoundCompletions", v)}
-              />
-              <Toggle
-                id="inAppPayoutReminders"
-                label="Payout reminders"
-                checked={settings.notifications.inAppPayoutReminders}
-                onChange={(v) => updateNotification("inAppPayoutReminders", v)}
-              />
-              <Toggle
-                id="inAppMissedContributions"
-                label="Missed contributions"
-                checked={settings.notifications.inAppMissedContributions}
-                onChange={(v) =>
-                  updateNotification("inAppMissedContributions", v)
-                }
-              />
-            </div>
-          </div>
-
-          <div className="mt-6 border-t border-gray-100 pt-5 dark:border-[var(--border)]">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-[var(--muted)]">
-                Contribution reminders
-              </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-[var(--muted)]">
-                Choose when to be reminded about upcoming contributions. You can select more than one.
-              </p>
-            </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              {reminderOptions.map(({ offset, label, description }) => (
-                <label
-                  key={offset}
-                  htmlFor={`reminder-${offset}`}
-                  className="flex cursor-pointer items-start gap-3 rounded-md border border-gray-200 p-3 transition-colors hover:border-blue-400 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:border-[var(--border)] dark:hover:border-blue-400 dark:has-[:checked]:bg-blue-500/10"
-                >
-                  <input
-                    id={`reminder-${offset}`}
-                    type="checkbox"
-                    checked={settings.notifications.reminderOffsets.includes(offset)}
-                    onChange={(event) => updateReminderOffset(offset, event.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-[var(--border)] dark:bg-[var(--modal)]"
-                  />
-                  <span>
-                    <span className="block text-sm font-medium text-gray-800 dark:text-[var(--text)]">
-                      {label}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-gray-500 dark:text-[var(--muted)]">
-                      {description}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Browser push notification opt-in & preferences */}
-        <PushNotificationPreferences />
-
-        {/* Two-factor authentication */}
-        <TwoFactorSetup accountLabel={connectedAddress ?? "wallet"} />
-      </div>
-
-      {/* Save */}
-      <div className="mt-6 flex items-center gap-3">
+    <div className="mx-auto max-w-5xl space-y-8 pb-16">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold font-sora text-[var(--text)]">Settings</h1>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Manage your wallet profile, notification triggers, connected sessions, and security keys.
+          </p>
+        </div>
         <button
           type="button"
-          onClick={handleSave}
-          disabled={status === "saving"}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          onClick={openShortcuts}
+          className="inline-flex items-center gap-2 rounded-xl border border-[var(--ov-14)] px-3.5 py-2 text-xs font-semibold text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] self-start sm:self-auto"
         >
-          {status === "saving" ? "Saving..." : "Save changes"}
+          <HelpCircle size={14} aria-hidden="true" />
+          <span>Keyboard shortcuts</span>
         </button>
-        {status === "success" && (
-          <span className="text-sm text-green-600 dark:text-green-400">Settings saved.</span>
-        )}
-        {status === "error" && (
-          <span className="text-sm text-red-600 dark:text-red-400">
-            Something went wrong. Try again.
-          </span>
-        )}
       </div>
 
-      {/* Danger zone */}
-      <section className="mt-10 rounded-lg border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-500/10 p-5">
-        <h2 className="text-base font-semibold text-red-800 dark:text-red-300">Danger zone</h2>
-        <p className="mt-1 text-sm text-red-700 dark:text-red-400">
-          Leaving all circles removes you from every active circle you&apos;ve
-          joined. Contributions already made are not refunded automatically;
-          any pending payouts follow the circle&apos;s normal payout rules.
-        </p>
+      {/* Navigation Tabs */}
+      <div
+        className="flex items-center gap-1.5 border-b border-[var(--ov-10)] overflow-x-auto scrollbar-none pb-px"
+        role="tablist"
+        aria-label="Settings sections"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "general"}
+          onClick={() => handleTabChange("general")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${
+            activeTab === "general"
+              ? "text-[var(--text)] border-[#4B6B76] bg-[var(--ov-05)]"
+              : "text-[var(--muted)] hover:text-[var(--text)] border-transparent hover:bg-[var(--ov-03)]"
+          }`}
+        >
+          <User size={15} aria-hidden="true" />
+          <span>Profile & Appearance</span>
+        </button>
 
-        {leaveStatus === "done" ? (
-          <p className="mt-3 text-sm font-medium text-red-800 dark:text-red-300">
-            You&apos;ve left all circles.
-          </p>
-        ) : showLeaveConfirm ? (
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-sm text-red-800 dark:text-red-300">Are you sure?</span>
-            <button
-              type="button"
-              disabled={leaveStatus === "leaving"}
-              onClick={handleLeaveAllCircles}
-              className="rounded-md bg-red-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
-            >
-              {leaveStatus === "leaving" ? "Leaving..." : "Yes, leave all circles"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowLeaveConfirm(false)}
-              className="rounded-md border border-gray-300 dark:border-[var(--border)] bg-white dark:bg-[var(--modal)] px-3 py-1.5 text-sm text-gray-700 dark:text-[var(--text)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)]"
-            >
-              Cancel
-            </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "notifications"}
+          onClick={() => handleTabChange("notifications")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${
+            activeTab === "notifications"
+              ? "text-[var(--text)] border-[#4B6B76] bg-[var(--ov-05)]"
+              : "text-[var(--muted)] hover:text-[var(--text)] border-transparent hover:bg-[var(--ov-03)]"
+          }`}
+        >
+          <Bell size={15} aria-hidden="true" />
+          <span>Notifications</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "security"}
+          onClick={() => handleTabChange("security")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${
+            activeTab === "security"
+              ? "text-[var(--text)] border-[#4B6B76] bg-[var(--ov-05)]"
+              : "text-[var(--muted)] hover:text-[var(--text)] border-transparent hover:bg-[var(--ov-03)]"
+          }`}
+        >
+          <Shield size={15} aria-hidden="true" />
+          <span>Security & Sessions</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "danger"}
+          onClick={() => handleTabChange("danger")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${
+            activeTab === "danger"
+              ? "text-red-500 border-red-500 bg-red-500/5"
+              : "text-[var(--muted)] hover:text-red-500 border-transparent hover:bg-red-500/5"
+          }`}
+        >
+          <AlertTriangle size={15} aria-hidden="true" />
+          <span>Danger Zone</span>
+        </button>
+      </div>
+
+      {/* Tab Panels */}
+
+      {/* TAB 1: General & Profile */}
+      {activeTab === "general" && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Profile Card */}
+            <section className="p-6 rounded-2xl bg-[var(--content)] border border-[var(--ov-10)] space-y-4">
+              <h2 className="text-base font-bold font-sora text-[var(--text)] flex items-center gap-2">
+                <User size={18} className="text-[#4B6B76]" aria-hidden="true" />
+                <span>Profile Details</span>
+              </h2>
+
+              <div className="space-y-4 pt-2">
+                <div>
+                  <label className="block text-xs font-medium text-[var(--muted)] mb-1">
+                    Connected Wallet Address
+                  </label>
+                  <div className="p-3 rounded-xl bg-[var(--modal)] border border-[var(--ov-10)] font-mono text-xs text-[var(--text)] truncate">
+                    {connectedAddress}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="displayName"
+                    className="block text-xs font-medium text-[var(--muted)] mb-1"
+                  >
+                    Display Name (Optional)
+                  </label>
+                  <input
+                    id="displayName"
+                    type="text"
+                    value={profile.displayName}
+                    onChange={(e) =>
+                      setProfile({ displayName: e.target.value })
+                    }
+                    placeholder="e.g. Satoshi_Saver"
+                    className="w-full h-10 px-3.5 rounded-xl bg-[var(--modal)] border border-[var(--ov-10)] text-xs text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76] transition-colors"
+                  />
+                  <p className="text-[11px] text-[var(--muted)] mt-1">
+                    This is how other participants see you in circles and discussions.
+                  </p>
+                </div>
+
+                <div className="pt-2 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSaveProfile}
+                    disabled={profileStatus === "saving"}
+                    className="px-5 py-2 rounded-xl bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {profileStatus === "saving" ? "Saving..." : "Save Profile"}
+                  </button>
+                  {profileStatus === "success" && (
+                    <span className="text-xs text-emerald-500 font-medium">Profile saved.</span>
+                  )}
+                  {profileStatus === "error" && (
+                    <span className="text-xs text-red-500 font-medium">Failed to save.</span>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Appearance Card */}
+            <section className="p-6 rounded-2xl bg-[var(--content)] border border-[var(--ov-10)] space-y-4">
+              <h2 className="text-base font-bold font-sora text-[var(--text)] flex items-center gap-2">
+                <Palette size={18} className="text-[#4B6B76]" aria-hidden="true" />
+                <span>Appearance & Theme</span>
+              </h2>
+
+              <div className="pt-2 flex items-center justify-between">
+                <div>
+                  <span className="block text-sm font-semibold text-[var(--text)]">
+                    Color Theme
+                  </span>
+                  <span className="block text-xs text-[var(--muted)] mt-0.5">
+                    Light, dark, or automatic system match
+                  </span>
+                </div>
+                <ThemeToggle />
+              </div>
+            </section>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowLeaveConfirm(true)}
-            className="mt-3 rounded-md border border-red-300 dark:border-red-800/60 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15"
-          >
-            Leave all circles
-          </button>
-        )}
-      </section>
+        </div>
+      )}
+
+      {/* TAB 2: Notifications */}
+      {activeTab === "notifications" && (
+        <div className="space-y-8 animate-fade-in">
+          {/* Email Notification Categorized Preferences */}
+          <EmailNotificationPreferences />
+
+          {/* Browser Push Preferences */}
+          <PushNotificationPreferences />
+        </div>
+      )}
+
+      {/* TAB 3: Security & Sessions */}
+      {activeTab === "security" && (
+        <div className="space-y-8 animate-fade-in">
+          {/* Active Sessions & Connected Devices Manager */}
+          <ActiveSessionsManager />
+
+          {/* Two-Factor Authentication Setup */}
+          <TwoFactorSetup accountLabel={connectedAddress ?? "wallet"} />
+        </div>
+      )}
+
+      {/* TAB 4: Danger Zone */}
+      {activeTab === "danger" && (
+        <div className="space-y-6 animate-fade-in">
+          <section className="p-6 rounded-2xl bg-red-500/10 border border-red-500/30 space-y-4">
+            <div className="flex items-center gap-3 text-red-500">
+              <AlertTriangle size={24} aria-hidden="true" />
+              <h2 className="text-lg font-bold font-sora">
+                Danger Zone
+              </h2>
+            </div>
+
+            <p className="text-xs text-[var(--muted)] leading-relaxed max-w-2xl">
+              Leaving all circles removes you from every active circle you&apos;ve joined. Contributions already made are not refunded automatically; any pending payouts follow each circle&apos;s normal settlement rules.
+            </p>
+
+            {leaveStatus === "done" ? (
+              <p className="text-xs font-semibold text-emerald-500">
+                You have successfully left all joined circles.
+              </p>
+            ) : showLeaveConfirm ? (
+              <div className="p-4 rounded-xl bg-[var(--modal)] border border-red-500/30 space-y-3">
+                <span className="block text-xs font-bold text-red-500">
+                  Are you absolutely sure? This action cannot be undone.
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={leaveStatus === "leaving"}
+                    onClick={handleLeaveAllCircles}
+                    className="rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {leaveStatus === "leaving" ? "Leaving..." : "Yes, Leave All Circles"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowLeaveConfirm(false)}
+                    className="rounded-xl border border-[var(--ov-14)] bg-[var(--content)] px-4 py-2 text-xs font-medium text-[var(--text)] hover:bg-[var(--ov-08)] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowLeaveConfirm(true)}
+                className="mt-2 rounded-xl border border-red-500/40 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/20 transition-colors"
+              >
+                Leave all circles
+              </button>
+            )}
+          </section>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense>
+      <SettingsContent />
+    </Suspense>
   );
 }

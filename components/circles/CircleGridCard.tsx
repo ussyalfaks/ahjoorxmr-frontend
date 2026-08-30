@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Users, DollarSign, Clock } from "lucide-react";
+import { Users, DollarSign, Clock, Check } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { truncateAddress, type DiscoverCircle } from "@/data/circles";
 import AutoPayStatusBadge from "@/components/circles/AutoPayStatusBadge";
 import BookmarkButton from "@/components/circles/BookmarkButton";
+import { useCircleComparison } from "@/contexts/CircleComparisonContext";
 
 interface CircleGridCardProps {
   circle: DiscoverCircle;
@@ -22,8 +23,17 @@ export default function CircleGridCard({
   const fillPct = Math.round((circle.members.length / circle.totalSlots) * 100);
   const isFull = circle.members.length >= circle.totalSlots;
 
+  const { isSelected, toggleCircle, isMaxSelected } = useCircleComparison();
+  const selected = isSelected(circle.id);
+
   return (
-    <article className="bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[var(--content-hover)] transition-colors">
+    <article
+      className={`bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 transition-all duration-200 ${
+        selected
+          ? "ring-2 ring-[#4B6B76] border-[#4B6B76] shadow-md bg-[var(--content-hover)]"
+          : "hover:bg-[var(--content-hover)]"
+      }`}
+    >
       {(circle.closed || isFull) && (
         <div
           className={`-mt-2 -mx-1 rounded-lg px-3 py-1.5 text-[11px] font-medium ${
@@ -45,7 +55,7 @@ export default function CircleGridCard({
             {circle.name}
           </h2>
         </Link>
-        {/* Slot fill badge */}
+        {/* Actions & Badges */}
         <div className="flex shrink-0 items-center gap-1.5 mt-0.5">
           <AutoPayStatusBadge circleId={circle.id} />
           <span
@@ -58,13 +68,33 @@ export default function CircleGridCard({
         </div>
       </div>
 
-      {/* Creator */}
-      <div className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
-        <span>by</span>
-        <span className="font-mono truncate max-w-[140px]">
-          {truncateAddress(circle.creator)}
-        </span>
-        <CopyButton value={circle.creator} />
+      {/* Creator & Compare Checkbox Row */}
+      <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+        <div className="flex items-center gap-1.5">
+          <span>by</span>
+          <span className="font-mono truncate max-w-[120px]">
+            {truncateAddress(circle.creator)}
+          </span>
+          <CopyButton value={circle.creator} />
+        </div>
+
+        {/* Compare Checkbox */}
+        <label
+          htmlFor={`compare-grid-${circle.id}`}
+          className="flex items-center gap-1.5 cursor-pointer text-[11px] font-medium text-[var(--muted)] hover:text-[var(--text)] select-none"
+        >
+          <input
+            id={`compare-grid-${circle.id}`}
+            type="checkbox"
+            checked={selected}
+            disabled={!selected && isMaxSelected}
+            onChange={() => toggleCircle(circle.id)}
+            className="rounded border-[var(--ov-1a)] text-[#4B6B76] focus:ring-[#4B6B76] w-3.5 h-3.5 cursor-pointer disabled:opacity-40"
+          />
+          <span className={selected ? "text-[#4B6B76] font-semibold" : ""}>
+            Compare
+          </span>
+        </label>
       </div>
 
       {/* Stats */}
@@ -125,3 +155,4 @@ export default function CircleGridCard({
     </article>
   );
 }
+

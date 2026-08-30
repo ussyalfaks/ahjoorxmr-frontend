@@ -11,6 +11,7 @@ import {
   Lock,
   LayoutGrid,
   Settings,
+  Award,
   CornerDownLeft,
   type LucideIcon,
 } from "lucide-react";
@@ -49,6 +50,7 @@ const ACTIONS: PaletteItem[] = [
 const PAGES: PaletteItem[] = [
   { id: "page-overview", group: "Pages", label: "Dashboard Overview", icon: LayoutGrid, href: "/dashboard" },
   { id: "page-circles", group: "Pages", label: "Circles", icon: Users, href: "/dashboard/circles" },
+  { id: "page-achievements", group: "Pages", label: "Achievements & Badges", keywords: "trophies medals rewards", icon: Award, href: "/dashboard/achievements" },
   { id: "page-locked-funds", group: "Pages", label: "Locked Funds", icon: Lock, href: "/dashboard/locked-funds" },
   { id: "page-payouts", group: "Pages", label: "Payouts", icon: Wallet, href: "/dashboard/payouts" },
   { id: "page-settings", group: "Pages", label: "Settings", icon: Settings, href: "/dashboard/settings" },

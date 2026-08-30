@@ -108,12 +108,33 @@ export default function CircleSettingsPage({
   const [penaltyValue, setPenaltyValue] = useState("");
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiving, setArchiving] = useState(false);
+
+  const contributionAmount = parseFloat(contribution) || 0;
+  const penaltyNumericValue = parseFloat(penaltyValue) || 0;
+  const penaltyIsValid =
+    !penaltyEnabled ||
+    (penaltyNumericValue > 0 &&
+      (penaltyType === "percentage"
+        ? penaltyNumericValue <= 100
+        : penaltyNumericValue <= contributionAmount));
   const [status, setStatus] = useState<SettingsCircle["status"] | null>(circle?.status ?? null);
   const [roles, setRoles] = useState<Record<string, CircleRole>>(() =>
     Object.fromEntries(circle?.participants.map((participant) => [participant.address, participant.role]) ?? [])
   );
   const [showDrawModal, setShowDrawModal] = useState(false);
   const [payoutDraw, setPayoutDraw] = useState<PayoutDraw | null>(() => (circle ? getPayoutDraw(circle.id) : null));
+  const [joinRequests, setJoinRequests] = useState<CircleJoinRequest[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(REQUESTS_KEY);
+      if (raw) {
+        setJoinRequests(JSON.parse(raw));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   if (!circle) {
     return (

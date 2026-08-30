@@ -7,6 +7,9 @@ import CreateCircleModal from "@/components/modals/CreateCircleModal";
 import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
 import CircleGridCard from "@/components/circles/CircleGridCard";
 import CircleListRow from "@/components/circles/CircleListRow";
+import ComparisonFloatingBar from "@/components/circles/ComparisonFloatingBar";
+import CircleComparison from "@/components/circles/CircleComparison";
+import { CircleComparisonProvider } from "@/contexts/CircleComparisonContext";
 import { useCircleViewPreference } from "@/hooks/useCircleViewPreference";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import {
@@ -69,10 +72,11 @@ function ListHeader() {
   return (
     <div
       className="hidden sm:grid items-center gap-x-4 px-4 py-2 rounded-lg bg-[var(--ov-05)] mb-1
-        grid-cols-[minmax(180px,2fr)_120px_100px_80px_110px_auto]"
+        grid-cols-[28px_minmax(160px,2fr)_110px_100px_80px_100px_auto]"
       role="rowgroup"
       aria-label="Circle list column headers"
     >
+      <span className="sr-only">Compare</span>
       <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
         Circle
       </span>
@@ -153,7 +157,7 @@ function CirclesContent() {
     if (!inviteId) return;
     const circle = MOCK_CIRCLES.find((c) => c.id === inviteId);
     if (circle) setJoinCircle(circle);
-  }, [inviteId, allCircles]);
+  }, [inviteId]);
 
   useEffect(() => {
     if (action === "create") {
@@ -349,7 +353,7 @@ function CirclesContent() {
         </div>
       </div>
 
-      <CreateCircleModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
+      <CreateCircleModal open={createOpen} onClose={() => setCreateOpen(false)} />
       <JoinCircleModal
         open={joinCircle !== null}
         onClose={() => {
@@ -359,6 +363,11 @@ function CirclesContent() {
         circle={joinCircle}
         currentWallet={CURRENT_WALLET}
       />
+      <ComparisonFloatingBar allCircles={MOCK_CIRCLES} />
+      <CircleComparison
+        allCircles={MOCK_CIRCLES}
+        onJoinCircle={(circle) => setJoinCircle(circle)}
+      />
     </>
   );
 }
@@ -366,7 +375,9 @@ function CirclesContent() {
 export default function CirclesPage() {
   return (
     <Suspense>
-      <CirclesContent />
+      <CircleComparisonProvider>
+        <CirclesContent />
+      </CircleComparisonProvider>
     </Suspense>
   );
 }
