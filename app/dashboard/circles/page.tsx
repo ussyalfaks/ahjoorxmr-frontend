@@ -2,12 +2,13 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Plus, LayoutGrid, List, Search, X } from "lucide-react";
+import { Plus, LayoutGrid, List, Search, Star, X } from "lucide-react";
 import CreateCircleModal from "@/components/modals/CreateCircleModal";
 import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
 import CircleGridCard from "@/components/circles/CircleGridCard";
 import CircleListRow from "@/components/circles/CircleListRow";
 import { useCircleViewPreference } from "@/hooks/useCircleViewPreference";
+import { useBookmarks } from "@/hooks/useBookmarks";
 import {
   MOCK_CIRCLES,
   CURRENT_WALLET,
@@ -99,7 +100,7 @@ function EmptyState({
   tab,
   hasQuery,
 }: {
-  tab: "my" | "discover";
+  tab: "my" | "discover" | "bookmarked";
   hasQuery: boolean;
 }) {
   return (
@@ -108,6 +109,13 @@ function EmptyState({
         <>
           <Search size={32} className="text-[var(--muted)]" aria-hidden="true" />
           <p className="text-[var(--muted)] text-base">No circles match your search.</p>
+        </>
+      ) : tab === "bookmarked" ? (
+        <>
+          <Star size={32} className="text-[var(--muted)]" aria-hidden="true" />
+          <p className="text-[var(--muted)] text-base">
+            You haven&apos;t bookmarked any circles yet.
+          </p>
         </>
       ) : (
         <p className="text-[var(--muted)] text-base">
@@ -123,7 +131,7 @@ function EmptyState({
 // ---------------------------------------------------------------------------
 // Main content (inside Suspense for useSearchParams)
 // ---------------------------------------------------------------------------
-type Tab = "my" | "discover";
+type Tab = "my" | "discover" | "bookmarked";
 
 function CirclesContent() {
   const searchParams = useSearchParams();
@@ -138,6 +146,7 @@ function CirclesContent() {
   const [query, setQuery] = useState("");
 
   const { view, setView } = useCircleViewPreference();
+  const { bookmarkedIds } = useBookmarks();
 
   // Handle invite / create deep-link params
   useEffect(() => {
@@ -159,13 +168,11 @@ function CirclesContent() {
   };
 
   // Derive filtered list — memo keeps it cheap on re-render
-  const baseCircles = useMemo<DiscoverCircle[]>(
-    () =>
-      tab === "my"
-        ? MOCK_CIRCLES.filter((c) => c.members.includes(CURRENT_WALLET))
-        : MOCK_CIRCLES.filter((c) => !c.members.includes(CURRENT_WALLET)),
-    [tab]
-  );
+  const baseCircles = useMemo<DiscoverCircle[]>(() => {
+    if (tab === "my") return MOCK_CIRCLES.filter((c) => c.members.includes(CURRENT_WALLET));
+    if (tab === "bookmarked") return MOCK_CIRCLES.filter((c) => bookmarkedIds.includes(c.id));
+    return MOCK_CIRCLES.filter((c) => !c.members.includes(CURRENT_WALLET));
+  }, [tab, bookmarkedIds]);
 
   const displayCircles = useMemo(
     () => filterCirclesByQuery(baseCircles, query),
@@ -173,6 +180,7 @@ function CirclesContent() {
   );
 
   const isDiscover = tab === "discover";
+  const isBookmarked = tab === "bookmarked";
 
   return (
     <>
@@ -238,6 +246,26 @@ function CirclesContent() {
                 {MOCK_CIRCLES.filter((c) => !c.members.includes(CURRENT_WALLET)).length}
               </span>
             </button>
+            <button
+              role="tab"
+              aria-selected={tab === "bookmarked"}
+              aria-controls="circles-panel"
+              onClick={() => setTab("bookmarked")}
+              className={`flex items-center px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-inset -mb-px sm:mb-0 sm:rounded-lg ${
+                tab === "bookmarked"
+                  ? "text-[var(--text)] border-b-2 border-white sm:border-0 sm:bg-[var(--ov-0a)]"
+                  : "text-[var(--muted)] hover:text-[var(--text)] border-b-2 border-transparent sm:border-0 sm:hover:bg-[var(--ov-07)]"
+              }`}
+            >
+              <Star size={13} aria-hidden="true" className="mr-1.5" />
+              Bookmarked
+              <span
+                className="ml-2 text-xs text-[var(--muted)] tabular-nums"
+                aria-label={`${MOCK_CIRCLES.filter((c) => bookmarkedIds.includes(c.id)).length} circles`}
+              >
+                {MOCK_CIRCLES.filter((c) => bookmarkedIds.includes(c.id)).length}
+              </span>
+            </button>
           </div>
 
           {/* Search + view toggle */}
@@ -294,7 +322,7 @@ function CirclesContent() {
                 <CircleGridCard
                   key={circle.id}
                   circle={circle}
-                  showJoin={isDiscover}
+                  showJoin={isDiscover || (isBookmarked && !circle.members.includes(CURRENT_WALLET))}
                   onJoin={setJoinCircle}
                 />
               ))}
@@ -304,14 +332,14 @@ function CirclesContent() {
             <div
               className="flex flex-col gap-0.5"
               role="table"
-              aria-label={tab === "my" ? "My circles" : "Discover circles"}
+              aria-label={tab === "my" ? "My circles" : tab === "discover" ? "Discover circles" : "Bookmarked circles"}
             >
               <ListHeader />
               {displayCircles.map((circle, i) => (
                 <CircleListRow
                   key={circle.id}
                   circle={circle}
-                  showJoin={isDiscover}
+                  showJoin={isDiscover || (isBookmarked && !circle.members.includes(CURRENT_WALLET))}
                   onJoin={setJoinCircle}
                   even={i % 2 === 1}
                 />

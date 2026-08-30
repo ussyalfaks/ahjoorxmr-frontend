@@ -5,6 +5,7 @@ import { Users, DollarSign, Clock } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { truncateAddress, type DiscoverCircle } from "@/data/circles";
 import AutoPayStatusBadge from "@/components/circles/AutoPayStatusBadge";
+import BookmarkButton from "@/components/circles/BookmarkButton";
 
 interface CircleGridCardProps {
   circle: DiscoverCircle;
@@ -19,9 +20,21 @@ export default function CircleGridCard({
   onJoin,
 }: CircleGridCardProps) {
   const fillPct = Math.round((circle.members.length / circle.totalSlots) * 100);
+  const isFull = circle.members.length >= circle.totalSlots;
 
   return (
     <article className="bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[var(--content-hover)] transition-colors">
+      {(circle.closed || isFull) && (
+        <div
+          className={`-mt-2 -mx-1 rounded-lg px-3 py-1.5 text-[11px] font-medium ${
+            circle.closed
+              ? "bg-[var(--ov-0a)] text-[var(--muted)]"
+              : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+          }`}
+        >
+          {circle.closed ? "This circle has closed" : "This circle is now full"}
+        </div>
+      )}
       {/* Name */}
       <div className="flex items-start justify-between gap-2">
         <Link
@@ -41,6 +54,7 @@ export default function CircleGridCard({
           >
             {fillPct}%
           </span>
+          <BookmarkButton circleId={circle.id} circleName={circle.name} />
         </div>
       </div>
 

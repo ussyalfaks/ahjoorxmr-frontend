@@ -1,8 +1,12 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Settings, BarChart3 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Settings, BarChart3, LogOut } from "lucide-react";
 import Link from "next/link";
+import LeaveCircleModal from "@/components/modals/LeaveCircleModal";
+import { addNotification } from "@/lib/notifications";
+import { ANNOUNCEMENTS_EVENT, getAnnouncementsForCircle } from "@/lib/announcements";
 import ActivityFeed from "@/components/circles/ActivityFeed";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import DisputeList from "@/components/circles/DisputeList";
@@ -13,11 +17,12 @@ import ReportIssueModal, {
 } from "@/components/modals/ReportIssueModal";
 import ExportButton from "@/components/ui/ExportButton";
 import { useToast } from "@/components/ui/Toast";
-import type { CircleEvent } from "@/types/circle";
+import type { CircleEvent, PenaltyConfig } from "@/types/circle";
 import type { Dispute } from "@/types/dispute";
 import type { Comment } from "@/types/discussion";
 import type { ExportRow } from "@/lib/export";
 import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
+import BookmarkButton from "@/components/circles/BookmarkButton";
 import { calculateCircleHealth } from "@/lib/circleHealth";
 import { getPayoutDraw, type PayoutDraw } from "@/lib/payoutDraw";
 import { Lock } from "lucide-react";
@@ -60,6 +65,7 @@ interface CircleDetail {
   isOrganizer: boolean;
   isCoOrganizer: boolean;
   isMember: boolean;
+  penalty?: PenaltyConfig;
 }
 
 const MOCK_EVENTS: CircleEvent[] = [
@@ -193,6 +199,7 @@ const CIRCLES: Record<string, CircleDetail> = {
     isOrganizer: false,
     isCoOrganizer: false,
     isMember: true,
+    penalty: { enabled: true, type: "percentage", value: "10" },
   },
   "6": {
     id: "6",
@@ -385,19 +392,39 @@ export default function CircleDetailPage({
   const { id } = use(params);
   const circle = CIRCLES[id];
   const { showToast } = useToast();
+  const router = useRouter();
 
   const [disputes, setDisputes] = useState<Dispute[]>(() =>
     MOCK_DISPUTES.filter((d) => d.circleId === id)
   );
   const [reportOpen, setReportOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [comments, setComments] = useState<Comment[]>(() =>
     MOCK_COMMENTS.filter((c) => c.circleId === id)
   );
   const [payoutDraw, setPayoutDraw] = useState<PayoutDraw | null>(null);
+  const [announcementEvents, setAnnouncementEvents] = useState<CircleEvent[]>([]);
 
   useEffect(() => {
     setPayoutDraw(getPayoutDraw(id));
+  }, [id]);
+
+  useEffect(() => {
+    const sync = () => {
+      setAnnouncementEvents(
+        getAnnouncementsForCircle(id).map((a) => ({
+          id: a.id,
+          type: "announcement_sent",
+          actor: a.sentBy,
+          timestamp: new Date(a.sentAt),
+          meta: { message: a.message, priority: a.priority },
+        }))
+      );
+    };
+    sync();
+    window.addEventListener(ANNOUNCEMENTS_EVENT, sync);
+    return () => window.removeEventListener(ANNOUNCEMENTS_EVENT, sync);
   }, [id]);
 
   useEffect(() => {
@@ -477,6 +504,21 @@ export default function CircleDetailPage({
     [id]
   );
 
+  const handleLeaveCircle = useCallback(async () => {
+    if (!circle) return;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    addNotification({
+      id: `member-left-${circle.id}-${Date.now()}`,
+      type: "member_left",
+      title: "A member left your circle",
+      description: `${fmt(CURRENT_WALLET)} left ${circle.name}.`,
+      href: `/dashboard/circles/${circle.id}`,
+    });
+    setLeaveOpen(false);
+    showToast({ title: `You left ${circle.name}`, variant: "success" });
+    router.push("/dashboard/circles");
+  }, [circle, router, showToast]);
+
   const getExportRows = useCallback((): ExportRow[] => {
     if (!circle) return [];
     const contributions: ExportRow[] = circle.participants
@@ -518,6 +560,18 @@ export default function CircleDetailPage({
   const isNextRecipient = circle.nextPayoutRecipient === CURRENT_WALLET;
   const canManageCircle = circle.isOrganizer || circle.isCoOrganizer;
 
+  // Leave-circle eligibility — non-organizer participants only, and never on
+  // a circle that's already finished.
+  const canLeaveCircle = circle.isMember && !circle.isOrganizer && circle.status !== "completed";
+  const hasCircleStarted = circle.roundHistory.length > 0 || circle.currentRound > 1;
+  // A locked payout order assumes a fixed member list for every round still
+  // ahead of it — leaving before your own payout turn would skip whoever
+  // was scheduled behind you, so that case is blocked rather than allowed.
+  const userAlreadyReceivedPayout = payoutDraw
+    ? payoutDraw.order.slice(0, circle.currentRound - 1).includes(CURRENT_WALLET)
+    : false;
+  const leavingBreaksPayoutOrder = !!payoutDraw && hasCircleStarted && !userAlreadyReceivedPayout;
+
   // Build milestone data for completed circles or when user is the next recipient
   const completedMilestone: MilestoneData | null =
     circle.status === "completed"
@@ -553,6 +607,7 @@ export default function CircleDetailPage({
           <ArrowLeft size={20} />
         </Link>
         <h1 className="text-2xl font-bold font-sora text-[var(--text)]">{circle.name}</h1>
+        <BookmarkButton circleId={circle.id} circleName={circle.name} size={18} />
         <CircleHealthIndicator health={health} />
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[circle.status]}`}>
           {circle.status}
@@ -710,6 +765,15 @@ export default function CircleDetailPage({
               <Flag size={15} aria-hidden="true" />
               Report an Issue
             </button>
+            {canLeaveCircle && (
+              <button
+                onClick={() => setLeaveOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-[var(--muted)] hover:text-[var(--text)] text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              >
+                <LogOut size={15} aria-hidden="true" />
+                Leave Circle
+              </button>
+            )}
           </div>
         )}
 
@@ -803,7 +867,7 @@ export default function CircleDetailPage({
             <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Activity</h2>
             <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
           </div>
-          <ActivityFeed events={MOCK_EVENTS} pageSize={5} />
+          <ActivityFeed events={[...MOCK_EVENTS, ...announcementEvents]} pageSize={5} />
         </div>
 
         <ExportButton
@@ -835,6 +899,18 @@ export default function CircleDetailPage({
         circleName={circle.name}
         round={circle.currentRound}
         onSubmit={handleSubmitReport}
+      />
+
+      <LeaveCircleModal
+        open={leaveOpen}
+        onClose={() => setLeaveOpen(false)}
+        circleName={circle.name}
+        contribution={circle.contribution}
+        hasStarted={hasCircleStarted}
+        penalty={circle.penalty}
+        blocked={leavingBreaksPayoutOrder}
+        blockedReason="Leaving now would break this round's payout order — a member is still waiting on the fixed schedule from your circle's payout draw. Ask the organizer to re-run the draw before you leave."
+        onConfirm={handleLeaveCircle}
       />
     </div>
   );

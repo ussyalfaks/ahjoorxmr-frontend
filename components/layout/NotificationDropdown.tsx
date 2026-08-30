@@ -1,9 +1,23 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bell, CheckCircle2, DollarSign, AlertCircle, Clock, UserPlus, X } from "lucide-react";
+import { Bell, CheckCircle2, DollarSign, AlertCircle, Clock, UserPlus, UserMinus, Megaphone, X } from "lucide-react";
 import Link from "next/link";
 import type { Notification, NotificationType } from "@/types/notification";
+import { NOTIFICATIONS_EVENT } from "@/lib/notifications";
+
+const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
+
+function readStoredNotifications(): Notification[] {
+  try {
+    const stored = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) ?? "[]") as Array<
+      Omit<Notification, "timestamp"> & { timestamp: string }
+    >;
+    return stored.map((notification) => ({ ...notification, timestamp: new Date(notification.timestamp) }));
+  } catch {
+    return [];
+  }
+}
 
 const INITIAL_NOTIFICATIONS: Notification[] = [
   {
@@ -58,12 +72,32 @@ const TYPE_CONFIG: Record<NotificationType, { icon: React.ComponentType<{ size?:
   missed_contribution: { icon: AlertCircle, color: "text-[#FF5B5B]" },
   your_turn:      { icon: Clock,         color: "text-[#4B6B76]" },
   join_request:   { icon: UserPlus,      color: "text-[#4B6B76]" },
+  member_left:    { icon: UserMinus,     color: "text-[#FF5B5B]" },
+  announcement:   { icon: Megaphone,     color: "text-[#4B6B76]" },
 };
 
 export default function NotificationDropdown() {
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sync = () => {
+      const stored = readStoredNotifications();
+      if (stored.length === 0) return;
+      setNotifications((current) => [
+        ...stored.filter((s) => !current.some((c) => c.id === s.id)),
+        ...current,
+      ]);
+    };
+    sync();
+    window.addEventListener(NOTIFICATIONS_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(NOTIFICATIONS_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

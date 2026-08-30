@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { ArrowUpRight, Users, CheckCircle2, DollarSign, GripHorizontal, EyeOff, ArrowUp, ArrowDown, Settings2, RotateCcw, Plus } from "lucide-react";
 import SavingsCard from "@/components/cards/SavingsCard";
 import SavingsGrowthChart from "@/components/charts/SavingsGrowthChart";
+import UpcomingPayoutsCalendar from "@/components/dashboard/UpcomingPayoutsCalendar";
 import TxConfirmModal, { TxType } from "@/components/modals/TxConfirmModal";
 import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
 import type { Circle } from "@/types/circle";
@@ -14,7 +15,7 @@ interface PendingTx {
   amount: number;
 }
 
-type WidgetId = 'stats' | 'chart' | 'active-savings';
+type WidgetId = 'stats' | 'chart' | 'active-savings' | 'payouts-calendar';
 
 interface WidgetLayout {
   id: WidgetId;
@@ -25,12 +26,14 @@ const DEFAULT_LAYOUT: WidgetLayout[] = [
   { id: 'stats', visible: true },
   { id: 'chart', visible: true },
   { id: 'active-savings', visible: true },
+  { id: 'payouts-calendar', visible: true },
 ];
 
 const WIDGET_TITLES: Record<WidgetId, string> = {
   'stats': 'Overview Stats',
   'chart': 'Savings Growth',
-  'active-savings': 'Active Savings'
+  'active-savings': 'Active Savings',
+  'payouts-calendar': 'Upcoming Payouts'
 };
 
 /**
@@ -312,6 +315,8 @@ export default function DashboardOverviewPage() {
             </div>
           </div>
         );
+      case 'payouts-calendar':
+        return <UpcomingPayoutsCalendar circles={circles} />;
       default:
         return null;
     }
@@ -436,7 +441,8 @@ export default function DashboardOverviewPage() {
           <>
             <div className="mt-8 mb-6">{renderWidgetContent('stats')}</div>
             <div className="mb-6">{renderWidgetContent('chart')}</div>
-            <div>{renderWidgetContent('active-savings')}</div>
+            <div className="mb-6">{renderWidgetContent('active-savings')}</div>
+            <div>{renderWidgetContent('payouts-calendar')}</div>
           </>
         )}
       </div>

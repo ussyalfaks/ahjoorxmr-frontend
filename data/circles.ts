@@ -23,6 +23,8 @@ export interface DiscoverCircle {
   totalRounds?: number;
   /** Optional: next payout label, e.g. "in 2 days" */
   nextPayout?: string;
+  /** Circle has stopped accepting new activity — bookmarks flag this instead of hiding it. */
+  closed?: boolean;
 }
 
 export const MOCK_CIRCLES: DiscoverCircle[] = [

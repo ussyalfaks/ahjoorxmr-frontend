@@ -8,6 +8,7 @@ import {
   Play,
   XCircle,
   Activity,
+  Megaphone,
 } from "lucide-react";
 import type { CircleEvent, EventType } from "@/types/circle";
 
@@ -66,6 +67,11 @@ const EVENT_CONFIG: Record<
     icon: <XCircle size={16} />,
     color: "text-[#F87171] bg-[#F8717115]",
   },
+  announcement_sent: {
+    label: "sent an announcement",
+    icon: <Megaphone size={16} />,
+    color: "text-[#4B6B76] bg-[#4B6B7615]",
+  },
 };
 
 export default function ActivityFeed({ events, pageSize = 10 }: Props) {
@@ -122,6 +128,16 @@ export default function ActivityFeed({ events, pageSize = 10 }: Props) {
                   {!!event.meta?.amount && (
                     <span className="ml-1 font-semibold text-[var(--text)]">
                       · {String(event.meta.amount)}
+                    </span>
+                  )}
+                  {!!event.meta?.message && (
+                    <span className="block mt-1 text-[var(--text)]">
+                      &ldquo;{String(event.meta.message)}&rdquo;
+                      {event.meta?.priority === "urgent" && (
+                        <span className="ml-2 rounded-full bg-[#FF5B5B22] px-1.5 py-0.5 text-[9px] font-semibold text-[#FF5B5B] align-middle">
+                          URGENT
+                        </span>
+                      )}
                     </span>
                   )}
                 </p>
