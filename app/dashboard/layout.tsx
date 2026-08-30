@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut, Wallet, Trophy, Bell, HelpCircle } from "lucide-react";
+import { LayoutGrid, Lock, FileText, User, Settings, Users, LogOut, Wallet, Trophy, Bell, HelpCircle, Award } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
@@ -84,6 +84,15 @@ export default function DashboardLayout({
               </li>
               <li>
                 <Link
+                  href="/dashboard/achievements"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <Award size={20} aria-hidden="true" />
+                  <span className="font-medium">Achievements</span>
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/dashboard/leaderboard"
                   className="flex items-center gap-3 px-4 py-3 text-[#9A9A9A] hover:text-[#EBEBEB] hover:bg-[#ffffff0a] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
@@ -102,20 +111,11 @@ export default function DashboardLayout({
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/dashboard/settings"
                   className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
-                  <FileText size={20} aria-hidden="true" />
-                  <span className="font-medium">Investments</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-                >
-                  <User size={20} aria-hidden="true" />
-                  <span className="font-medium">Profile</span>
+                  <Settings size={20} aria-hidden="true" />
+                  <span className="font-medium">Settings</span>
                 </Link>
               </li>
               <li>

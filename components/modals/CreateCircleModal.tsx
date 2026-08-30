@@ -5,6 +5,7 @@ import { X, ArrowRight, ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import SavingsCalculator from "@/components/calculator/SavingsCalculator";
 import { CIRCLE_CATEGORIES, CATEGORY_LABELS, type CircleCategory } from "@/lib/circles";
+import type { PenaltyConfig } from "@/types/circle";
 
 interface Props {
   open: boolean;
@@ -19,6 +20,10 @@ export interface CreateCircleData {
   maxMembers: string;
   roundDuration: string;
   category: CircleCategory;
+  isPrivate: boolean;
+  penaltyEnabled: boolean;
+  penaltyType: "percentage" | "fixed";
+  penaltyValue: string;
 }
 
 interface CircleTemplate {
@@ -68,6 +73,10 @@ const EMPTY: CreateCircleData = {
   maxMembers: "",
   roundDuration: "",
   category: "family",
+  isPrivate: false,
+  penaltyEnabled: false,
+  penaltyType: "percentage",
+  penaltyValue: "",
 };
 
 const TOTAL_STEPS = 4;

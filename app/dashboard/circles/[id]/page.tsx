@@ -23,7 +23,7 @@ import type { Comment } from "@/types/discussion";
 import type { ExportRow } from "@/lib/export";
 import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
 import BookmarkButton from "@/components/circles/BookmarkButton";
-import { calculateCircleHealth } from "@/lib/circleHealth";
+import { getMockCircleHealth } from "@/lib/circleHealth";
 import { getPayoutDraw, type PayoutDraw } from "@/lib/payoutDraw";
 import { Lock } from "lucide-react";
 import AutoPaySection from "@/components/circles/AutoPaySection";
@@ -608,7 +608,7 @@ export default function CircleDetailPage({
         </Link>
         <h1 className="text-2xl font-bold font-sora text-[var(--text)]">{circle.name}</h1>
         <BookmarkButton circleId={circle.id} circleName={circle.name} size={18} />
-        <CircleHealthIndicator health={health} />
+        <CircleHealthIndicator health={getMockCircleHealth(circle.id)} />
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[circle.status]}`}>
           {circle.status}
         </span>

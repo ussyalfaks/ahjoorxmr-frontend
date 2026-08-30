@@ -5,6 +5,7 @@ import { Users, DollarSign, Clock, ArrowRight } from "lucide-react";
 import { truncateAddress, type DiscoverCircle } from "@/data/circles";
 import AutoPayStatusBadge from "@/components/circles/AutoPayStatusBadge";
 import BookmarkButton from "@/components/circles/BookmarkButton";
+import { useCircleComparison } from "@/contexts/CircleComparisonContext";
 
 interface CircleListRowProps {
   circle: DiscoverCircle;
@@ -23,19 +24,41 @@ export default function CircleListRow({
   const fillPct = Math.round((circle.members.length / circle.totalSlots) * 100);
   const slotsLeft = circle.totalSlots - circle.members.length;
 
+  const { isSelected, toggleCircle, isMaxSelected } = useCircleComparison();
+  const selected = isSelected(circle.id);
+
   return (
     <div
-      className={`grid items-center gap-x-4 gap-y-2 px-4 py-3.5 rounded-xl transition-colors
+      className={`grid items-center gap-x-4 gap-y-2 px-4 py-3.5 rounded-xl transition-all duration-150
         hover:bg-[var(--content-hover)]
-        ${even ? "bg-[var(--ov-03)]" : "bg-transparent"}
+        ${selected ? "bg-[var(--ov-08)] ring-1 ring-[#4B6B76]/60" : even ? "bg-[var(--ov-03)]" : "bg-transparent"}
         /* Responsive column layout:
            mobile  : stacked (name + meta)
-           sm+     : name | contribution | members | round | next payout | action
+           sm+     : compare | name | contribution | members | round | next payout | action
         */
-        grid-cols-[1fr_auto]
-        sm:grid-cols-[minmax(180px,2fr)_120px_100px_80px_110px_auto]`}
+        grid-cols-[auto_1fr_auto]
+        sm:grid-cols-[28px_minmax(160px,2fr)_110px_100px_80px_100px_auto]`}
       role="row"
     >
+      {/* ---- Compare checkbox column ---- */}
+      <div className="flex items-center justify-center">
+        <label
+          htmlFor={`compare-list-${circle.id}`}
+          className="cursor-pointer p-1"
+          title="Select to compare"
+        >
+          <input
+            id={`compare-list-${circle.id}`}
+            type="checkbox"
+            checked={selected}
+            disabled={!selected && isMaxSelected}
+            onChange={() => toggleCircle(circle.id)}
+            aria-label={`Compare ${circle.name}`}
+            className="rounded border-[var(--ov-1a)] text-[#4B6B76] focus:ring-[#4B6B76] w-3.5 h-3.5 cursor-pointer disabled:opacity-40"
+          />
+        </label>
+      </div>
+
       {/* ---- Name + creator (always visible) ---- */}
       <div className="flex flex-col gap-0.5 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -159,3 +182,4 @@ export default function CircleListRow({
     </div>
   );
 }
+

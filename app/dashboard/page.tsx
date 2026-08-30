@@ -5,6 +5,7 @@ import { ArrowUpRight, Users, CheckCircle2, DollarSign, GripHorizontal, EyeOff, 
 import SavingsCard from "@/components/cards/SavingsCard";
 import SavingsGrowthChart from "@/components/charts/SavingsGrowthChart";
 import UpcomingPayoutsCalendar from "@/components/dashboard/UpcomingPayoutsCalendar";
+import RecentAchievementCard from "@/components/dashboard/RecentAchievementCard";
 import TxConfirmModal, { TxType } from "@/components/modals/TxConfirmModal";
 import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
 import type { Circle } from "@/types/circle";
@@ -15,7 +16,7 @@ interface PendingTx {
   amount: number;
 }
 
-type WidgetId = 'stats' | 'chart' | 'active-savings' | 'payouts-calendar';
+type WidgetId = 'stats' | 'recent-achievement' | 'chart' | 'active-savings' | 'payouts-calendar';
 
 interface WidgetLayout {
   id: WidgetId;
@@ -24,6 +25,7 @@ interface WidgetLayout {
 
 const DEFAULT_LAYOUT: WidgetLayout[] = [
   { id: 'stats', visible: true },
+  { id: 'recent-achievement', visible: true },
   { id: 'chart', visible: true },
   { id: 'active-savings', visible: true },
   { id: 'payouts-calendar', visible: true },
@@ -31,6 +33,7 @@ const DEFAULT_LAYOUT: WidgetLayout[] = [
 
 const WIDGET_TITLES: Record<WidgetId, string> = {
   'stats': 'Overview Stats',
+  'recent-achievement': 'Recent Achievement',
   'chart': 'Savings Growth',
   'active-savings': 'Active Savings',
   'payouts-calendar': 'Upcoming Payouts'
@@ -62,9 +65,15 @@ export default function DashboardOverviewPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as WidgetLayout[];
-        // Basic validation
-        if (Array.isArray(parsed) && parsed.length === DEFAULT_LAYOUT.length) {
-          setLayout(parsed);
+        if (Array.isArray(parsed)) {
+          const existingIds = new Set(parsed.map((w) => w.id));
+          const merged = [
+            ...parsed.filter((p) => p.id in WIDGET_TITLES),
+            ...DEFAULT_LAYOUT.filter((d) => !existingIds.has(d.id)),
+          ];
+          if (merged.length > 0) {
+            setLayout(merged);
+          }
         }
       } catch (e) {
         // ignore
@@ -294,6 +303,8 @@ export default function DashboardOverviewPage() {
             </div>
           </div>
         );
+      case 'recent-achievement':
+        return <RecentAchievementCard />;
       case 'chart':
         return <SavingsGrowthChart />;
       case 'active-savings':
