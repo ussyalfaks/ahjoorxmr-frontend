@@ -12,9 +12,14 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
+  Type,
+  Contrast,
 } from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import { useTheme, type FontSize } from "@/contexts/ThemeContext";
+import { useIdleTimer } from "@/hooks/useIdleTimer";
 import PushNotificationPreferences from "@/components/settings/PushNotificationPreferences";
+import LowBalanceAlertSettings from "@/components/wallet/LowBalanceAlert";
 import TwoFactorSetup from "@/components/settings/TwoFactorSetup";
 import EmailNotificationPreferences from "@/components/settings/EmailNotificationPreferences";
 import ActiveSessionsManager from "@/components/settings/ActiveSessionsManager";
@@ -36,6 +41,294 @@ function truncateAddress(address?: string | null) {
 }
 
 type SettingsTab = "general" | "notifications" | "security" | "danger";
+
+const FONT_SIZE_OPTIONS: { value: FontSize; label: string; size: string }[] = [
+  { value: "sm", label: "Small", size: "14px" },
+  { value: "md", label: "Default", size: "16px" },
+  { value: "lg", label: "Large", size: "18px" },
+  { value: "xl", label: "X-Large", size: "20px" },
+];
+
+function FontSizeControl() {
+  const { fontSize, setFontSize } = useTheme();
+
+  return (
+    <div className="pt-4 border-t border-[var(--ov-10)]">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Type size={16} className="text-[var(--muted)]" aria-hidden="true" />
+          <span className="text-sm font-semibold text-[var(--text)]">Font Size</span>
+        </div>
+      </div>
+      <div 
+        className="flex gap-1.5 p-1 rounded-lg bg-[var(--modal)] border border-[var(--ov-10)]"
+        role="radiogroup"
+        aria-label="Select font size"
+      >
+        {FONT_SIZE_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            role="radio"
+            aria-checked={fontSize === option.value}
+            onClick={() => setFontSize(option.value)}
+            className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
+              fontSize === option.value
+                ? "bg-[#4B6B76] text-white"
+                : "text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-05)]"
+            }`}
+            style={{ fontSize: option.size }}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HighContrastToggle() {
+  const { highContrast, setHighContrast, resolvedTheme } = useTheme();
+
+  return (
+    <div className="pt-4 border-t border-[var(--ov-10)]">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Contrast size={16} className="text-[var(--muted)]" aria-hidden="true" />
+          <div>
+            <span className="block text-sm font-semibold text-[var(--text)]">
+              High Contrast
+            </span>
+            <span className="block text-xs text-[var(--muted)] mt-0.5">
+              Enhances text visibility ({resolvedTheme === "dark" ? "dark" : "light"} mode)
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={() => setHighContrast(!highContrast)}
+          role="switch"
+          aria-checked={highContrast}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
+            highContrast ? "bg-[#4B6B76]" : "bg-[var(--ov-1a)]"
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${
+              highContrast ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const AUTO_LOGOUT_STORAGE_KEY = "ahjoor-auto-logout";
+
+const AUTO_LOGOUT_OPTIONS = [
+  { value: 5, label: "5 minutes" },
+  { value: 10, label: "10 minutes" },
+  { value: 15, label: "15 minutes" },
+  { value: 30, label: "30 minutes" },
+];
+
+function AutoLogoutSection() {
+  const [storedEnabled, setStoredEnabled] = useState(false);
+  const [storedMinutes, setStoredMinutes] = useState(5);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(AUTO_LOGOUT_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setStoredEnabled(parsed.enabled ?? false);
+        setStoredMinutes(parsed.minutes ?? 5);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const {
+    showWarning,
+    timeRemaining,
+    setEnabled,
+    setTimeoutMinutes,
+    extendSession,
+    isIdle,
+  } = useIdleTimer({
+    enabled: storedEnabled,
+    timeout: storedMinutes * 60 * 1000,
+    warningTime: 60 * 1000,
+    onIdle: () => {
+      // Trigger logout - in a real app, this would clear auth and redirect
+      localStorage.removeItem(STORAGE_KEY);
+      window.location.href = "/";
+    },
+  });
+
+  const handleEnableChange = (enabled: boolean) => {
+    setStoredEnabled(enabled);
+    setEnabled(enabled);
+    localStorage.setItem(
+      AUTO_LOGOUT_STORAGE_KEY,
+      JSON.stringify({ enabled, minutes: storedMinutes })
+    );
+  };
+
+  const handleMinutesChange = (minutes: number) => {
+    setStoredMinutes(minutes);
+    setTimeoutMinutes(minutes);
+    localStorage.setItem(
+      AUTO_LOGOUT_STORAGE_KEY,
+      JSON.stringify({ enabled: storedEnabled, minutes })
+    );
+  };
+
+  return (
+    <>
+      <section className="p-6 rounded-2xl bg-[var(--content)] border border-[var(--ov-10)] space-y-4">
+        <h2 className="text-base font-bold font-sora text-[var(--text)] flex items-center gap-2">
+          <Shield size={18} className="text-[#4B6B76]" aria-hidden="true" />
+          <span>Auto-Logout Timer</span>
+        </h2>
+
+        <p className="text-xs text-[var(--muted)] leading-relaxed">
+          Automatically sign out after a period of inactivity to protect your account.
+          A warning will appear 60 seconds before auto-logout.
+        </p>
+
+        <div className="pt-2 flex items-center justify-between">
+          <div>
+            <span className="block text-sm font-semibold text-[var(--text)]">
+              Enable Auto-Logout
+            </span>
+            <span className="block text-xs text-[var(--muted)] mt-0.5">
+              {storedEnabled ? "Active" : "Disabled"}
+            </span>
+          </div>
+          <button
+            onClick={() => handleEnableChange(!storedEnabled)}
+            role="switch"
+            aria-checked={storedEnabled}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
+              storedEnabled ? "bg-[#4B6B76]" : "bg-[var(--ov-1a)]"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${
+                storedEnabled ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+
+        {storedEnabled && (
+          <div className="pt-4 border-t border-[var(--ov-10)]">
+            <label className="block text-sm font-semibold text-[var(--text)] mb-2">
+              Inactivity period
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {AUTO_LOGOUT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleMinutesChange(option.value)}
+                  className={`px-4 py-2 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
+                    storedMinutes === option.value
+                      ? "bg-[#4B6B76] text-white"
+                      : "bg-[var(--modal)] text-[var(--muted)] hover:text-[var(--text)] border border-[var(--ov-10)]"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Warning Modal */}
+      <IdleWarningModal
+        show={showWarning}
+        timeRemaining={timeRemaining}
+        onStaySignedIn={extendSession}
+      />
+    </>
+  );
+}
+
+function IdleWarningModal({
+  show,
+  timeRemaining,
+  onStaySignedIn,
+}: {
+  show: boolean;
+  timeRemaining: number;
+  onStaySignedIn: () => void;
+}) {
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (show && timeRemaining === 0) {
+      setRedirecting(true);
+    }
+  }, [show, timeRemaining]);
+
+  if (!show) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="idle-warning-title"
+      aria-describedby="idle-warning-desc"
+    >
+      <div className="bg-[var(--content)] p-8 rounded-2xl max-w-sm mx-4 shadow-2xl border border-[var(--ov-10)]">
+        <div className="w-14 h-14 rounded-full bg-amber-500/20 flex items-center justify-center mb-5 mx-auto">
+          <Shield size={28} className="text-amber-500" aria-hidden="true" />
+        </div>
+        
+        <h3
+          id="idle-warning-title"
+          className="text-xl font-bold font-sora text-[var(--text)] text-center mb-3"
+        >
+          {redirecting ? "Signing out..." : "Session Expiring"}
+        </h3>
+        
+        <p id="idle-warning-desc" className="text-sm text-[var(--muted)] text-center mb-6">
+          {redirecting
+            ? "You have been signed out due to inactivity."
+            : `Your session will expire in ${timeRemaining} second${timeRemaining !== 1 ? "s" : ""} due to inactivity.`}
+        </p>
+
+        {redirecting ? (
+          <div className="flex justify-center">
+            <div className="animate-spin w-6 h-6 border-2 border-[#4B6B76] border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                // This would navigate to logout - for now just close
+                localStorage.removeItem(STORAGE_KEY);
+                window.location.href = "/";
+              }}
+              className="flex-1 px-4 py-3 bg-[var(--ov-0a)] text-[var(--muted)] rounded-xl font-medium hover:bg-[var(--ov-14)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              Sign Out
+            </button>
+            <button
+              onClick={onStaySignedIn}
+              className="flex-1 px-4 py-3 bg-[#4B6B76] text-white rounded-xl font-medium hover:bg-[#3D5A64] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              Stay Signed In
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -278,6 +571,12 @@ function SettingsContent() {
                 </div>
                 <ThemeToggle />
               </div>
+
+              {/* Font Size Control */}
+              <FontSizeControl />
+
+              {/* High Contrast Toggle */}
+              <HighContrastToggle />
             </section>
           </div>
         </div>
@@ -291,6 +590,9 @@ function SettingsContent() {
 
           {/* Browser Push Preferences */}
           <PushNotificationPreferences />
+
+          {/* Low Balance Alert Settings */}
+          <LowBalanceAlertSettings />
         </div>
       )}
 
@@ -302,6 +604,9 @@ function SettingsContent() {
 
           {/* Two-Factor Authentication Setup */}
           <TwoFactorSetup accountLabel={connectedAddress ?? "wallet"} />
+
+          {/* Auto-Logout Timer */}
+          <AutoLogoutSection />
         </div>
       )}
 
