@@ -13,6 +13,9 @@
 }
 
 :root {
+  /* Base font size for accessibility scaling */
+  --base-font-size: 16px;
+
   /* Light theme (default) */
   --bg: #ffffff;
   --bg2: #f3f3f8;
@@ -61,6 +64,17 @@
   color-scheme: light;
 }
 
+/* High contrast mode - overrides text colors for better readability */
+html.high-contrast {
+  --text: #000000 !important;
+  --muted: #1a1a1a !important;
+}
+
+html.high-contrast.dark {
+  --text: #ffffff !important;
+  --muted: #e5e5e5 !important;
+}
+
 .dark {
   /* Dark theme — matches the app's original hardcoded palette. */
   --bg: #0a0a0f;
@@ -106,7 +120,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
-  font-size: 16px;
+  font-size: var(--base-font-size, 16px);
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;

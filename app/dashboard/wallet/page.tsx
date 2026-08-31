@@ -20,6 +20,7 @@ import { useWallet, truncateAddress, AVAILABLE_WALLETS } from "@/contexts/Wallet
 import AddressBookSection from "@/components/wallet/AddressBookSection";
 import SendTransferModal from "@/components/wallet/SendTransferModal";
 import TwoFactorChallengeModal from "@/components/settings/TwoFactorChallengeModal";
+import LowBalanceAlertBanner, { LowBalanceAlertSettings } from "@/components/wallet/LowBalanceAlert";
 import { isTwoFactorEnabled } from "@/lib/twoFactor";
 
 type TransactionType = "contribution" | "payout" | "join";
@@ -243,6 +244,17 @@ export default function WalletPage() {
           <div className="h-px bg-[var(--ov-1a)] w-40" aria-hidden="true" />
         </div>
       </div>
+
+      {/* Low Balance Alert Banner */}
+      {activeWallet && (
+        <LowBalanceAlertBanner
+          balance={activeWallet.balance}
+          upcomingContribution={50} // Would come from actual circle data
+          daysUntilContribution={5} // Would come from actual circle data
+          onNavigateToDeposit={() => setSendOpen(true)}
+          testMode={true} // Enable for demo purposes
+        />
+      )}
 
       {/* Linked Wallets Card */}
       <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl">

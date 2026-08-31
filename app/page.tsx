@@ -6,6 +6,7 @@ import DashboardPreview from "@/components/sections/DashboardPreview";
 import HowItWorks from "@/components/sections/HowItWorks";
 import CalculatorSection from "@/components/sections/CalculatorSection";
 import WhyAhjoor from "@/components/sections/WhyAhjoor";
+import Testimonials from "@/components/sections/Testimonials";
 import FAQSection from "@/components/sections/FAQSection";
 
 export default function Home() {
@@ -18,6 +19,7 @@ export default function Home() {
       <HowItWorks />
       <CalculatorSection />
       <WhyAhjoor />
+      <Testimonials />
       <FAQSection />
       <Footer />
     </main>
