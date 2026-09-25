@@ -15,6 +15,7 @@ import { getPayoutDraw, type PayoutDraw } from "@/lib/payoutDraw";
 import AutoPaySection from "@/components/circles/AutoPaySection";
 import AnnouncementComposer from "@/components/circles/AnnouncementComposer";
 import { getCircleRules, saveCircleRules } from "@/lib/circleRules";
+import CircleImageUploader from "@/components/circles/CircleImageUploader";
 
 const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
@@ -333,6 +334,17 @@ export default function CircleSettingsPage({
         >
           {savingDetails ? "Saving..." : "Save Details"}
         </button>
+      </section>
+
+      <section className="bg-[var(--content)] p-6 rounded-2xl space-y-5">
+        <div>
+          <h2 className="text-lg font-bold font-sora text-[var(--text)]">Circle Images</h2>
+          <p className="mt-1 text-xs text-[var(--muted)]">Personalize how this circle appears in discovery and on its detail page. Images are cropped before they are saved.</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <CircleImageUploader circleId={circle.id} kind="icon" label="Circle icon" description="A square mark used in compact circle lists." aspectRatio={1} />
+          <CircleImageUploader circleId={circle.id} kind="cover" label="Cover image" description="A wide image shown on discovery cards and the detail page." aspectRatio={16 / 9} />
+        </div>
       </section>
 
       <section className="space-y-5 rounded-2xl bg-[var(--content)] p-6">

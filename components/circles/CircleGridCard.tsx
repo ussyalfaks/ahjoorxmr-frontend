@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Users, DollarSign, Clock, Check, Copy } from "lucide-react";
+import { Users, DollarSign, Clock, Copy } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { truncateAddress, type DiscoverCircle } from "@/data/circles";
 import AutoPayStatusBadge from "@/components/circles/AutoPayStatusBadge";
 import BookmarkButton from "@/components/circles/BookmarkButton";
 import { useCircleComparison } from "@/contexts/CircleComparisonContext";
+import CircleImage from "@/components/circles/CircleImage";
 
 interface CircleGridCardProps {
   circle: DiscoverCircle;
@@ -30,23 +31,25 @@ export default function CircleGridCard({
 
   return (
     <article
-      className={`bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 transition-all duration-200 ${
-        selected
-          ? "ring-2 ring-[#4B6B76] border-[#4B6B76] shadow-md bg-[var(--content-hover)]"
-          : "hover:bg-[var(--content-hover)]"
-      }`}
+      className={`bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 transition-all duration-200 ${selected
+        ? "ring-2 ring-[#4B6B76] border-[#4B6B76] shadow-md bg-[var(--content-hover)]"
+        : "hover:bg-[var(--content-hover)]"
+        }`}
     >
+      <Link href={`/dashboard/circles/${circle.id}`} className="block overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]">
+        <CircleImage circleId={circle.id} circleName={circle.name} kind="cover" alt={`${circle.name} cover`} className="aspect-[16/9] w-full object-cover" />
+      </Link>
       {(circle.closed || isFull) && (
         <div
-          className={`-mt-2 -mx-1 rounded-lg px-3 py-1.5 text-[11px] font-medium ${
-            circle.closed
-              ? "bg-[var(--ov-0a)] text-[var(--muted)]"
-              : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-          }`}
+          className={`-mt-2 -mx-1 rounded-lg px-3 py-1.5 text-[11px] font-medium ${circle.closed
+            ? "bg-[var(--ov-0a)] text-[var(--muted)]"
+            : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            }`}
         >
           {circle.closed ? "This circle has closed" : "This circle is now full"}
         </div>
       )}
+
       {/* Name */}
       <div className="flex items-start justify-between gap-2">
         <Link

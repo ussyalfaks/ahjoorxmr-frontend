@@ -30,6 +30,7 @@ import AutoPaySection from "@/components/circles/AutoPaySection";
 import { enableAutoPay, getAutoPayConfig, recordAutoPayAttempt } from "@/lib/autoPay";
 import CircleRulesView from "@/components/circles/CircleRulesView";
 import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, type CircleRulesRecord } from "@/lib/circleRules";
+import CircleImage from "@/components/circles/CircleImage";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -606,6 +607,7 @@ export default function CircleDetailPage({
 
   return (
     <div className="space-y-10 pb-20 md:pb-0">
+      <CircleImage circleId={circle.id} circleName={circle.name} kind="cover" alt={`${circle.name} cover`} className="aspect-[16/5] w-full rounded-2xl object-cover" />
       {/* Back + Title */}
       <div className="flex flex-wrap items-center gap-3">
         <Link
