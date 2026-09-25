@@ -326,13 +326,12 @@ function ParticipantRow({ participant }: { participant: Participant }) {
         </Link>
       </div>
       <div className="flex items-center gap-1.5">
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-          participant.role === "organizer"
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${participant.role === "organizer"
             ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
             : participant.role === "co-organizer"
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
               : "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-[var(--muted)]"
-        }`}>
+          }`}>
           {participant.role === "organizer" ? "Organizer" : participant.role === "co-organizer" ? "Co-Organizer" : "Participant"}
         </span>
         {participant.paid ? (
@@ -483,11 +482,11 @@ export default function CircleDetailPage({
         current.map((d) =>
           d.id === disputeId
             ? {
-                ...d,
-                status: "resolved",
-                resolutionNote,
-                resolvedAt: new Date(),
-              }
+              ...d,
+              status: "resolved",
+              resolutionNote,
+              resolvedAt: new Date(),
+            }
             : d
         )
       );
@@ -586,23 +585,23 @@ export default function CircleDetailPage({
   const completedMilestone: MilestoneData | null =
     circle.status === "completed"
       ? {
-          type: "circle_completed",
-          circleName: circle.name,
-          amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
-          subtitle: `${circle.totalRounds} rounds completed · ${circle.participants.length} members`,
-          date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-        }
+        type: "circle_completed",
+        circleName: circle.name,
+        amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
+        subtitle: `${circle.totalRounds} rounds completed · ${circle.participants.length} members`,
+        date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+      }
       : null;
 
   const payoutMilestone: MilestoneData | null =
     isNextRecipient
       ? {
-          type: "payout_received",
-          circleName: circle.name,
-          amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
-          subtitle: `Round ${circle.currentRound} of ${circle.totalRounds}`,
-          date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-        }
+        type: "payout_received",
+        circleName: circle.name,
+        amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
+        subtitle: `Round ${circle.currentRound} of ${circle.totalRounds}`,
+        date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+      }
       : null;
 
   return (
@@ -669,11 +668,10 @@ export default function CircleDetailPage({
               aria-selected={isActive}
               aria-controls={`tabpanel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-                isActive
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${isActive
                   ? "text-[var(--text)] border-b-2 border-[#4B6B76] -mb-px"
                   : "text-[var(--muted)] hover:text-[var(--text)]"
-              }`}
+                }`}
             >
               {tab.label}
               {tab.id === "discussion" && comments.length > 0 && (
@@ -777,11 +775,10 @@ export default function CircleDetailPage({
             </button>
             <button
               disabled={!isNextRecipient}
-              className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-                isNextRecipient
+              className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${isNextRecipient
                   ? "bg-green-500/20 hover:bg-green-500/30 text-green-600 dark:text-green-400"
                   : "bg-[var(--ov-0a)] text-[var(--muted)] cursor-not-allowed opacity-50"
-              }`}
+                }`}
             >
               Claim Reward
             </button>
@@ -826,6 +823,12 @@ export default function CircleDetailPage({
             )}
           </div>
         </div>
+
+        <ContactDirectory
+          participants={circle.participants}
+          viewerAddress={CURRENT_WALLET}
+          viewerIsMember={circle.isMember}
+        />
 
         {/* Payout Order (fair draw result) */}
         {payoutDraw && (

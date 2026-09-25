@@ -6,11 +6,18 @@ import SavingsCard from "@/components/cards/SavingsCard";
 import SavingsGrowthChart from "@/components/charts/SavingsGrowthChart";
 import UpcomingPayoutsCalendar from "@/components/dashboard/UpcomingPayoutsCalendar";
 import RecentAchievementCard from "@/components/dashboard/RecentAchievementCard";
-import TxConfirmModal, { TxType } from "@/components/modals/TxConfirmModal";
+import TxConfirmModal, { TxType, type TxAttempt, type TxFailure } from "@/components/modals/TxConfirmModal";
 import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
 import type { Circle } from "@/types/circle";
 
 interface PendingTx {
+  type: TxType;
+  circle: Circle;
+  amount: number;
+  retryFailure?: TxFailure;
+}
+
+interface FailedDashboardTx extends TxFailure {
   type: TxType;
   circle: Circle;
   amount: number;
@@ -54,6 +61,7 @@ function getContributionAmount(circle: Circle): number {
 
 export default function DashboardOverviewPage() {
   const [pendingTx, setPendingTx] = useState<PendingTx | null>(null);
+  const [failedTx, setFailedTx] = useState<FailedDashboardTx | null>(null);
   const [layout, setLayout] = useState<WidgetLayout[]>(DEFAULT_LAYOUT);
   const [isClient, setIsClient] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
@@ -123,11 +131,11 @@ export default function DashboardOverviewPage() {
   const handleDrop = (e: React.DragEvent, targetIdx: number) => {
     e.preventDefault();
     if (draggedIdx === null || draggedIdx === targetIdx) return;
-    
+
     const newLayout = [...layout];
     const [removed] = newLayout.splice(draggedIdx, 1);
     newLayout.splice(targetIdx, 0, removed);
-    
+
     saveLayout(newLayout);
     setDraggedIdx(null);
   };
@@ -213,6 +221,7 @@ export default function DashboardOverviewPage() {
   );
 
   const handleContributeClick = (circle: Circle) => {
+    setFailedTx(null);
     setPendingTx({
       type: "contribute",
       circle,
@@ -221,6 +230,7 @@ export default function DashboardOverviewPage() {
   };
 
   const handleClaimClick = (circle: Circle) => {
+    setFailedTx(null);
     setPendingTx({
       type: "claim",
       circle,
@@ -228,12 +238,17 @@ export default function DashboardOverviewPage() {
     });
   };
 
-  const submitContribution = async (circle: Circle, amount: number): Promise<string> => {
+  const submitContribution = async (circle: Circle, amount: number, attempt: TxAttempt): Promise<string> => {
+    void circle;
+    void amount;
+    void attempt;
     await new Promise((resolve) => setTimeout(resolve, 1500));
     return "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd";
   };
 
-  const submitClaim = async (circle: Circle): Promise<string> => {
+  const submitClaim = async (circle: Circle, attempt: TxAttempt): Promise<string> => {
+    void circle;
+    void attempt;
     await new Promise((resolve) => setTimeout(resolve, 1500));
     return "0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567";
   };
@@ -342,7 +357,7 @@ export default function DashboardOverviewPage() {
         <div className="flex justify-end mb-6 relative">
           <div className="relative">
             <FeatureSpotlight featureId="dashboard-customize" align="right">
-              <button 
+              <button
                 onClick={() => setIsCustomizeOpen(!isCustomizeOpen)}
                 className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full bg-[var(--modal)] border border-[var(--border)] hover:bg-[var(--content-hover)] transition-colors text-[var(--text)]"
               >
@@ -350,7 +365,7 @@ export default function DashboardOverviewPage() {
                 Customize Layout
               </button>
             </FeatureSpotlight>
-            
+
             {isCustomizeOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 bg-[var(--modal)] border border-[var(--border)] rounded-xl shadow-xl p-4 z-50">
                 <h4 className="text-sm font-semibold mb-3 text-[var(--text)]">Hidden Widgets</h4>
@@ -359,7 +374,7 @@ export default function DashboardOverviewPage() {
                     {hiddenWidgets.map(w => (
                       <div key={w.id} className="flex items-center justify-between bg-[var(--background)] px-3 py-2 rounded-lg border border-[var(--border)]">
                         <span className="text-sm text-[var(--text)]">{WIDGET_TITLES[w.id]}</span>
-                        <button 
+                        <button
                           onClick={() => toggleVisibility(w.id, true)}
                           className="p-1 hover:bg-[var(--ov-0a)] rounded text-[var(--text)]"
                           title="Show Widget"
@@ -372,9 +387,9 @@ export default function DashboardOverviewPage() {
                 ) : (
                   <p className="text-xs text-[var(--muted)] mb-4">All widgets are currently visible.</p>
                 )}
-                
+
                 <div className="h-px bg-[var(--border)] w-full mb-3" />
-                <button 
+                <button
                   onClick={resetLayout}
                   className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
                 >
@@ -392,9 +407,9 @@ export default function DashboardOverviewPage() {
         {isClient ? layout.map((widget, idx) => {
           if (!widget.visible) return null;
           const isDragged = draggedIdx === idx;
-          
+
           return (
-            <div 
+            <div
               key={widget.id}
               draggable
               onDragStart={(e) => handleDragStart(e, idx)}
@@ -405,26 +420,26 @@ export default function DashboardOverviewPage() {
             >
               <div className="flex items-center justify-between mb-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity h-8 px-1">
                 <div className="flex items-center gap-2 text-[var(--muted)]">
-                  <button 
-                    className="cursor-grab active:cursor-grabbing p-1 hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded transition-colors" 
+                  <button
+                    className="cursor-grab active:cursor-grabbing p-1 hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded transition-colors"
                     aria-label={`Drag ${WIDGET_TITLES[widget.id]}`}
                   >
                     <GripHorizontal size={16} />
                   </button>
                   <span className="text-xs font-semibold uppercase tracking-wider">{WIDGET_TITLES[widget.id]}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-1 bg-[var(--modal)] rounded-lg border border-[var(--border)] p-1 shadow-sm">
-                  <button 
-                    onClick={() => moveWidget(idx, -1)} 
+                  <button
+                    onClick={() => moveWidget(idx, -1)}
                     disabled={idx === 0}
                     className="p-1 rounded hover:bg-[var(--ov-0a)] text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     aria-label="Move Up"
                   >
                     <ArrowUp size={14} />
                   </button>
-                  <button 
-                    onClick={() => moveWidget(idx, 1)} 
+                  <button
+                    onClick={() => moveWidget(idx, 1)}
                     disabled={idx === layout.length - 1}
                     className="p-1 rounded hover:bg-[var(--ov-0a)] text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     aria-label="Move Down"
@@ -432,7 +447,7 @@ export default function DashboardOverviewPage() {
                     <ArrowDown size={14} />
                   </button>
                   <div className="w-px h-4 bg-[var(--border)] mx-1" />
-                  <button 
+                  <button
                     onClick={() => toggleVisibility(widget.id, false)}
                     className="p-1 rounded hover:bg-red-500/10 text-[var(--muted)] hover:text-red-500 transition-colors"
                     aria-label="Hide Widget"
@@ -441,7 +456,7 @@ export default function DashboardOverviewPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div className={isDragged ? 'pointer-events-none' : ''}>
                 {renderWidgetContent(widget.id)}
               </div>
@@ -458,6 +473,43 @@ export default function DashboardOverviewPage() {
         )}
       </div>
 
+      {failedTx && !pendingTx && (
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4" role="alert">
+          <div className="min-w-0">
+            <p className="font-semibold text-red-500">Transaction failed</p>
+            <p className="mt-1 text-sm text-[var(--text)]">{failedTx.reason}</p>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              {failedTx.type === "contribute" ? "Contribution" : "Claim"} for {failedTx.circle.name} · Attempt {failedTx.attempt}
+            </p>
+            {failedTx.hash && (
+              <a
+                href={`https://starkscan.co/tx/${failedTx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex text-xs text-[var(--muted)] underline"
+              >
+                View failed transaction {failedTx.hash.slice(0, 10)}...
+              </a>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setPendingTx({
+                type: failedTx.type,
+                circle: failedTx.circle,
+                amount: failedTx.amount,
+                retryFailure: failedTx,
+              });
+              setFailedTx(null);
+            }}
+            className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {pendingTx && (
         <TxConfirmModal
           isOpen={!!pendingTx}
@@ -465,10 +517,12 @@ export default function DashboardOverviewPage() {
           type={pendingTx.type}
           circleName={pendingTx.circle.name}
           amount={pendingTx.amount}
-          onConfirm={() =>
+          retryFailure={pendingTx.retryFailure}
+          onFailure={(failure) => setFailedTx({ ...failure, type: pendingTx.type, circle: pendingTx.circle, amount: pendingTx.amount })}
+          onConfirm={(attempt) =>
             pendingTx.type === "contribute"
-              ? submitContribution(pendingTx.circle, pendingTx.amount)
-              : submitClaim(pendingTx.circle)
+              ? submitContribution(pendingTx.circle, pendingTx.amount, attempt)
+              : submitClaim(pendingTx.circle, attempt)
           }
         />
       )}

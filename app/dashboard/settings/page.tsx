@@ -25,15 +25,24 @@ import EmailNotificationPreferences from "@/components/settings/EmailNotificatio
 import ActiveSessionsManager from "@/components/settings/ActiveSessionsManager";
 import PasskeyManager from "@/components/settings/PasskeyManager";
 import { OPEN_SHORTCUTS_EVENT } from "@/components/ui/ShortcutsModal";
+import { Toggle } from "@/components/ui/Toggle";
+import {
+  defaultContactSharingSettings,
+  saveContactSharingSettings,
+  type ContactField,
+  type ContactSharingSettings,
+} from "@/lib/contactDirectory";
 
 const STORAGE_KEY = "ahjoorxmr:settings";
 
 interface StoredProfileSettings {
   displayName: string;
+  contactSharing: ContactSharingSettings;
 }
 
 const defaultProfileSettings: StoredProfileSettings = {
   displayName: "",
+  contactSharing: defaultContactSharingSettings,
 };
 
 function truncateAddress(address?: string | null) {
@@ -61,7 +70,7 @@ function FontSizeControl() {
           <span className="text-sm font-semibold text-[var(--text)]">Font Size</span>
         </div>
       </div>
-      <div 
+      <div
         className="flex gap-1.5 p-1 rounded-lg bg-[var(--modal)] border border-[var(--ov-10)]"
         role="radiogroup"
         aria-label="Select font size"
@@ -72,11 +81,10 @@ function FontSizeControl() {
             role="radio"
             aria-checked={fontSize === option.value}
             onClick={() => setFontSize(option.value)}
-            className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-              fontSize === option.value
-                ? "bg-[#4B6B76] text-white"
-                : "text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-05)]"
-            }`}
+            className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${fontSize === option.value
+              ? "bg-[#4B6B76] text-white"
+              : "text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-05)]"
+              }`}
             style={{ fontSize: option.size }}
           >
             {option.label}
@@ -108,14 +116,12 @@ function HighContrastToggle() {
           onClick={() => setHighContrast(!highContrast)}
           role="switch"
           aria-checked={highContrast}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-            highContrast ? "bg-[#4B6B76]" : "bg-[var(--ov-1a)]"
-          }`}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${highContrast ? "bg-[#4B6B76]" : "bg-[var(--ov-1a)]"
+            }`}
         >
           <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${
-              highContrast ? "translate-x-5" : "translate-x-0"
-            }`}
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${highContrast ? "translate-x-5" : "translate-x-0"
+              }`}
           />
         </button>
       </div>
@@ -211,14 +217,12 @@ function AutoLogoutSection() {
             onClick={() => handleEnableChange(!storedEnabled)}
             role="switch"
             aria-checked={storedEnabled}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-              storedEnabled ? "bg-[#4B6B76]" : "bg-[var(--ov-1a)]"
-            }`}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${storedEnabled ? "bg-[#4B6B76]" : "bg-[var(--ov-1a)]"
+              }`}
           >
             <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${
-                storedEnabled ? "translate-x-5" : "translate-x-0"
-              }`}
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${storedEnabled ? "translate-x-5" : "translate-x-0"
+                }`}
             />
           </button>
         </div>
@@ -233,11 +237,10 @@ function AutoLogoutSection() {
                 <button
                   key={option.value}
                   onClick={() => handleMinutesChange(option.value)}
-                  className={`px-4 py-2 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-                    storedMinutes === option.value
-                      ? "bg-[#4B6B76] text-white"
-                      : "bg-[var(--modal)] text-[var(--muted)] hover:text-[var(--text)] border border-[var(--ov-10)]"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${storedMinutes === option.value
+                    ? "bg-[#4B6B76] text-white"
+                    : "bg-[var(--modal)] text-[var(--muted)] hover:text-[var(--text)] border border-[var(--ov-10)]"
+                    }`}
                 >
                   {option.label}
                 </button>
@@ -288,14 +291,14 @@ function IdleWarningModal({
         <div className="w-14 h-14 rounded-full bg-amber-500/20 flex items-center justify-center mb-5 mx-auto">
           <Shield size={28} className="text-amber-500" aria-hidden="true" />
         </div>
-        
+
         <h3
           id="idle-warning-title"
           className="text-xl font-bold font-sora text-[var(--text)] text-center mb-3"
         >
           {redirecting ? "Signing out..." : "Session Expiring"}
         </h3>
-        
+
         <p id="idle-warning-desc" className="text-sm text-[var(--muted)] text-center mb-6">
           {redirecting
             ? "You have been signed out due to inactivity."
@@ -360,9 +363,13 @@ function SettingsContent() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const stored = JSON.parse(raw);
-        if (stored.displayName !== undefined) {
-          setProfile({ displayName: stored.displayName });
-        }
+        setProfile({
+          displayName: typeof stored.displayName === "string" ? stored.displayName : "",
+          contactSharing: {
+            ...defaultContactSharingSettings,
+            ...(stored.contactSharing ?? {}),
+          },
+        });
       }
     } catch {
       // ignore
@@ -382,6 +389,7 @@ function SettingsContent() {
     setProfileStatus("saving");
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+      saveContactSharingSettings(connectedAddress, profile.contactSharing);
       await new Promise((resolve) => setTimeout(resolve, 400));
       setProfileStatus("success");
     } catch {
@@ -434,11 +442,10 @@ function SettingsContent() {
           role="tab"
           aria-selected={activeTab === "general"}
           onClick={() => handleTabChange("general")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${
-            activeTab === "general"
-              ? "text-[var(--text)] border-[#4B6B76] bg-[var(--ov-05)]"
-              : "text-[var(--muted)] hover:text-[var(--text)] border-transparent hover:bg-[var(--ov-03)]"
-          }`}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${activeTab === "general"
+            ? "text-[var(--text)] border-[#4B6B76] bg-[var(--ov-05)]"
+            : "text-[var(--muted)] hover:text-[var(--text)] border-transparent hover:bg-[var(--ov-03)]"
+            }`}
         >
           <User size={15} aria-hidden="true" />
           <span>Profile & Appearance</span>
@@ -449,11 +456,10 @@ function SettingsContent() {
           role="tab"
           aria-selected={activeTab === "notifications"}
           onClick={() => handleTabChange("notifications")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${
-            activeTab === "notifications"
-              ? "text-[var(--text)] border-[#4B6B76] bg-[var(--ov-05)]"
-              : "text-[var(--muted)] hover:text-[var(--text)] border-transparent hover:bg-[var(--ov-03)]"
-          }`}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${activeTab === "notifications"
+            ? "text-[var(--text)] border-[#4B6B76] bg-[var(--ov-05)]"
+            : "text-[var(--muted)] hover:text-[var(--text)] border-transparent hover:bg-[var(--ov-03)]"
+            }`}
         >
           <Bell size={15} aria-hidden="true" />
           <span>Notifications</span>
@@ -464,11 +470,10 @@ function SettingsContent() {
           role="tab"
           aria-selected={activeTab === "security"}
           onClick={() => handleTabChange("security")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${
-            activeTab === "security"
-              ? "text-[var(--text)] border-[#4B6B76] bg-[var(--ov-05)]"
-              : "text-[var(--muted)] hover:text-[var(--text)] border-transparent hover:bg-[var(--ov-03)]"
-          }`}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${activeTab === "security"
+            ? "text-[var(--text)] border-[#4B6B76] bg-[var(--ov-05)]"
+            : "text-[var(--muted)] hover:text-[var(--text)] border-transparent hover:bg-[var(--ov-03)]"
+            }`}
         >
           <Shield size={15} aria-hidden="true" />
           <span>Security & Sessions</span>
@@ -479,11 +484,10 @@ function SettingsContent() {
           role="tab"
           aria-selected={activeTab === "danger"}
           onClick={() => handleTabChange("danger")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${
-            activeTab === "danger"
-              ? "text-red-500 border-red-500 bg-red-500/5"
-              : "text-[var(--muted)] hover:text-red-500 border-transparent hover:bg-red-500/5"
-          }`}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap focus-visible:outline-none ${activeTab === "danger"
+            ? "text-red-500 border-red-500 bg-red-500/5"
+            : "text-[var(--muted)] hover:text-red-500 border-transparent hover:bg-red-500/5"
+            }`}
         >
           <AlertTriangle size={15} aria-hidden="true" />
           <span>Danger Zone</span>
@@ -525,7 +529,7 @@ function SettingsContent() {
                     type="text"
                     value={profile.displayName}
                     onChange={(e) =>
-                      setProfile({ displayName: e.target.value })
+                      setProfile((current) => ({ ...current, displayName: e.target.value }))
                     }
                     placeholder="e.g. Satoshi_Saver"
                     className="w-full h-10 px-3.5 rounded-xl bg-[var(--modal)] border border-[var(--ov-10)] text-xs text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76] transition-colors"
@@ -533,6 +537,72 @@ function SettingsContent() {
                   <p className="text-[11px] text-[var(--muted)] mt-1">
                     This is how other participants see you in circles and discussions.
                   </p>
+                </div>
+
+                <div className="border-t border-[var(--ov-10)] pt-4">
+                  <Toggle
+                    id="share-contact-info"
+                    label="Share contact info with circle members"
+                    description="Off by default. When enabled, only members of a circle you share with can see the selected field."
+                    checked={profile.contactSharing.shareContactInfo}
+                    onChange={(shareContactInfo) =>
+                      setProfile((current) => ({
+                        ...current,
+                        contactSharing: {
+                          ...current.contactSharing,
+                          shareContactInfo,
+                          contactField: shareContactInfo ? current.contactSharing.contactField : "none",
+                          contactValue: shareContactInfo ? current.contactSharing.contactValue : "",
+                        },
+                      }))
+                    }
+                  />
+
+                  {profile.contactSharing.shareContactInfo && (
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="contact-field" className="mb-1 block text-xs font-medium text-[var(--muted)]">
+                          Contact field to display
+                        </label>
+                        <select
+                          id="contact-field"
+                          value={profile.contactSharing.contactField}
+                          onChange={(e) => {
+                            const contactField = e.target.value as ContactField;
+                            setProfile((current) => ({
+                              ...current,
+                              contactSharing: { ...current.contactSharing, contactField },
+                            }));
+                          }}
+                          className="h-10 w-full rounded-xl border border-[var(--ov-10)] bg-[var(--modal)] px-3 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                        >
+                          <option value="none">None</option>
+                          <option value="email">Email</option>
+                          <option value="handle">Preferred handle</option>
+                        </select>
+                      </div>
+                      {profile.contactSharing.contactField !== "none" && (
+                        <div>
+                          <label htmlFor="contact-value" className="mb-1 block text-xs font-medium text-[var(--muted)]">
+                            {profile.contactSharing.contactField === "email" ? "Email address" : "Preferred handle"}
+                          </label>
+                          <input
+                            id="contact-value"
+                            type={profile.contactSharing.contactField === "email" ? "email" : "text"}
+                            value={profile.contactSharing.contactValue}
+                            onChange={(e) =>
+                              setProfile((current) => ({
+                                ...current,
+                                contactSharing: { ...current.contactSharing, contactValue: e.target.value },
+                              }))
+                            }
+                            placeholder={profile.contactSharing.contactField === "email" ? "you@example.com" : "@your-handle"}
+                            className="h-10 w-full rounded-xl border border-[var(--ov-10)] bg-[var(--modal)] px-3 text-xs text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-2 flex items-center gap-3">

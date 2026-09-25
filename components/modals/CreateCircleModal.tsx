@@ -6,6 +6,8 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import SavingsCalculator from "@/components/calculator/SavingsCalculator";
 import { CIRCLE_CATEGORIES, CATEGORY_LABELS, type CircleCategory } from "@/lib/circles";
 import type { PenaltyConfig } from "@/types/circle";
+import GasFeeEstimate from "@/components/modals/GasFeeEstimate";
+import { useGasFeeEstimate } from "@/hooks/useGasFeeEstimate";
 
 interface Props {
   open: boolean;
@@ -88,6 +90,8 @@ export default function CreateCircleModal({ open, onClose, onCreate, initialValu
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const feeRequest = useMemo(() => ({ operation: "create-circle" as const }), []);
+  const { fee, loading: feeLoading } = useGasFeeEstimate(open, feeRequest);
 
   useEffect(() => {
     if (!open) return;
@@ -457,10 +461,12 @@ export default function CreateCircleModal({ open, onClose, onCreate, initialValu
                   ))}
                 </div>
 
+                <GasFeeEstimate fee={fee} loading={feeLoading} />
+
                 <div className="mt-6">
                   <h3 className="text-sm font-semibold text-[var(--text)] mb-3">Simulation Preview</h3>
                   <div className="max-h-[300px] overflow-y-auto custom-scrollbar -mx-2 px-2">
-                    <SavingsCalculator 
+                    <SavingsCalculator
                       isReadOnly={true}
                       amount={Number(form.contribution) || 0}
                       participants={Number(form.maxMembers) || 0}

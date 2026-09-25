@@ -3,15 +3,31 @@
 import { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { testimonials, Testimonial } from "@/data/testimonials";
+import { analyzeSentiment, findNegativeSentimentSpikes, type ReviewSentiment } from "@/lib/sentiment";
 
-function TestimonialCard({ testimonial, isActive }: { testimonial: Testimonial; isActive: boolean }) {
+type ReviewedTestimonial = Testimonial & ReturnType<typeof analyzeSentiment>;
+
+const SENTIMENT_STYLES: Record<ReviewSentiment, string> = {
+  positive: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  negative: "bg-red-500/10 text-red-500 border-red-500/20",
+  neutral: "bg-slate-500/10 text-[var(--muted)] border-[var(--border)]",
+};
+
+function SentimentBadge({ sentiment }: { sentiment: ReviewSentiment }) {
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize ${SENTIMENT_STYLES[sentiment]}`}>
+      {sentiment}
+    </span>
+  );
+}
+
+function TestimonialCard({ testimonial, isActive }: { testimonial: ReviewedTestimonial; isActive: boolean }) {
   return (
     <div
-      className={`flex-shrink-0 w-full md:w-[400px] lg:w-[450px] p-6 md:p-8 rounded-[20px] bg-[var(--card)] border border-[var(--border)] transition-all duration-300 ${
-        isActive
-          ? "opacity-100 scale-100 translate-x-0"
-          : "opacity-0 scale-95 absolute pointer-events-none"
-      }`}
+      className={`flex-shrink-0 w-full md:w-[400px] lg:w-[450px] p-6 md:p-8 rounded-[20px] bg-[var(--card)] border border-[var(--border)] transition-all duration-300 ${isActive
+        ? "opacity-100 scale-100 translate-x-0"
+        : "opacity-0 scale-95 absolute pointer-events-none"
+        }`}
       role="group"
       aria-roledescription="carousel"
       aria-label={`Testimonial by ${testimonial.name}`}
@@ -22,8 +38,9 @@ function TestimonialCard({ testimonial, isActive }: { testimonial: Testimonial; 
       </div>
 
       {/* Quote Text */}
+      <div className="mb-3"><SentimentBadge sentiment={testimonial.label} /></div>
       <blockquote className="text-[15px] leading-[1.7] text-[var(--muted)] mb-6">
-        "{testimonial.quote}"
+        &quot;{testimonial.quote}&quot;
       </blockquote>
 
       {/* Author Info */}
@@ -55,14 +72,29 @@ function TestimonialCard({ testimonial, isActive }: { testimonial: Testimonial; 
 
 export default function Testimonials() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [sentimentFilter, setSentimentFilter] = useState<ReviewSentiment | "all">("all");
+  const reviewedTestimonials = testimonials.map((testimonial) => ({
+    ...testimonial,
+    ...analyzeSentiment(testimonial.quote),
+  }));
+  const visibleTestimonials = reviewedTestimonials.filter(
+    (testimonial) => sentimentFilter === "all" || testimonial.label === sentimentFilter
+  );
+  const visibleCount = visibleTestimonials.length;
+  const negativeSpikes = findNegativeSentimentSpikes(
+    reviewedTestimonials.map((testimonial) => ({
+      project: testimonial.circleContext ?? "Unassigned project",
+      sentiment: testimonial.label,
+    }))
+  );
 
   const goToPrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
-  }, []);
+    setCurrentIndex((prev) => (prev === 0 ? Math.max(visibleCount - 1, 0) : prev - 1));
+  }, [visibleCount]);
 
   const goToNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
-  }, []);
+    setCurrentIndex((prev) => (prev === visibleCount - 1 ? 0 : prev + 1));
+  }, [visibleCount]);
 
   const goToSlide = useCallback((index: number) => {
     setCurrentIndex(index);
@@ -81,11 +113,39 @@ export default function Testimonials() {
           Join thousands of members who have transformed their savings journey with Ahjoor.
         </p>
 
+        {negativeSpikes.length > 0 && (
+          <div className="mb-8 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-left text-sm text-red-500" role="alert">
+            Negative sentiment spike detected for: {negativeSpikes.join(", ")}. Review the latest feedback.
+          </div>
+        )}
+
+        <div className="mb-8 flex flex-wrap justify-center gap-2" role="group" aria-label="Filter reviews by sentiment">
+          {(["all", "positive", "neutral", "negative"] as const).map((filter) => {
+            const count = filter === "all"
+              ? reviewedTestimonials.length
+              : reviewedTestimonials.filter((testimonial) => testimonial.label === filter).length;
+            return (
+              <button
+                key={filter}
+                type="button"
+                onClick={() => {
+                  setSentimentFilter(filter);
+                  setCurrentIndex(0);
+                }}
+                aria-pressed={sentimentFilter === filter}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${sentimentFilter === filter ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--text)]" : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]"}`}
+              >
+                {filter} ({count})
+              </button>
+            );
+          })}
+        </div>
+
         {/* Carousel Container */}
         <div className="relative mb-8">
           {/* Desktop: Grid Layout */}
           <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {testimonials.map((testimonial) => (
+            {visibleTestimonials.map((testimonial) => (
               <div
                 key={testimonial.id}
                 className="p-6 md:p-7 rounded-[20px] bg-[var(--card)] border border-[var(--border)] text-left hover:border-[var(--border-hover)] transition-all duration-250 hover:-translate-y-1"
@@ -93,8 +153,9 @@ export default function Testimonials() {
                 <div className="mb-4 w-9 h-9 rounded-[10px] bg-[var(--accent-soft)] flex items-center justify-center">
                   <Quote size={18} className="text-[var(--accent)]" aria-hidden="true" />
                 </div>
+                <div className="mb-3"><SentimentBadge sentiment={testimonial.label} /></div>
                 <blockquote className="text-[14px] leading-[1.65] text-[var(--muted)] mb-5">
-                  "{testimonial.quote}"
+                  &quot;{testimonial.quote}&quot;
                 </blockquote>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent2)] flex items-center justify-center text-white font-bold text-xs shrink-0">
@@ -122,7 +183,7 @@ export default function Testimonials() {
           {/* Mobile: Carousel */}
           <div className="md:hidden relative overflow-hidden">
             <div className="relative h-[320px] flex items-center justify-center mx-4">
-              {testimonials.map((testimonial, index) => (
+              {visibleTestimonials.map((testimonial, index) => (
                 <TestimonialCard
                   key={testimonial.id}
                   testimonial={testimonial}
@@ -133,18 +194,17 @@ export default function Testimonials() {
 
             {/* Navigation Dots */}
             <div className="flex justify-center gap-2 mt-4" role="tablist" aria-label="Testimonial navigation">
-              {testimonials.map((_, index) => (
+              {visibleTestimonials.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => goToSlide(index)}
                   role="tab"
                   aria-selected={index === currentIndex}
                   aria-label={`Go to testimonial ${index + 1}`}
-                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                    index === currentIndex
-                      ? "w-6 bg-[var(--accent)]"
-                      : "bg-[var(--ov-1a)] hover:bg-[var(--ov-14)]"
-                  }`}
+                  className={`w-2 h-2 rounded-full transition-all duration-200 ${index === currentIndex
+                    ? "w-6 bg-[var(--accent)]"
+                    : "bg-[var(--ov-1a)] hover:bg-[var(--ov-14)]"
+                    }`}
                 />
               ))}
             </div>
@@ -176,11 +236,10 @@ export default function Testimonials() {
               role="tab"
               aria-selected={index === currentIndex}
               aria-label={`Go to testimonial ${index + 1}`}
-              className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                index === currentIndex
-                  ? "w-6 bg-[var(--accent)]"
-                  : "bg-[var(--ov-1a)] hover:bg-[var(--ov-14)]"
-              }`}
+              className={`w-2 h-2 rounded-full transition-all duration-200 ${index === currentIndex
+                ? "w-6 bg-[var(--accent)]"
+                : "bg-[var(--ov-1a)] hover:bg-[var(--ov-14)]"
+                }`}
             />
           ))}
         </div>
