@@ -6,6 +6,7 @@ import { truncateAddress, type DiscoverCircle } from "@/data/circles";
 import AutoPayStatusBadge from "@/components/circles/AutoPayStatusBadge";
 import BookmarkButton from "@/components/circles/BookmarkButton";
 import { useCircleComparison } from "@/contexts/CircleComparisonContext";
+import CircleImage from "@/components/circles/CircleImage";
 
 interface CircleListRowProps {
   circle: DiscoverCircle;
@@ -64,6 +65,7 @@ export default function CircleListRow({
       {/* ---- Name + creator (always visible) ---- */}
       <div className="flex flex-col gap-0.5 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
+          <CircleImage circleId={circle.id} circleName={circle.name} kind="icon" alt="" className="h-9 w-9 shrink-0 rounded-lg object-cover" />
           <Link
             href={`/dashboard/circles/${circle.id}`}
             className="text-sm font-semibold text-[var(--text)] hover:underline truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
@@ -73,11 +75,10 @@ export default function CircleListRow({
           <AutoPayStatusBadge circleId={circle.id} />
           {(circle.closed || slotsLeft <= 0) && (
             <span
-              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                circle.closed
+              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${circle.closed
                   ? "bg-[var(--ov-0a)] text-[var(--muted)]"
                   : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-              }`}
+                }`}
             >
               {circle.closed ? "Closed" : "Full"}
             </span>
