@@ -9,6 +9,7 @@ import RecentAchievementCard from "@/components/dashboard/RecentAchievementCard"
 import TxConfirmModal, { TxType, type TxAttempt, type TxFailure } from "@/components/modals/TxConfirmModal";
 import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
 import type { Circle } from "@/types/circle";
+import BalanceBreakdownWidget from "@/components/wallet/BalanceBreakdownWidget"
 
 interface PendingTx {
   type: TxType;
@@ -23,7 +24,7 @@ interface FailedDashboardTx extends TxFailure {
   amount: number;
 }
 
-type WidgetId = 'stats' | 'recent-achievement' | 'chart' | 'active-savings' | 'payouts-calendar';
+type WidgetId = 'stats' | 'balance-breakdown' | 'recent-achievement' | 'chart' | 'active-savings' | 'payouts-calendar';
 
 interface WidgetLayout {
   id: WidgetId;
@@ -32,6 +33,7 @@ interface WidgetLayout {
 
 const DEFAULT_LAYOUT: WidgetLayout[] = [
   { id: 'stats', visible: true },
+  { id: 'balance-breakdown', visible: true },
   { id: 'recent-achievement', visible: true },
   { id: 'chart', visible: true },
   { id: 'active-savings', visible: true },
@@ -40,6 +42,7 @@ const DEFAULT_LAYOUT: WidgetLayout[] = [
 
 const WIDGET_TITLES: Record<WidgetId, string> = {
   'stats': 'Overview Stats',
+  'balance-breakdown': 'Balance Breakdown',
   'recent-achievement': 'Recent Achievement',
   'chart': 'Savings Growth',
   'active-savings': 'Active Savings',
@@ -318,8 +321,8 @@ export default function DashboardOverviewPage() {
             </div>
           </div>
         );
-      case 'recent-achievement':
-        return <RecentAchievementCard />;
+      case 'balance-breakdown':
+        return <BalanceBreakdownWidget />;
       case 'chart':
         return <SavingsGrowthChart />;
       case 'active-savings':

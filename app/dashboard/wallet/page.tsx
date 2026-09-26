@@ -22,6 +22,7 @@ import SendTransferModal from "@/components/wallet/SendTransferModal";
 import TwoFactorChallengeModal from "@/components/settings/TwoFactorChallengeModal";
 import LowBalanceAlertBanner, { LowBalanceAlertSettings } from "@/components/wallet/LowBalanceAlert";
 import { isTwoFactorEnabled } from "@/lib/twoFactor";
+import BalanceBreakdownWidget from "@/components/wallet/BalanceBreakdownWidget";
 
 type TransactionType = "contribution" | "payout" | "join";
 
@@ -255,7 +256,7 @@ export default function WalletPage() {
           testMode={true} // Enable for demo purposes
         />
       )}
-
+         <BalanceBreakdownWidget />
       {/* Linked Wallets Card */}
       <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl">
         <div className="flex items-center justify-between mb-6">
