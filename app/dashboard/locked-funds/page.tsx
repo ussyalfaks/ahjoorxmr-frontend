@@ -2,14 +2,11 @@
 
 import { useState, useRef, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
++import { MOCK_LOCKED_FUNDS } from "@/data/lockedFunds";
 
 const TOKENS = ["USDT", "USDC", "STRK", "XLM"];
 
-const lockedFunds = [
-  { name: "Annual Savings", amount: "2000", token: "USDT", lockedUntil: "25 January, 2026" },
-  { name: "Just For Fun", amount: "500", token: "USDC", lockedUntil: "25 January, 2026" },
-  { name: "Summer Savings", amount: "500", token: "STRK", lockedUntil: "25 January, 2026" },
-];
+
 
 export default function LockedFundsPage() {
   const [tokenOpen, setTokenOpen] = useState(false);
@@ -130,7 +127,7 @@ export default function LockedFundsPage() {
 
       {/* Locked Funds Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {lockedFunds.map((fund) => (
+        {MOCK_LOCKED_FUNDS.map((fund) => (
           <article
             key={fund.name}
             className="bg-[var(--content)] rounded-2xl p-6 flex flex-col gap-4 hover:bg-[var(--content-hover)] transition-colors"
