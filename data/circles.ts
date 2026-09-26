@@ -123,7 +123,8 @@ export function filterCirclesByQuery(
     (c) =>
       c.name.toLowerCase().includes(q) ||
       c.contribution.toLowerCase().includes(q) ||
-      c.duration.toLowerCase().includes(q)
+      c.duration.toLowerCase().includes(q) ||
+      (c.category ?? "").toLowerCase().includes(q)
   );
 }
 
