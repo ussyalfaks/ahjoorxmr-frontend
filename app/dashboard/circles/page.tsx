@@ -2,10 +2,11 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Plus, LayoutGrid, List, Search, Star, X } from "lucide-react";
+import { Plus, LayoutGrid, List, Search, Star } from "lucide-react";
 import CreateCircleModal, { type CreateCircleData } from "@/components/modals/CreateCircleModal";
 import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
 import CircleGridCard from "@/components/circles/CircleGridCard";
+import CircleSearchAutocomplete from "@/components/circles/CircleSearchAutocomplete";
 import CircleListRow from "@/components/circles/CircleListRow";
 import ComparisonFloatingBar from "@/components/circles/ComparisonFloatingBar";
 import CircleComparison from "@/components/circles/CircleComparison";
@@ -343,31 +344,12 @@ function CirclesContent() {
           {/* Search + view toggle */}
           <div className="flex items-center gap-2">
             {/* Search input */}
-            <div className="relative flex-1 sm:flex-none sm:w-52">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search circles…"
-                aria-label="Search circles"
-                className="w-full h-9 pl-8 pr-8 rounded-lg border border-[var(--ov-14)] bg-[var(--ov-05)] text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76] transition-colors"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)] focus-visible:outline-none"
-                  aria-label="Clear search"
-                >
-                  <X size={13} aria-hidden="true" />
-                </button>
-              )}
-            </div>
+            <CircleSearchAutocomplete
+              key={tab}
+              circles={baseCircles}
+              onQueryChange={setQuery}
+              className="flex-1 sm:flex-none sm:w-52"
+            />
 
             {/* View toggle */}
             <ViewToggle view={view} onChange={setView} />
