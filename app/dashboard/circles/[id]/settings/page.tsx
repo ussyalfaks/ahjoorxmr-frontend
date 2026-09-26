@@ -16,6 +16,7 @@ import AutoPaySection from "@/components/circles/AutoPaySection";
 import AnnouncementComposer from "@/components/circles/AnnouncementComposer";
 import { getCircleRules, saveCircleRules } from "@/lib/circleRules";
 import CircleImageUploader from "@/components/circles/CircleImageUploader";
+import { JOIN_REQUESTS_UPDATED_EVENT } from "@/lib/joinRequests";
 
 const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
@@ -266,6 +267,7 @@ export default function CircleSettingsPage({
     const updated = { ...request, status: nextStatus, organizerNote, updatedAt: new Date().toISOString() };
     const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) ?? "[]") as CircleJoinRequest[];
     localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests.map((item) => item.id === request.id ? updated : item)));
+    window.dispatchEvent(new CustomEvent(JOIN_REQUESTS_UPDATED_EVENT, { detail: { circleId: request.circleId } }));
     setJoinRequests((current) => current.map((item) => item.id === request.id ? updated : item));
     const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) ?? "[]");
     localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify([

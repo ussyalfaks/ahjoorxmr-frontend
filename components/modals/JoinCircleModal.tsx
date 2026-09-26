@@ -7,6 +7,8 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { CircleJoinRequest, PenaltyConfig } from "@/types/circle";
 import CircleRulesView from "@/components/circles/CircleRulesView";
 import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, type CircleRulesRecord } from "@/lib/circleRules";
+import { JOIN_REQUESTS_UPDATED_EVENT } from "@/lib/joinRequests";
+import WaitlistPositionCard from "@/components/circles/WaitlistPositionCard";
 
 const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 
@@ -41,17 +43,21 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
   useFocusTrap(ref, open, handleClose);
 
   useEffect(() => {
-    if (!open || !circle?.isPrivate) return;
-    const circleId = circle.id;
-    function refreshStatus() {
-      const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) ?? "[]") as CircleJoinRequest[];
-      const existing = requests.find((request) => request.circleId === circleId && request.requester === currentWallet);
-      setRequestStatus(existing?.status ?? null);
-    }
-    refreshStatus();
-    window.addEventListener("storage", refreshStatus);
-    return () => window.removeEventListener("storage", refreshStatus);
-  }, [circle, currentWallet, open]);
+  if (!open || !circle?.isPrivate) return;
+  const circleId = circle.id;
+  function refreshStatus() {
+    const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) ?? "[]") as CircleJoinRequest[];
+    const existing = requests.find((request) => request.circleId === circleId && request.requester === currentWallet);
+    setRequestStatus(existing?.status ?? null);
+  }
+  refreshStatus();
+  window.addEventListener("storage", refreshStatus);
+  window.addEventListener(JOIN_REQUESTS_UPDATED_EVENT, refreshStatus);
+  return () => {
+    window.removeEventListener("storage", refreshStatus);
+    window.removeEventListener(JOIN_REQUESTS_UPDATED_EVENT, refreshStatus);
+  };
+}, [circle, currentWallet, open]);
 
   useEffect(() => {
     if (!open || !circle) return;
@@ -92,7 +98,8 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
       ...requests.filter((item) => !(item.circleId === circle.id && item.requester === currentWallet)),
       request,
     ]));
-    setRequestStatus("pending");
+    window.dispatchEvent(new CustomEvent(JOIN_REQUESTS_UPDATED_EVENT, { detail: { circleId: circle.id } }));
+setRequestStatus("pending");;
     onRequestSubmitted?.(request);
   }
 
@@ -171,6 +178,9 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
             <p className="text-sm text-[var(--muted)]">
               {requestStatus === "pending" ? "The organizer will review your request." : requestStatus === "approved" ? "Your request was approved. You can now join this circle." : "The organizer declined your request."}
             </p>
+            {requestStatus === "pending" && (
+  <WaitlistPositionCard circleId={circle.id} currentWallet={currentWallet} />
+)}
             <button onClick={handleClose} className="w-full py-2.5 bg-[var(--ov-0a)] text-[var(--text)] font-medium rounded-xl">Close</button>
           </div>
         ) : (

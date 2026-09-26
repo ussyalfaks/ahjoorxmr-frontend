@@ -31,6 +31,8 @@ import { enableAutoPay, getAutoPayConfig, recordAutoPayAttempt } from "@/lib/aut
 import CircleRulesView from "@/components/circles/CircleRulesView";
 import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, type CircleRulesRecord } from "@/lib/circleRules";
 import CircleImage from "@/components/circles/CircleImage";
+import { JOIN_REQUESTS_UPDATED_EVENT } from "@/lib/joinRequests"; // (not actually used here, safe to omit if unused)
+import WaitlistPositionCard from "@/components/circles/WaitlistPositionCard";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -720,7 +722,8 @@ export default function CircleDetailPage({
           </div>
           <p className="text-xs text-[var(--muted)]">Created {circle.createdAt}</p>
         </div>
-
+{/* Waitlist position — only meaningful for a non-member with a pending join request. */}
+{!circle.isMember && <WaitlistPositionCard circleId={circle.id} currentWallet={CURRENT_WALLET} />}
         <section className="rounded-2xl bg-[var(--content)] p-6" aria-labelledby="circle-rules-heading">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
