@@ -9,7 +9,8 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import InstallPWAButton from "@/components/ui/InstallPWAButton";
 import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
 import FeedbackWidget from "@/components/ui/FeedbackWidget";
-import ShortcutsModal from "@/components/ui/ShortcutsModal";
+ import ShortcutsModal from "@/components/ui/ShortcutsModal";
++import EmailVerificationBanner from "@/components/settings/EmailVerificationBanner";
 
 const WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 const WALLET_DISPLAY = "0x23g43gdaa...";
@@ -172,6 +173,7 @@ export default function DashboardLayout({
 
         {/* Page Content */}
         <main className="flex-1 px-6 md:px-10 pb-10">
+          <EmailVerificationBanner />
           {children}
         </main>
 

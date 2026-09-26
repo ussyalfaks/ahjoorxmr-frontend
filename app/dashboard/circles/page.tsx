@@ -10,8 +10,10 @@ import CircleListRow from "@/components/circles/CircleListRow";
 import ComparisonFloatingBar from "@/components/circles/ComparisonFloatingBar";
 import CircleComparison from "@/components/circles/CircleComparison";
 import { CircleComparisonProvider } from "@/contexts/CircleComparisonContext";
-import { useCircleViewPreference } from "@/hooks/useCircleViewPreference";
-import { useBookmarks } from "@/hooks/useBookmarks";
+ import { useCircleViewPreference } from "@/hooks/useCircleViewPreference";
+ import { useBookmarks } from "@/hooks/useBookmarks";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
+import { useToast } from "@/components/ui/Toast";
 import {
   MOCK_CIRCLES,
   CURRENT_WALLET,
@@ -151,30 +153,51 @@ function CirclesContent() {
   const [joinCircle, setJoinCircle] = useState<JoinCircleData | null>(null);
   const [query, setQuery] = useState("");
 
-  const { view, setView } = useCircleViewPreference();
-  const { bookmarkedIds } = useBookmarks();
+   const { view, setView } = useCircleViewPreference();
+   const { bookmarkedIds } = useBookmarks();
+  const { isVerified } = useEmailVerification();
+  const { showToast } = useToast();
 
-  // Handle invite / create deep-link params
-  useEffect(() => {
-    if (!inviteId) return;
-    const circle = circles.find((c) => c.id === inviteId);
-    if (circle) setJoinCircle(circle);
-  }, [circles, inviteId]);
-
-  useEffect(() => {
-    if (action === "create") {
-      setCreateOpen(true);
-      router.replace("/dashboard/circles");
-    }
-  }, [action, router]);
-
-  function openCreateCircle() {
-    setDuplicateValues(undefined);
-    setCreateOpen(true);
+  function requireVerified(): boolean {
+    if (isVerified) return true;
+    showToast({
+      title: "Verify your email to continue",
+      message: "Creating and joining circles requires a verified email address.",
+      variant: "warning",
+    });
+    return false;
   }
 
-  function duplicateCircle(circle: (typeof MOCK_CIRCLES)[number]) {
-    const contribution = circle.contribution.replace(/[^\d.]/g, "");
+  function requestJoinCircle(circle: JoinCircleData) {
+    if (!requireVerified()) return;
+    setJoinCircle(circle);
+  }
+
+   // Handle invite / create deep-link params
+   useEffect(() => {
+     if (!inviteId) return;
+     const circle = circles.find((c) => c.id === inviteId);
+    if (circle) setJoinCircle(circle);
+    if (circle) requestJoinCircle(circle);
+   }, [circles, inviteId]);
+
+   useEffect(() => {
+     if (action === "create") {
+      setCreateOpen(true);
+      if (requireVerified()) setCreateOpen(true);
+       router.replace("/dashboard/circles");
+     }
+   }, [action, router]);
+
+   function openCreateCircle() {
+    if (!requireVerified()) return;
+     setDuplicateValues(undefined);
+     setCreateOpen(true);
+   }
+
+   function duplicateCircle(circle: (typeof MOCK_CIRCLES)[number]) {
+    if (!requireVerified()) return;
+     const contribution = circle.contribution.replace(/[^\d.]/g, "");
     const roundDuration = circle.duration.replace(/[^\d.]/g, "");
     setDuplicateValues({
       name: `${circle.name} (Copy)`,
@@ -372,7 +395,7 @@ function CirclesContent() {
                   key={circle.id}
                   circle={circle}
                   showJoin={isDiscover || (isBookmarked && !circle.members.includes(CURRENT_WALLET))}
-                  onJoin={setJoinCircle}
+                 onJoin={requestJoinCircle}
                   onDuplicate={tab === "my" && circle.creator.toLowerCase() === CURRENT_WALLET.toLowerCase() ? duplicateCircle : undefined}
                 />
               ))}
@@ -421,7 +444,7 @@ function CirclesContent() {
       <ComparisonFloatingBar allCircles={MOCK_CIRCLES} />
       <CircleComparison
         allCircles={MOCK_CIRCLES}
-        onJoinCircle={(circle) => setJoinCircle(circle)}
+        onJoinCircle={(circle) => requestJoinCircle(circle)}
       />
     </>
   );

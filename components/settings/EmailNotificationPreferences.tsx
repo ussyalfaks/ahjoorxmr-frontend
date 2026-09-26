@@ -14,6 +14,7 @@ import {
   Radio,
 } from "lucide-react";
 import { Toggle } from "@/components/ui/Toggle";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
 
 const NOTIFICATIONS_STORAGE_KEY = "ahjoorxmr:notification-settings";
 
@@ -90,6 +91,7 @@ export default function EmailNotificationPreferences() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">(
     "idle"
   );
+  const { isVerified } = useEmailVerification();
 
   useEffect(() => {
     try {
@@ -182,6 +184,13 @@ export default function EmailNotificationPreferences() {
         <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 flex items-center gap-2 text-xs font-medium animate-fade-up">
           <AlertCircle size={16} aria-hidden="true" />
           <span>Failed to save preferences. Please try again.</span>
+        </div>
+      )}
+
+       {!isVerified && (
+        <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center gap-2 text-xs font-medium">
+          <AlertCircle size={16} aria-hidden="true" />
+          <span>Email delivery is paused until you verify your email address.</span>
         </div>
       )}
 
