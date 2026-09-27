@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 export interface Participant {
@@ -145,6 +145,41 @@ export function ParticipantList({ participants, onSendReminder }: ParticipantLis
 
   return (
     <section className="rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)]">
+      {/* Pre-launch lobby: seats, countdown and start CTA */}
+      {(typeof seatsRemaining === "number" || startDate) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-[var(--border)] bg-[var(--ov-0a)] px-4 py-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+            {typeof seatsRemaining === "number" && (
+              <span className="text-gray-700 dark:text-[var(--muted)]">
+                <span className="font-semibold text-gray-900 dark:text-[var(--text)]">
+                  {participants.length}
+                </span>{" "}
+                joined ·{" "}
+                <span className="font-semibold text-gray-900 dark:text-[var(--text)]">
+                  {seatsRemaining}
+                </span>{" "}
+                {seatsRemaining === 1 ? "seat" : "seats"} remaining
+              </span>
+            )}
+            {startDate && (
+              <span className="flex items-center gap-2 text-gray-700 dark:text-[var(--muted)]">
+                Starts in <StartCountdown startDate={startDate} />
+              </span>
+            )}
+          </div>
+
+          {isOrganizer && seatsFilled && onStartCircle && (
+            <button
+              type="button"
+              onClick={onStartCircle}
+              className="rounded-md bg-[#4B6B76] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2"
+            >
+              Start circle now
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-[var(--border)] px-4 py-3">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-[var(--text)]">
           Participants{" "}
