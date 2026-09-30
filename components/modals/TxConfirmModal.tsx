@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, CheckCircle2, XCircle, ExternalLink, X } from "lucide-react";
 import { addPendingTransaction } from "@/lib/pendingTransactions";
 import GasFeeEstimate from "@/components/modals/GasFeeEstimate";
+import GlossaryTerm from "@/components/ui/GlossaryTerm";
 import { useGasFeeEstimate } from "@/hooks/useGasFeeEstimate";
 import type { GasFeeEstimate as GasFeeEstimateData, GasFeeRequest } from "@/lib/gasFee";
 
@@ -169,6 +170,12 @@ export default function TxConfirmModal({
               </div>
             </dl>
             <GasFeeEstimate fee={fee} loading={feeLoading} />
+            <p className="mt-3 mb-6 text-xs leading-5 text-[var(--muted)]">
+              Your wallet will ask for a{" "}
+              <GlossaryTerm term="wallet-signature">wallet signature</GlossaryTerm> to approve this.
+              It&apos;s complete once it receives a{" "}
+              <GlossaryTerm term="block-confirmation">block confirmation</GlossaryTerm>.
+            </p>
 
             <div className="flex gap-3">
               <button
@@ -215,6 +222,11 @@ export default function TxConfirmModal({
               >
                 View on Starkscan <ExternalLink size={14} />
               </a>
+            )}
+            {txHash && (
+              <span className="ml-1 align-middle">
+                <GlossaryTerm term="block-explorer" iconOnly />
+              </span>
             )}
             <button
               onClick={onClose}
