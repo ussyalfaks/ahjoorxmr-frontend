@@ -39,6 +39,7 @@ import WaitlistPositionCard from "@/components/circles/WaitlistPositionCard";
 import CirclePausedBanner from "@/components/circles/CirclePausedBanner";
 import { useCirclePause } from "@/hooks/useCirclePause";
 import { recordLeftCircle } from "@/lib/circleRecommendations";
+import { celebrateMilestone, detectCircleMilestones } from "@/lib/milestoneCelebrations";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -404,6 +405,20 @@ export default function CircleDetailPage({
   useEffect(() => {
     setPayoutDraw(getPayoutDraw(id));
   }, [id]);
+
+  // Celebrate milestones this circle has reached (each plays once per user).
+  useEffect(() => {
+    if (!circle || !circle.isMember) return;
+    detectCircleMilestones({
+      id: circle.id,
+      name: circle.name,
+      status: circle.status,
+      memberCount: circle.participants.length,
+      totalSlots: circle.totalSlots,
+      lastCompletedRound: circle.roundHistory.reduce((max, row) => Math.max(max, row.round), 0),
+      totalRounds: circle.totalRounds,
+    }).forEach(celebrateMilestone);
+  }, [circle]);
 
   useEffect(() => {
     const syncRules = () => setCircleRules(getCircleRules(id));
