@@ -11,7 +11,7 @@ import CircleListRow from "@/components/circles/CircleListRow";
 import ComparisonFloatingBar from "@/components/circles/ComparisonFloatingBar";
 import CircleComparison from "@/components/circles/CircleComparison";
 import { CircleComparisonProvider } from "@/contexts/CircleComparisonContext";
- import { useCircleViewPreference } from "@/hooks/useCircleViewPreference";
+import { useCircleViewPreference } from "@/hooks/useCircleViewPreference";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useCircleTags } from "@/hooks/useCircleTags";
 import { useEmailVerification } from "@/hooks/useEmailVerification";

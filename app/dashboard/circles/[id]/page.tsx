@@ -33,13 +33,9 @@ import { enableAutoPay, getAutoPayConfig, recordAutoPayAttempt } from "@/lib/aut
 import CircleRulesView from "@/components/circles/CircleRulesView";
 import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, type CircleRulesRecord } from "@/lib/circleRules";
 import CircleImage from "@/components/circles/CircleImage";
-<<<<<<< HEAD
 import { DownloadAgreementButton } from "@/components/circles/DownloadAgreementButton";
 import type { ModerationEvent } from "@/types/discussion";
-=======
-import { JOIN_REQUESTS_UPDATED_EVENT } from "@/lib/joinRequests"; // (not actually used here, safe to omit if unused)
 import WaitlistPositionCard from "@/components/circles/WaitlistPositionCard";
->>>>>>> main
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
