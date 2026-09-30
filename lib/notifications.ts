@@ -1,6 +1,7 @@
 import type { Notification, NotificationType } from "@/types/notification";
 import { shouldSuppress } from "@/lib/doNotDisturb";
 import { alertUser, playNotificationSound, showBrowserNotification } from "@/lib/notificationAlerts";
+import { celebrateFromNotification } from "@/lib/milestoneCelebrations";
 
 const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
 
@@ -53,6 +54,7 @@ export function addNotification(input: NotificationInput) {
     localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify([...readList(NOTIFICATIONS_KEY), entry]));
     window.dispatchEvent(new Event(NOTIFICATIONS_EVENT));
     alertUser(input.type, input.title, input.description);
+    celebrateFromNotification(input);
   } catch {
     // ignore storage errors
   }
