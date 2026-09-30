@@ -71,6 +71,8 @@ export default function DashboardOverviewPage() {
   const [isClient, setIsClient] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  // Bumps whenever the live connection is restored so dashboard data is re-derived.
+  const refreshToken = useReconnectRefresh();
 
   useEffect(() => {
     setIsClient(true);
@@ -156,7 +158,8 @@ export default function DashboardOverviewPage() {
       card3: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       card4: null,
     }),
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [refreshToken]
   );
 
   const circles: Circle[] = useMemo(
@@ -407,8 +410,8 @@ export default function DashboardOverviewPage() {
         </div>
       )}
 
-      {/* Widgets Flow */}
-      <div className="space-y-6">
+      {/* Widgets Flow — re-keyed on reconnect so widgets re-read fresh data */}
+      <div key={refreshToken} className="space-y-6">
         <AnnualSavingsSummary />
         <SavingsGoalsWidget />
         {isClient ? layout.map((widget, idx) => {

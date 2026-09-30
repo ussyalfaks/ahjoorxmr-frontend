@@ -17,7 +17,7 @@ import AnnouncementComposer from "@/components/circles/AnnouncementComposer";
 import { getCircleRules, saveCircleRules } from "@/lib/circleRules";
 import CircleImageUploader from "@/components/circles/CircleImageUploader";
 import { JOIN_REQUESTS_UPDATED_EVENT } from "@/lib/joinRequests";
-import CirclePauseControls from "@/components/circles/CirclePauseControls";
+import CircleInvitePanel from "@/components/circles/CircleInvitePanel";
 
 const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
@@ -544,6 +544,8 @@ export default function CircleSettingsPage({
           )}
         </section>
       )}
+
+      <CircleInvitePanel circleId={circle.id} circleName={circle.name} />
 
       <section className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
         <div>
