@@ -22,9 +22,16 @@ function isPushCategoryEnabled(type: NotificationType): boolean {
   }
 }
 
+// Bursts (e.g. one notification per circle participant) should chime once.
+const SOUND_THROTTLE_MS = 1500;
+let lastSoundAt = 0;
+
 /** Short two-tone chime via Web Audio, so no audio asset is needed. */
 export function playNotificationSound() {
   if (typeof window === "undefined") return;
+  const now = Date.now();
+  if (now - lastSoundAt < SOUND_THROTTLE_MS) return;
+  lastSoundAt = now;
   try {
     const AudioCtx =
       window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
