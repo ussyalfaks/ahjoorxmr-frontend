@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bell, CheckCircle2, DollarSign, AlertCircle, Clock, UserPlus, UserMinus, Megaphone, Repeat, X } from "lucide-react";
+import { Bell, CheckCircle2, DollarSign, AlertCircle, Clock, UserPlus, UserMinus, Megaphone, Repeat, X, PauseCircle, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import type { Notification, NotificationType } from "@/types/notification";
 import { NOTIFICATIONS_EVENT } from "@/lib/notifications";
@@ -75,6 +75,8 @@ const TYPE_CONFIG: Record<NotificationType, { icon: React.ComponentType<{ size?:
   member_left:    { icon: UserMinus,     color: "text-[#FF5B5B]" },
   announcement:   { icon: Megaphone,     color: "text-[#4B6B76]" },
   seat_transfer:  { icon: Repeat,        color: "text-[#4B6B76]" },
+  circle_paused:  { icon: PauseCircle,   color: "text-[#FBBF24]" },
+  circle_resumed: { icon: PlayCircle,    color: "text-[var(--success)]" },
 };
 
 export default function NotificationDropdown() {
