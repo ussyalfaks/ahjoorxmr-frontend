@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PartyPopper, Trophy, Users, X } from "lucide-react";
-import { CELEBRATE_EVENT, type CelebrationKind, type CelebrationMilestone } from "@/lib/milestoneCelebrations";
+import {
+  CELEBRATE_EVENT,
+  attachCelebrationOverlay,
+  detachCelebrationOverlay,
+  type CelebrationKind,
+  type CelebrationMilestone,
+} from "@/lib/milestoneCelebrations";
 
 const DISPLAY_MS = 5000;
 const CONFETTI_MS = 2800;
@@ -112,7 +118,10 @@ export default function MilestoneCelebration() {
       if (milestone) setQueue((q) => (q.some((m) => m.key === milestone.key) ? q : [...q, milestone]));
     };
     window.addEventListener(CELEBRATE_EVENT, onCelebrate);
+    const pending = attachCelebrationOverlay();
+    if (pending.length) setQueue((q) => [...q, ...pending.filter((m) => !q.some((x) => x.key === m.key))]);
     return () => {
+      detachCelebrationOverlay();
       media?.removeEventListener?.("change", onChange);
       window.removeEventListener(CELEBRATE_EVENT, onCelebrate);
     };

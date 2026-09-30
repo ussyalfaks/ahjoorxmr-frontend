@@ -39,6 +39,21 @@ export function markCelebrated(key: string) {
   }
 }
 
+// Page effects can run before the layout-level overlay subscribes (child
+// effects fire first on a fresh load), so hold celebrations until it does.
+let overlayListening = false;
+const pendingCelebrations: CelebrationMilestone[] = [];
+
+/** Called by the overlay on mount; returns anything requested before it was ready. */
+export function attachCelebrationOverlay(): CelebrationMilestone[] {
+  overlayListening = true;
+  return pendingCelebrations.splice(0);
+}
+
+export function detachCelebrationOverlay() {
+  overlayListening = false;
+}
+
 /**
  * Requests a celebration. Each milestone plays at most once per user (per
  * browser): it's marked as celebrated as soon as it's dispatched, so a
@@ -47,7 +62,11 @@ export function markCelebrated(key: string) {
 export function celebrateMilestone(milestone: CelebrationMilestone): boolean {
   if (typeof window === "undefined" || hasCelebrated(milestone.key)) return false;
   markCelebrated(milestone.key);
-  window.dispatchEvent(new CustomEvent<CelebrationMilestone>(CELEBRATE_EVENT, { detail: milestone }));
+  if (overlayListening) {
+    window.dispatchEvent(new CustomEvent<CelebrationMilestone>(CELEBRATE_EVENT, { detail: milestone }));
+  } else {
+    pendingCelebrations.push(milestone);
+  }
   return true;
 }
 
