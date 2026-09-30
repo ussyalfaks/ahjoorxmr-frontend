@@ -10,6 +10,8 @@ interface GlossaryTermProps {
   children?: React.ReactNode;
   /** Render only the info icon (for labels that already show the term). */
   iconOnly?: boolean;
+  /** Where the tooltip opens. Use "bottom" near the top of scroll containers. */
+  placement?: "top" | "bottom";
   className?: string;
 }
 
@@ -18,7 +20,13 @@ interface GlossaryTermProps {
  * focus. Touch: tap the info icon to toggle. Escape, clicking outside or
  * blurring away dismisses it.
  */
-export default function GlossaryTerm({ term, children, iconOnly = false, className = "" }: GlossaryTermProps) {
+export default function GlossaryTerm({
+  term,
+  children,
+  iconOnly = false,
+  placement = "top",
+  className = "",
+}: GlossaryTermProps) {
   const entry = getGlossaryEntry(term);
   const tooltipId = useId();
   const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -91,7 +99,7 @@ export default function GlossaryTerm({ term, children, iconOnly = false, classNa
         <span
           id={tooltipId}
           role="tooltip"
-          className="absolute bottom-full left-1/2 z-[60] mb-2 block w-64 max-w-[80vw] -translate-x-1/2 rounded-xl border border-[var(--ov-14)] bg-[var(--modal)] p-3 text-left text-xs font-normal normal-case leading-5 tracking-normal text-[var(--muted)] shadow-xl"
+          className={`absolute left-1/2 z-[60] block ${placement === "top" ? "bottom-full mb-2" : "top-full mt-2"} w-64 max-w-[80vw] -translate-x-1/2 rounded-xl border border-[var(--ov-14)] bg-[var(--modal)] p-3 text-left text-xs font-normal normal-case leading-5 tracking-normal text-[var(--muted)] shadow-xl`}
         >
           <span className="mb-1 block text-sm font-semibold text-[var(--text)]">{entry.term}</span>
           {entry.definition}
