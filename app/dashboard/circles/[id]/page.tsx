@@ -38,6 +38,7 @@ import type { ModerationEvent } from "@/types/discussion";
 import WaitlistPositionCard from "@/components/circles/WaitlistPositionCard";
 import CirclePausedBanner from "@/components/circles/CirclePausedBanner";
 import { useCirclePause } from "@/hooks/useCirclePause";
+import { recordLeftCircle } from "@/lib/circleRecommendations";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -526,6 +527,7 @@ export default function CircleDetailPage({
       description: `${fmt(CURRENT_WALLET)} left ${circle.name}.`,
       href: `/dashboard/circles/${circle.id}`,
     });
+    recordLeftCircle(circle.id);
     setLeaveOpen(false);
     showToast({ title: `You left ${circle.name}`, variant: "success" });
     router.push("/dashboard/circles");
