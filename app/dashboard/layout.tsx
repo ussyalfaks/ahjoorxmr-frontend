@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutGrid, Lock, FileText, Settings, Users, LogOut, Wallet, Trophy, Bell, HelpCircle, Award } from "lucide-react";
+import { LayoutGrid, Lock, FileText, Settings, Users, LogOut, Wallet, Trophy, Bell, HelpCircle, Award, Target } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
@@ -24,32 +24,84 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ConnectionStatusProvider>
-      <div className="flex min-h-screen bg-[var(--bg)] text-[var(--text)]">
-        {/* Sidebar - Desktop */}
-        <aside className="hidden md:flex w-[260px] flex-col border-r border-[var(--ov-0f)] bg-[var(--surface)]">
-          <div className="p-8 flex flex-col h-full">
-            {/* Logo */}
-            <div className="flex items-center gap-2 mb-12">
-              <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center" aria-hidden="true">
-                <span className="font-bold text-sm">$</span>
-              </div>
-              <span className="text-xl font-bold font-sora">Ahjoor</span>
+    <div className="flex min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      {/* Sidebar - Desktop */}
+      <aside className="hidden md:flex print:hidden w-[260px] flex-col border-r border-[var(--ov-0f)] bg-[var(--surface)]">
+        <div className="p-8 flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center gap-2 mb-12">
+            <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center" aria-hidden="true">
+              <span className="font-bold text-sm">$</span>
             </div>
 
-            {/* Navigation */}
-            <nav aria-label="Dashboard navigation">
-              <ul className="space-y-2 list-none p-0 m-0">
-                <li>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-3 px-4 py-3 text-[var(--text)] bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-                  >
-                    <LayoutGrid size={20} className="text-[var(--text)]" aria-hidden="true" />
-                    <span className="font-medium">Overview</span>
-                  </Link>
-                </li>
-                <li>
+          {/* Navigation */}
+          <nav aria-label="Dashboard navigation">
+            <ul className="space-y-2 list-none p-0 m-0">
+              <li>
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--text)] bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <LayoutGrid size={20} className="text-[var(--text)]" aria-hidden="true" />
+                  <span className="font-medium">Overview</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/circles"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <Users size={20} aria-hidden="true" />
+                  <span className="font-medium">Circles</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/locked-funds"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <Lock size={20} aria-hidden="true" />
+                  <span className="font-medium">Locked Funds</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/payouts"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <Wallet size={20} aria-hidden="true" />
+                  <span className="font-medium">Payouts</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/contributions"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <FileText size={20} aria-hidden="true" />
+                  <span className="font-medium">Contributions</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/statements"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <FileText size={20} aria-hidden="true" />
+                  <span className="font-medium">Statements</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/goals"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <Target size={20} aria-hidden="true" />
+                  <span className="font-medium">Goals</span>
+                </Link>
+              </li>
+              <li>
+                <FeatureSpotlight featureId="multi-wallet" align="left">
                   <Link
                     href="/dashboard/circles"
                     className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
@@ -157,24 +209,23 @@ export default function DashboardLayout({
           </div>
         </aside>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-h-screen">
-          {/* Top Header */}
-          <header className="flex items-center justify-end p-6 md:px-10 py-5 gap-3">
-            <DashboardHeaderSearch />
-            <ConnectionStatusIndicator />
-            <InstallPWAButton />
-            <ThemeToggle />
-            <NotificationDropdown />
-            <div
-              className="flex items-center border border-[var(--ov-1a)] rounded-full px-4 py-2 gap-2 bg-[var(--ov-05)]"
-              role="status"
-              aria-label={`Connected wallet: ${WALLET_DISPLAY}`}
-            >
-              <span className="text-sm font-medium text-[var(--muted2)]">{WALLET_DISPLAY}</span>
-              <CopyButton value={WALLET_ADDRESS} aria-label="Copy wallet address" />
-            </div>
-          </header>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Top Header */}
+        <header className="print:hidden flex items-center justify-end p-6 md:px-10 py-5 gap-3">
+          <DashboardHeaderSearch />
+          <InstallPWAButton />
+          <ThemeToggle />
+          <NotificationDropdown />
+          <div
+            className="flex items-center border border-[var(--ov-1a)] rounded-full px-4 py-2 gap-2 bg-[var(--ov-05)]"
+            role="status"
+            aria-label={`Connected wallet: ${WALLET_DISPLAY}`}
+          >
+            <span className="text-sm font-medium text-[var(--muted2)]">{WALLET_DISPLAY}</span>
+            <CopyButton value={WALLET_ADDRESS} aria-label="Copy wallet address" />
+          </div>
+        </header>
 
           {/* Page Content */}
           <main className="flex-1 px-6 md:px-10 pb-10">

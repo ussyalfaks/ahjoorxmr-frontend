@@ -11,7 +11,7 @@ import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
 import type { Circle } from "@/types/circle";
 import BalanceBreakdownWidget from "@/components/wallet/BalanceBreakdownWidget"
 import AnnualSavingsSummary from "@/components/dashboard/AnnualSavingsSummary";
-import { useReconnectRefresh } from "@/contexts/ConnectionStatusContext";
+import SavingsGoalsWidget from "@/components/dashboard/SavingsGoalsWidget";
 
 interface PendingTx {
   type: TxType;
@@ -413,6 +413,7 @@ export default function DashboardOverviewPage() {
       {/* Widgets Flow — re-keyed on reconnect so widgets re-read fresh data */}
       <div key={refreshToken} className="space-y-6">
         <AnnualSavingsSummary />
+        <SavingsGoalsWidget />
         {isClient ? layout.map((widget, idx) => {
           if (!widget.visible) return null;
           const isDragged = draggedIdx === idx;

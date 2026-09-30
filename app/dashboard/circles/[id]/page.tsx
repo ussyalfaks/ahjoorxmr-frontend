@@ -2,12 +2,14 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Settings, BarChart3, LogOut } from "lucide-react";
+import { ArrowLeft, Check, X as XIcon, Settings, BarChart3, LogOut } from "lucide-react";
 import Link from "next/link";
 import LeaveCircleModal from "@/components/modals/LeaveCircleModal";
 import { addNotification } from "@/lib/notifications";
 import { ANNOUNCEMENTS_EVENT, getAnnouncementsForCircle } from "@/lib/announcements";
 import ActivityFeed from "@/components/circles/ActivityFeed";
+import InviteManager from "@/components/circles/InviteManager";
+import { getInviteUsage, INVITES_UPDATED_EVENT } from "@/lib/inviteLinks";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import DisputeList from "@/components/circles/DisputeList";
 import DiscussionThread from "@/components/circles/DiscussionThread";
@@ -279,46 +281,6 @@ function fmt(address: string) {
   return `${address.slice(0, 8)}…${address.slice(-6)}`;
 }
 
-function InviteLinkButton({ circleId }: { circleId: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    const url = `${window.location.origin}/dashboard/circles?invite=${circleId}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      const el = document.createElement("textarea");
-      el.value = url;
-      el.style.cssText = "position:fixed;opacity:0";
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
-  return (
-    <button
-      onClick={copy}
-      className="flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-    >
-      {copied ? (
-        <>
-          <Check size={14} className="text-green-600 dark:text-green-400" aria-hidden="true" />
-          <span className="text-green-600 dark:text-green-400">Copied!</span>
-        </>
-      ) : (
-        <>
-          <LinkIcon size={14} aria-hidden="true" />
-          Copy Invite Link
-        </>
-      )}
-    </button>
-  );
-}
-
 function ParticipantRow({ participant }: { participant: Participant }) {
   const isCurrentUser = participant.address === CURRENT_WALLET;
   return (
@@ -413,6 +375,22 @@ export default function CircleDetailPage({
   );
   const [payoutDraw, setPayoutDraw] = useState<PayoutDraw | null>(null);
   const [announcementEvents, setAnnouncementEvents] = useState<CircleEvent[]>([]);
+  const [inviteEvents, setInviteEvents] = useState<CircleEvent[]>([]);
+
+  useEffect(() => {
+    const sync = () =>
+      setInviteEvents(
+        getInviteUsage(id).map((u) => ({
+          id: u.id,
+          type: "invite_used",
+          actor: "Invite link",
+          timestamp: new Date(u.usedAt),
+        }))
+      );
+    sync();
+    window.addEventListener(INVITES_UPDATED_EVENT, sync);
+    return () => window.removeEventListener(INVITES_UPDATED_EVENT, sync);
+  }, [id]);
   const [circleRules, setCircleRules] = useState<CircleRulesRecord | null>(null);
 
   useEffect(() => {
@@ -645,7 +623,7 @@ export default function CircleDetailPage({
         <div className="h-px bg-[var(--ov-1a)] flex-1 hidden sm:block" aria-hidden="true" />
         {canManageCircle && (
           <>
-            <InviteLinkButton circleId={circle.id} />
+            <InviteManager circleId={circle.id} />
             {circle.isOrganizer && (
               <Link
                 href={`/dashboard/circles/${circle.id}/analytics`}
@@ -944,7 +922,7 @@ export default function CircleDetailPage({
             <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Activity</h2>
             <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
           </div>
-          <ActivityFeed events={[...MOCK_EVENTS, ...announcementEvents]} pageSize={5} />
+          <ActivityFeed events={[...MOCK_EVENTS, ...announcementEvents, ...inviteEvents]} pageSize={5} />
         </div>
 
         <ExportButton
