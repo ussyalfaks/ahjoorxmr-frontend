@@ -14,6 +14,8 @@ import {
   Award,
   CornerDownLeft,
   type LucideIcon,
+  FileText,
+  Target,
 } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
@@ -54,6 +56,8 @@ const PAGES: PaletteItem[] = [
   { id: "page-locked-funds", group: "Pages", label: "Locked Funds", icon: Lock, href: "/dashboard/locked-funds" },
   { id: "page-payouts", group: "Pages", label: "Payouts", icon: Wallet, href: "/dashboard/payouts" },
   { id: "page-settings", group: "Pages", label: "Settings", icon: Settings, href: "/dashboard/settings" },
+  { id: "page-statements", group: "Pages", label: "Monthly Statements", icon: FileText, href: "/dashboard/statements" },
+  { id: "page-goals", group: "Pages", label: "Savings Goals", icon: Target, href: "/dashboard/goals" },
 ];
 
 const ALL_ITEMS: PaletteItem[] = [...MOCK_CIRCLES, ...ACTIONS, ...PAGES];

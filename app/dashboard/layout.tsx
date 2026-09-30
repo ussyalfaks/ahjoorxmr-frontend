@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutGrid, Lock, FileText, Settings, Users, LogOut, Wallet, Trophy, Bell, HelpCircle, Award } from "lucide-react";
+import { LayoutGrid, Lock, FileText, Settings, Users, LogOut, Wallet, Trophy, Bell, HelpCircle, Award, Target } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
@@ -23,7 +23,7 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen bg-[var(--bg)] text-[var(--text)]">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex w-[260px] flex-col border-r border-[var(--ov-0f)] bg-[var(--surface)]">
+      <aside className="hidden md:flex print:hidden w-[260px] flex-col border-r border-[var(--ov-0f)] bg-[var(--surface)]">
         <div className="p-8 flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-2 mb-12">
@@ -79,6 +79,24 @@ export default function DashboardLayout({
                 >
                   <FileText size={20} aria-hidden="true" />
                   <span className="font-medium">Contributions</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/statements"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <FileText size={20} aria-hidden="true" />
+                  <span className="font-medium">Statements</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard/goals"
+                  className="flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  <Target size={20} aria-hidden="true" />
+                  <span className="font-medium">Goals</span>
                 </Link>
               </li>
               <li>
@@ -156,7 +174,7 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Top Header */}
-        <header className="flex items-center justify-end p-6 md:px-10 py-5 gap-3">
+        <header className="print:hidden flex items-center justify-end p-6 md:px-10 py-5 gap-3">
           <DashboardHeaderSearch />
           <InstallPWAButton />
           <ThemeToggle />
