@@ -1,12 +1,12 @@
 import { Loader2, RefreshCw } from "lucide-react";
-import type { GasFeeEstimate } from "@/lib/gasFee";
+import type { GasFeeEstimate as GasFeeEstimateData } from "@/lib/gasFee";
 import GlossaryTerm from "@/components/ui/GlossaryTerm";
 
 export default function GasFeeEstimate({
   fee,
   loading,
 }: {
-  fee: GasFeeEstimate | null;
+  fee: GasFeeEstimateData | null;
   loading: boolean;
 }) {
   return (
