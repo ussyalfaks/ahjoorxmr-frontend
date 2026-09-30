@@ -9,6 +9,7 @@ import { OPEN_COMMAND_PALETTE_EVENT } from "@/components/ui/CommandPalette";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import InstallPWAButton from "@/components/ui/InstallPWAButton";
 import PendingTransactionsTracker from "@/components/layout/Navbar/PendingTransactionsTracker";
+import GlossaryTerm from "@/components/ui/GlossaryTerm";
 
 const navLinks = [
   { label: "Home", href: "#" },
@@ -68,7 +69,8 @@ function WalletSelectModal({
         </div>
 
         <p className="text-[var(--muted)] text-sm mb-5">
-          Choose a Starknet-compatible wallet to connect.
+          Choose a <GlossaryTerm term="starknet">Starknet</GlossaryTerm>-compatible{" "}
+          <GlossaryTerm term="wallet">wallet</GlossaryTerm> to connect.
         </p>
 
         <div className="space-y-3">
@@ -111,6 +113,9 @@ function WalletSelectModal({
           {passkeyBusy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <KeyRound size={16} aria-hidden="true" />}
           {passkeyBusy ? "Waiting for passkey..." : "Sign in with passkey"}
         </button>
+        <p className="mt-2 flex items-center justify-center gap-1 text-[11px] text-[var(--muted)]">
+          New to passkeys? <GlossaryTerm term="passkey" iconOnly />
+        </p>
         {passkeyError && <p role="alert" className="mt-2 text-xs leading-relaxed text-red-500">{passkeyError}</p>}
         {!passkeySupported && (
           <p className="mt-2 text-center text-[11px] text-[var(--muted)]">
