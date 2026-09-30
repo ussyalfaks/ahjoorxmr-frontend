@@ -17,6 +17,7 @@ import AnnouncementComposer from "@/components/circles/AnnouncementComposer";
 import { getCircleRules, saveCircleRules } from "@/lib/circleRules";
 import CircleImageUploader from "@/components/circles/CircleImageUploader";
 import { JOIN_REQUESTS_UPDATED_EVENT } from "@/lib/joinRequests";
+import CirclePauseControls from "@/components/circles/CirclePauseControls";
 
 const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
@@ -576,6 +577,15 @@ export default function CircleSettingsPage({
           </ul>
         )}
       </section>
+
+      {/* Pause / resume */}
+      <CirclePauseControls
+        circleId={circle.id}
+        circleName={circle.name}
+        actor={CURRENT_WALLET}
+        participants={circle.participants.map((p) => p.address)}
+        canPause={status === "active"}
+      />
 
       {/* Archive circle */}
       <section className="bg-[var(--content)] p-6 rounded-2xl space-y-3">
