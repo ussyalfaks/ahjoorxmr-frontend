@@ -36,6 +36,8 @@ import CircleImage from "@/components/circles/CircleImage";
 import { DownloadAgreementButton } from "@/components/circles/DownloadAgreementButton";
 import type { ModerationEvent } from "@/types/discussion";
 import WaitlistPositionCard from "@/components/circles/WaitlistPositionCard";
+import CirclePausedBanner from "@/components/circles/CirclePausedBanner";
+import { useCirclePause } from "@/hooks/useCirclePause";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -373,6 +375,14 @@ export default function CircleDetailPage({
   const [payoutDraw, setPayoutDraw] = useState<PayoutDraw | null>(null);
   const [announcementEvents, setAnnouncementEvents] = useState<CircleEvent[]>([]);
   const [inviteEvents, setInviteEvents] = useState<CircleEvent[]>([]);
+  const pauseState = useCirclePause(id);
+  const pauseEvents: CircleEvent[] = pauseState.log.map((entry) => ({
+    id: entry.id,
+    type: entry.type === "paused" ? "circle_paused" : "circle_resumed",
+    actor: entry.actor,
+    timestamp: new Date(entry.at),
+    meta: entry.reason ? { message: entry.reason } : undefined,
+  }));
 
   useEffect(() => {
     const sync = () =>
@@ -600,6 +610,7 @@ export default function CircleDetailPage({
   return (
     <div className="space-y-10 pb-20 md:pb-0">
       <CircleImage circleId={circle.id} circleName={circle.name} kind="cover" alt={`${circle.name} cover`} className="aspect-[16/5] w-full rounded-2xl object-cover" />
+      <CirclePausedBanner circleId={circle.id} />
       {/* Back + Title */}
       <div className="flex flex-wrap items-center gap-3">
         <Link
@@ -612,9 +623,15 @@ export default function CircleDetailPage({
         <h1 className="text-2xl font-bold font-sora text-[var(--text)]">{circle.name}</h1>
         <BookmarkButton circleId={circle.id} circleName={circle.name} size={18} />
         <CircleHealthIndicator health={getMockCircleHealth(circle.id)} />
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[circle.status]}`}>
-          {circle.status}
-        </span>
+        {pauseState.paused ? (
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            Paused
+          </span>
+        ) : (
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[circle.status]}`}>
+            {circle.status}
+          </span>
+        )}
         <div className="h-px bg-[var(--ov-1a)] flex-1 hidden sm:block" aria-hidden="true" />
         {canManageCircle && (
           <>
@@ -735,7 +752,14 @@ export default function CircleDetailPage({
         {circle.status !== "completed" && <div className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold font-sora text-[var(--text)]">Upcoming Payout</h2>
-            <CountdownTimer deadline={circle.nextPayoutDeadline} />
+            <CountdownTimer
+              paused={pauseState.paused}
+              deadline={
+                circle.nextPayoutDeadline
+                  ? new Date(circle.nextPayoutDeadline.getTime() + pauseState.totalPausedMs)
+                  : null
+              }
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
@@ -892,7 +916,7 @@ export default function CircleDetailPage({
             <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Activity</h2>
             <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
           </div>
-          <ActivityFeed events={[...MOCK_EVENTS, ...announcementEvents, ...inviteEvents]} pageSize={5} />
+          <ActivityFeed events={[...MOCK_EVENTS, ...announcementEvents, ...inviteEvents, ...pauseEvents]} pageSize={5} />
         </div>
 
         <ExportButton
