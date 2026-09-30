@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, CheckCircle2, Clock3, ChevronDown, FileText } from "lucide-react";
 import ExportButton from "@/components/ui/ExportButton";
 import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
+import GlossaryTerm from "@/components/ui/GlossaryTerm";
 import type { ExportRow } from "@/lib/export";
 import type { MilestoneData } from "@/types/milestone";
 import {
@@ -77,8 +78,10 @@ export default function PayoutsPage() {
             Payout history
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted2)]">
-            Review every completed and pending payout from your circles. Each
-            transaction links directly to the blockchain for independent
+            Review every completed and pending{" "}
+            <GlossaryTerm term="payout">payout</GlossaryTerm> from your circles. Each
+            transaction links to a{" "}
+            <GlossaryTerm term="block-explorer">block explorer</GlossaryTerm> for independent
             verification.
           </p>
         </div>
@@ -119,7 +122,10 @@ export default function PayoutsPage() {
                       Round #
                     </th>
                     <th scope="col" className="px-6 py-4 font-medium">
-                      Transaction Hash
+                      <span className="inline-flex items-center gap-1">
+                        Transaction Hash
+                        <GlossaryTerm term="transaction-hash" iconOnly placement="bottom" />
+                      </span>
                     </th>
                     <th scope="col" className="px-6 py-4 font-medium">
                       Status

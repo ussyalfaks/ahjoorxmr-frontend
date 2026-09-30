@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
-+import { MOCK_LOCKED_FUNDS } from "@/data/lockedFunds";
+import { MOCK_LOCKED_FUNDS } from "@/data/lockedFunds";
 
 const TOKENS = ["USDT", "USDC", "STRK", "XLM"];
 

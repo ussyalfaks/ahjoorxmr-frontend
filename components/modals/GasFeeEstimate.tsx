@@ -1,17 +1,20 @@
 import { Loader2, RefreshCw } from "lucide-react";
-import type { GasFeeEstimate } from "@/lib/gasFee";
+import type { GasFeeEstimate as GasFeeEstimateData } from "@/lib/gasFee";
+import GlossaryTerm from "@/components/ui/GlossaryTerm";
 
 export default function GasFeeEstimate({
   fee,
   loading,
 }: {
-  fee: GasFeeEstimate | null;
+  fee: GasFeeEstimateData | null;
   loading: boolean;
 }) {
   return (
     <div className="rounded-xl bg-[var(--ov-05)] p-3 text-sm">
       <div className="flex items-center justify-between">
-        <span className="text-[var(--muted)]">Estimated network fee</span>
+        <span className="text-[var(--muted)]">
+          Estimated <GlossaryTerm term="network-fee">network fee</GlossaryTerm>
+        </span>
         {loading && <Loader2 size={14} className="animate-spin text-[var(--muted)]" aria-label="Updating fee estimate" />}
         {!loading && fee && <RefreshCw size={14} className="text-[var(--muted)]" aria-label="Fee estimate updates automatically" />}
       </div>

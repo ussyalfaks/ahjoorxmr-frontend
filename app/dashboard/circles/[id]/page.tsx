@@ -33,13 +33,12 @@ import { enableAutoPay, getAutoPayConfig, recordAutoPayAttempt } from "@/lib/aut
 import CircleRulesView from "@/components/circles/CircleRulesView";
 import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, type CircleRulesRecord } from "@/lib/circleRules";
 import CircleImage from "@/components/circles/CircleImage";
-<<<<<<< HEAD
 import { DownloadAgreementButton } from "@/components/circles/DownloadAgreementButton";
 import type { ModerationEvent } from "@/types/discussion";
-=======
-import { JOIN_REQUESTS_UPDATED_EVENT } from "@/lib/joinRequests"; // (not actually used here, safe to omit if unused)
 import WaitlistPositionCard from "@/components/circles/WaitlistPositionCard";
->>>>>>> main
+import PayoutMethodSelector from "@/components/circles/PayoutMethodSelector";
+import PayoutMethodBadge from "@/components/circles/PayoutMethodBadge";
+import { getCircleCurrency, isPayoutInProgress } from "@/lib/payoutMethods";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -565,6 +564,8 @@ export default function CircleDetailPage({
   const currentUserPaid = currentUserParticipant?.paid ?? false;
   const isNextRecipient = circle.nextPayoutRecipient === CURRENT_WALLET;
   const canManageCircle = circle.isOrganizer || circle.isCoOrganizer;
+  const circleCurrency = getCircleCurrency(circle.contribution);
+  const payoutInProgress = isPayoutInProgress(isNextRecipient, circle.nextPayoutDeadline);
 
   // Leave-circle eligibility — non-organizer participants only, and never on
   // a circle that's already finished.
@@ -756,7 +757,32 @@ export default function CircleDetailPage({
               </p>
             </div>
           </div>
+          {circle.isMember && (
+            <div className="flex items-center justify-between border-t border-[var(--ov-0f)] pt-4">
+              <PayoutMethodBadge
+                circleId={circle.id}
+                currency={circleCurrency}
+                label={isNextRecipient ? "Paid to" : "Your payout method"}
+              />
+              {payoutInProgress && (
+                <span className="flex items-center gap-1 text-xs text-amber-400">
+                  <Lock size={12} aria-hidden="true" />
+                  Payout in progress
+                </span>
+              )}
+            </div>
+          )}
         </div>}
+
+        {/* Payout method preference */}
+        {circle.isMember && circle.status !== "completed" && (
+          <PayoutMethodSelector
+            circleId={circle.id}
+            circleName={circle.name}
+            currency={circleCurrency}
+            payoutInProgress={payoutInProgress}
+          />
+        )}
 
         {/* Auto-Pay */}
         {circle.isMember && circle.status !== "completed" && (

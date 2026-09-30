@@ -16,6 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
+import GlossaryTerm from "@/components/ui/GlossaryTerm";
 import { useWallet, truncateAddress, AVAILABLE_WALLETS } from "@/contexts/WalletContext";
 import AddressBookSection from "@/components/wallet/AddressBookSection";
 import SendTransferModal from "@/components/wallet/SendTransferModal";
@@ -212,8 +213,8 @@ export default function WalletPage() {
             No wallet connected
           </h2>
           <p className="text-[var(--muted)] mb-8 max-w-md">
-            Connect your wallet to view your on-chain activity across all circles, including
-            contributions, payouts, and memberships.
+            Connect your <GlossaryTerm term="wallet">wallet</GlossaryTerm> to view your on-chain
+            activity across all circles, including contributions, payouts, and memberships.
           </p>
           <button
             onClick={() => requestConnect("argent")}
