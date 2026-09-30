@@ -27,7 +27,7 @@ export interface CirclePauseState {
   log: CirclePauseLogEntry[];
 }
 
-function emptyState(circleId: string): CirclePauseState {
+export function emptyPauseState(circleId: string): CirclePauseState {
   return { circleId, paused: false, reason: null, pausedAt: null, pausedBy: null, totalPausedMs: 0, log: [] };
 }
 
@@ -51,7 +51,7 @@ function write(state: CirclePauseState) {
 }
 
 export function getCirclePauseState(circleId: string): CirclePauseState {
-  return readAll()[circleId] ?? emptyState(circleId);
+  return readAll()[circleId] ?? emptyPauseState(circleId);
 }
 
 export function isCirclePaused(circleId: string): boolean {
