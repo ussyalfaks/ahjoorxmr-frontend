@@ -16,6 +16,7 @@ import { useBookmarks } from "@/hooks/useBookmarks";
 import { useCircleTags } from "@/hooks/useCircleTags";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { useToast } from "@/components/ui/Toast";
+import SuggestedCirclesWidget from "@/components/circles/SuggestedCirclesWidget";
 import {
   MOCK_CIRCLES,
   CURRENT_WALLET,
@@ -373,6 +374,11 @@ function CirclesContent() {
               ? "No results"
               : `${displayCircles.length} result${displayCircles.length !== 1 ? "s" : ""} for "${query}"`}
           </p>
+        )}
+
+        {/* ---- Personalized picks (Discover tab only) ---- */}
+        {isDiscover && !query && (
+          <SuggestedCirclesWidget circles={circles} wallet={CURRENT_WALLET} onJoin={requestJoinCircle} />
         )}
 
         {/* ---- Panel ---- */}
