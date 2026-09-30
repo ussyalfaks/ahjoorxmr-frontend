@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 
 interface Props {
   deadline: Date | null;
+  /** Circle is paused: the deadline is suspended rather than counting down. */
+  paused?: boolean;
 }
 
 interface TimeLeft {
@@ -26,18 +28,26 @@ function getTimeLeft(deadline: Date): TimeLeft | null {
   };
 }
 
-export default function CountdownTimer({ deadline }: Props) {
+export default function CountdownTimer({ deadline, paused = false }: Props) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(
     deadline ? getTimeLeft(deadline) : null
   );
 
   useEffect(() => {
-    if (!deadline) return;
+    if (!deadline || paused) return;
     const update = () => setTimeLeft(getTimeLeft(deadline));
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, [deadline]);
+  }, [deadline, paused]);
+
+  if (paused) {
+    return (
+      <span className="text-xs font-medium text-amber-500" aria-label="Deadline suspended while the circle is paused">
+        Paused
+      </span>
+    );
+  }
 
   if (!deadline) {
     return (
