@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, CheckCircle2, XCircle, ExternalLink, X } from "lucide-react";
 import { addPendingTransaction } from "@/lib/pendingTransactions";
+import GasFeeEstimate from "@/components/modals/GasFeeEstimate";
+import { useGasFeeEstimate } from "@/hooks/useGasFeeEstimate";
+import type { GasFeeEstimate as GasFeeEstimateData, GasFeeRequest } from "@/lib/gasFee";
 
 export type TxType = "contribute" | "claim";
 export type TxStatus = "idle" | "pending" | "success" | "error";
