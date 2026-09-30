@@ -16,6 +16,7 @@ import { useBookmarks } from "@/hooks/useBookmarks";
 import { useCircleTags } from "@/hooks/useCircleTags";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { useToast } from "@/components/ui/Toast";
+import { INVITE_REF_PARAM, markInviteStatus } from "@/lib/circleInvites";
 import {
   MOCK_CIRCLES,
   CURRENT_WALLET,
@@ -147,6 +148,7 @@ function CirclesContent() {
 
   const tab: Tab = (searchParams.get("tab") as Tab) ?? "my";
   const inviteId = searchParams.get("invite");
+  const inviteRef = searchParams.get(INVITE_REF_PARAM);
   const action = searchParams.get("action");
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -176,6 +178,11 @@ function CirclesContent() {
     if (!requireVerified()) return;
     setJoinCircle(circle);
   }
+
+   // Arriving from an email/SMS invite counts as the invite being opened.
+   useEffect(() => {
+     if (inviteRef) markInviteStatus(inviteRef, "opened");
+   }, [inviteRef]);
 
    // Handle invite / create deep-link params
    useEffect(() => {
@@ -432,6 +439,9 @@ function CirclesContent() {
         }}
         circle={joinCircle}
         currentWallet={CURRENT_WALLET}
+        onJoined={() => {
+          if (inviteRef) markInviteStatus(inviteRef, "joined");
+        }}
       />
       <ComparisonFloatingBar allCircles={MOCK_CIRCLES} />
       <CircleComparison

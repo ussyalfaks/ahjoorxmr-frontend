@@ -29,9 +29,11 @@ interface Props {
   circle: JoinCircleData | null;
   currentWallet: string;
   onRequestSubmitted?: (request: CircleJoinRequest) => void;
+  /** Called after the user successfully joins (e.g. to attribute an invite). */
+  onJoined?: (circleId: string) => void;
 }
 
-export default function JoinCircleModal({ open, onClose, circle, currentWallet, onRequestSubmitted }: Props) {
+export default function JoinCircleModal({ open, onClose, circle, currentWallet, onRequestSubmitted, onJoined }: Props) {
   const [joining, setJoining] = useState(false);
   const [success, setSuccess] = useState(false);
   const [requestNote, setRequestNote] = useState("");
@@ -78,6 +80,7 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
     await new Promise((r) => setTimeout(r, 1200));
     setJoining(false);
     setSuccess(true);
+    if (circle) onJoined?.(circle.id);
   }
 
   function handleRequest() {
