@@ -382,6 +382,11 @@ function CirclesContent() {
           </p>
         )}
 
+        {/* ---- Personalized picks (Discover tab only) ---- */}
+        {isDiscover && !query && (
+          <SuggestedCirclesWidget circles={circles} wallet={CURRENT_WALLET} onJoin={requestJoinCircle} />
+        )}
+
         {/* ---- Panel ---- */}
         <div id="circles-panel" role="tabpanel">
           {displayCircles.length === 0 ? (

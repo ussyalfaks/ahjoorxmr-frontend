@@ -580,6 +580,15 @@ export default function CircleSettingsPage({
         )}
       </section>
 
+      {/* Pause / resume */}
+      <CirclePauseControls
+        circleId={circle.id}
+        circleName={circle.name}
+        actor={CURRENT_WALLET}
+        participants={circle.participants.map((p) => p.address)}
+        canPause={status === "active"}
+      />
+
       {/* Archive circle */}
       <section className="bg-[var(--content)] p-6 rounded-2xl space-y-3">
         <h2 className="text-lg font-bold font-sora text-[var(--text)]">Archive Circle</h2>

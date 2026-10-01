@@ -19,6 +19,7 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useTheme, type FontSize } from "@/contexts/ThemeContext";
 import { useIdleTimer } from "@/hooks/useIdleTimer";
 import PushNotificationPreferences from "@/components/settings/PushNotificationPreferences";
+import DoNotDisturbPreferences from "@/components/settings/DoNotDisturbPreferences";
 import LowBalanceAlertSettings from "@/components/wallet/LowBalanceAlert";
 import TwoFactorSetup from "@/components/settings/TwoFactorSetup";
 import EmailNotificationPreferences from "@/components/settings/EmailNotificationPreferences";
@@ -409,6 +410,7 @@ function SettingsContent() {
           <NotificationDigestPreferences />
           <EmailNotificationPreferences />
           <PushNotificationPreferences />
+          <DoNotDisturbPreferences />
           <LowBalanceAlertSettings />
         </div>
       )}

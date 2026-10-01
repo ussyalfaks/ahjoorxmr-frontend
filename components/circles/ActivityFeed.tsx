@@ -10,6 +10,8 @@ import {
   Activity,
   Megaphone,
   Link2,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import type { CircleEvent, EventType } from "@/types/circle";
 
@@ -77,6 +79,16 @@ const EVENT_CONFIG: Record<
     label: "Invite link used",
     icon: <Link2 size={16} />,
     color: "text-[#8b7cf8] bg-[#8b7cf815]",
+  },
+  circle_paused: {
+    label: "paused the circle",
+    icon: <PauseCircle size={16} />,
+    color: "text-[#FBBF24] bg-[#FBBF2415]",
+  },
+  circle_resumed: {
+    label: "resumed the circle",
+    icon: <PlayCircle size={16} />,
+    color: "text-[var(--success)] bg-[#4ADE8015]",
   },
 };
 
