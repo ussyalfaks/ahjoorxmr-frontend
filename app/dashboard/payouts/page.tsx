@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import Link from "next/link";
-import { ArrowUpRight, CheckCircle2, Clock3, ChevronDown, FileText } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Clock3, ChevronDown, FileText, X, AlertTriangle, Send } from "lucide-react";
 import ExportButton from "@/components/ui/ExportButton";
 import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
 import GlossaryTerm from "@/components/ui/GlossaryTerm";
@@ -49,6 +49,26 @@ export default function PayoutsPage() {
   );
   const visiblePayouts = MOCK_PAYOUT_HISTORY.slice(0, visibleCount);
 
+  const checklist = MOCK_ROUND_CLOSE_CHECKLIST;
+  const unpaidMembers = useMemo(
+    () => checklist.members.filter((member) => !member.paid),
+    [checklist.members]
+  );
+  const balanceSufficient = checklist.poolBalance >= checklist.expectedPayout;
+
+  const openChecklist = useCallback(() => {
+    setReminderSent(false);
+    setChecklistOpen(true);
+  }, []);
+
+  const closeChecklist = useCallback(() => {
+    setChecklistOpen(false);
+  }, []);
+
+  const sendReminder = useCallback(() => {
+    setReminderSent(true);
+  }, []);
+
   // Exports the full history, not just the rows currently paged into view.
   const getExportRows = useCallback(
     (): ExportRow[] =>
@@ -82,10 +102,141 @@ export default function PayoutsPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-[var(--ov-14)] bg-[var(--modal)] px-4 py-3 text-sm text-[var(--muted2)]">
-          <span className="font-semibold text-[var(--text)]">{MOCK_PAYOUT_HISTORY.length}</span> total payouts
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={openChecklist}
+            className="inline-flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-contrast)] transition-opacity hover:opacity-90"
+          >
+            <FileText size={16} aria-hidden="true" />
+            Release payout
+          </button>
+          <div className="rounded-2xl border border-[var(--ov-14)] bg-[var(--modal)] px-4 py-3 text-sm text-[var(--muted2)]">
+            <span className="font-semibold text-[var(--text)]">{MOCK_PAYOUT_HISTORY.length}</span> total payouts
+          </div>
         </div>
       </div>
+
+      {checklistOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="round-close-checklist-title"
+        >
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-[var(--ov-12)] bg-[var(--modal)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2
+                  id="round-close-checklist-title"
+                  className="text-xl font-semibold text-[var(--text)]"
+                >
+                  Round close checklist
+                </h2>
+                <p className="mt-1 text-sm text-[var(--muted2)]">
+                  {checklist.circleName} · Round {checklist.roundNumber}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeChecklist}
+                className="rounded-lg p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--ov-08)] hover:text-[var(--text)]"
+                aria-label="Close checklist"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div className="rounded-2xl border border-[var(--ov-12)] bg-[var(--ov-05)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+                  Pool balance vs expected
+                </p>
+                <div className="mt-2 flex items-baseline justify-between gap-3">
+                  <span className="text-lg font-semibold text-[var(--text)]">
+                    {formatAmount(checklist.poolBalance, checklist.tokenSymbol)}
+                  </span>
+                  <span className="text-sm text-[var(--muted2)]">
+                    expected {formatAmount(checklist.expectedPayout, checklist.tokenSymbol)}
+                  </span>
+                </div>
+                {!balanceSufficient && (
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-[#ff8a8a]">
+                    <AlertTriangle size={14} aria-hidden="true" />
+                    Pool balance is insufficient to cover the payout.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-[var(--ov-12)] bg-[var(--ov-05)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+                  Recipient address
+                </p>
+                <p className="mt-2 break-all font-mono text-sm text-[var(--text)]">
+                  {checklist.recipientAddress}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[var(--ov-12)] bg-[var(--ov-05)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+                  Members ({checklist.members.length - unpaidMembers.length}/{checklist.members.length} paid)
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {checklist.members.map((member) => (
+                    <li
+                      key={member.address}
+                      className="flex items-center justify-between gap-3 text-sm"
+                    >
+                      <span className="text-[var(--text)]">{member.name}</span>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
+                          member.paid
+                            ? "bg-[#1f3b2d] text-[#8ef0b0] border-[#2d5c43]"
+                            : "bg-[#3a2f18] text-[#ffd56a] border-[#665221]"
+                        }`}
+                      >
+                        {member.paid ? "Paid" : "Unpaid"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {unpaidMembers.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={sendReminder}
+                    disabled={reminderSent}
+                    className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[var(--ov-14)] px-3 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--ov-08)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Send size={14} aria-hidden="true" />
+                    {reminderSent
+                      ? "Reminder sent"
+                      : `Send reminder to ${unpaidMembers.length} unpaid`}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeChecklist}
+                className="rounded-xl border border-[var(--ov-14)] px-4 py-2.5 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--ov-08)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={closeChecklist}
+                disabled={!balanceSufficient}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-contrast)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <CheckCircle2 size={16} aria-hidden="true" />
+                Confirm release
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="overflow-hidden rounded-3xl border border-[var(--ov-12)] bg-[var(--modal)] shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
         {MOCK_PAYOUT_HISTORY.length === 0 ? (
@@ -174,31 +325,33 @@ export default function PayoutsPage() {
                           ) : (
                             <Clock3 size={12} aria-hidden="true" />
                           )}
-                          {payout.status === "completed" ? "Completed" : "Pending"}
+                          {payout.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        {payout.status === "completed" && (
-                          <ShareMilestoneButton
-                            milestone={{
-                              type: "payout_received",
+                        <ShareMilestoneButton
+                          milestone={
+                            {
+                              id: payout.transaction_hash,
+                              title: `${payout.circle_name} payout`,
+                              description: `Round ${payout.round_number} payout of ${formatAmount(
+                                payout.amount,
+                                payout.token_symbol
+                              )}`,
+                              amount: payout.amount,
+                              tokenSymbol: payout.token_symbol,
                               circleName: payout.circle_name,
-                              amount: formatAmount(payout.amount, payout.token_symbol),
-                              subtitle: `Round ${payout.round_number}`,
-                              date: formatDate(payout.payout_date),
-                            } satisfies MilestoneData}
-                            variant="icon"
-                          />
-                        )}
+                              date: payout.payout_date,
+                            } as MilestoneData
+                          }
+                        />
                       </td>
-                      {/* Receipt button */}
-                      <td className="px-4 py-4 text-sm">
+                      <td className="px-6 py-4 text-sm">
                         <Link
-                          href={`/dashboard/payouts/receipt/${payout.transaction_hash}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--muted)] bg-[var(--ov-07)] hover:bg-[var(--ov-0f)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] whitespace-nowrap"
-                          aria-label={`View receipt for ${payout.circle_name} round ${payout.round_number}`}
+                          href={`/dashboard/payouts/${payout.transaction_hash}`}
+                          className="inline-flex items-center gap-1 text-[var(--info)] transition-colors hover:text-[var(--text)]"
                         >
-                          <FileText size={13} aria-hidden="true" />
+                          <FileText size={14} aria-hidden="true" />
                           Receipt
                         </Link>
                       </td>
@@ -221,10 +374,8 @@ export default function PayoutsPage() {
                   className="inline-flex items-center gap-2 rounded-full border border-[var(--ov-16)] bg-[var(--ov-08)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--ov-10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   Load more
-                  <ChevronDown size={16} aria-hidden="true" />
+                  <ChevronDown size={14} aria-hidden="true" />
                 </button>
-              ) : (
-                <span className="text-sm text-[var(--muted)]">All payouts loaded</span>
               )}
             </div>
           </>

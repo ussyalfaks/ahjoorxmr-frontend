@@ -27,6 +27,12 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-[var(--surface)] focus:px-4 focus:py-2 focus:text-[var(--text)] focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+      >
+        Skip to main content
+      </a>
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex print:hidden w-[260px] flex-col border-r border-[var(--ov-0f)] bg-[var(--surface)]">
         <div className="p-8 flex flex-col h-full">
@@ -42,6 +48,7 @@ export default function DashboardLayout({
               <li>
                 <Link
                   href="/dashboard"
+                  aria-current="page"
                   className="flex items-center gap-3 px-4 py-3 text-[var(--text)] bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
                 >
                   <LayoutGrid size={20} className="text-[var(--text)]" aria-hidden="true" />
