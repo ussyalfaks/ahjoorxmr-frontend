@@ -167,6 +167,7 @@ export default function ContributionFiatValueChart({ contributions }: { contribu
                     r="7"
                     fill="transparent"
                     tabIndex={0}
+                    role="img"
                     onMouseEnter={() => setHoveredPoint(index)}
                     onFocus={() => setHoveredPoint(index)}
                     onBlur={() => setHoveredPoint(null)}

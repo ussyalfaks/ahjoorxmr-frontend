@@ -24,10 +24,6 @@ export function FriendbotButton({ className = "" }: FriendbotButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Only show on testnet
-  if (network !== "testnet") return null;
-  if (!isConnected || !address) return null;
-
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
@@ -57,6 +53,10 @@ export function FriendbotButton({ className = "" }: FriendbotButtonProps) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, refreshBalance]);
+
+  // Only show on testnet. Kept below every hook so the hook order never changes between renders.
+  if (network !== "testnet") return null;
+  if (!isConnected || !address) return null;
 
   return (
     <div className={`relative inline-block ${className}`}>

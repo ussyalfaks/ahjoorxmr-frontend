@@ -1,3 +1,4 @@
+import type { CircleCategory } from "@/lib/circles";
 /**
  * Shared circle mock data for the discovery / my-circles page.
  * Both the grid card and list row import from here so they always
@@ -26,7 +27,7 @@ export interface DiscoverCircle {
   /** Circle has stopped accepting new activity — bookmarks flag this instead of hiding it. */
   closed?: boolean;
   description?: string;
-  category?: "family" | "friends" | "community" | "business" | "emergency" | "other";
+  category?: CircleCategory;
   isPrivate?: boolean;
   penaltyEnabled?: boolean;
   penaltyType?: "percentage" | "fixed";

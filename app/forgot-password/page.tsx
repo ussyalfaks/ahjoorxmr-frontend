@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Mail, Lock, AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -11,7 +11,7 @@ const PASSWORD_STRENGTH_LABELS = ["Very Weak", "Weak", "Fair", "Good", "Strong"]
 const PASSWORD_STRENGTH_COLORS = ["text-red-500", "text-orange-500", "text-yellow-500", "text-lime-500", "text-green-500"];
 const PASSWORD_BAR_COLORS = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-lime-500", "bg-green-500"];
 
-export default function PasswordResetPage() {
+function PasswordResetContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -192,5 +192,14 @@ export default function PasswordResetPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+// useSearchParams() needs a Suspense boundary so the page can be statically prerendered.
+export default function PasswordResetPage() {
+  return (
+    <Suspense>
+      <PasswordResetContent />
+    </Suspense>
   );
 }

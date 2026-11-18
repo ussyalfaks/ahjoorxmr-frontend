@@ -27,7 +27,6 @@ export interface ToastItem extends Required<Pick<ToastInput, "title">> {
   variant: ToastVariant;
   action?: ToastAction;
   phase: "entering" | "visible" | "leaving";
-  action?: ToastAction;
 }
 
 export interface ToastContextValue {
@@ -73,30 +72,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       variant: toast.variant ?? "info",
       action: toast.action,
       phase: "entering",
-      action: toast.action,
     };
-    // Track whether the action was triggered so we can skip onCommit.
-    let actionTriggered = false;
-    if (toast.action) {
-      const originalOnAction = toast.action.onAction;
-      nextToast.action = {
-        ...toast.action,
-        onAction: () => {
-          actionTriggered = true;
-          originalOnAction();
-          // Dismiss the toast immediately
-          setToasts((current) =>
-            current.map((item) =>
-              item.id === id ? { ...item, phase: "leaving" } : item
-            )
-          );
-          window.setTimeout(() => {
-            setToasts((current) => current.filter((item) => item.id !== id));
-          }, EXIT_ANIMATION_MS);
-        },
-      };
-    }
-
     setToasts((current) => [...current, nextToast]);
 
     window.setTimeout(() => {
@@ -113,11 +89,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             )
           : current
       );
-
-      // Commit the action only if the user didn't trigger undo.
-      if (!actionTriggered && toast.action?.onCommit) {
-        toast.action.onCommit();
-      }
 
       window.setTimeout(() => {
         setToasts((current) => current.filter((item) => item.id !== id));

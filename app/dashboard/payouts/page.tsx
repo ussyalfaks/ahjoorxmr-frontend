@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, CheckCircle2, Clock3, ChevronDown, FileText, X, AlertTriangle, Send } from "lucide-react";
 import ExportButton from "@/components/ui/ExportButton";
@@ -42,7 +42,43 @@ function statusStyles(status: PayoutStatus) {
   return "bg-[#3a2f18] text-[#ffd56a] border-[#665221]";
 }
 
+// ---------------------------------------------------------------------------
+// Round close checklist data (organizer pre-payout confirmation)
+// ---------------------------------------------------------------------------
+interface ChecklistMember {
+  address: string;
+  name: string;
+  paid: boolean;
+}
+
+interface RoundCloseChecklist {
+  circleName: string;
+  roundNumber: number;
+  tokenSymbol: string;
+  poolBalance: number;
+  expectedPayout: number;
+  recipientAddress: string;
+  members: ChecklistMember[];
+}
+
+const MOCK_ROUND_CLOSE_CHECKLIST: RoundCloseChecklist = {
+  circleName: "Stark Savings Circle",
+  roundNumber: 4,
+  tokenSymbol: "USDC",
+  poolBalance: 1200,
+  expectedPayout: 1000,
+  recipientAddress: "0x04f2a1b9c3d8e7f60a1b2c3d4e5f60718293a4b5c6d7e8f9012345678abcdef",
+  members: [
+    { address: "0x04f2a1b9c3d8e7f60a1b2c3d4e5f60718293a4b5c6d7e8f9012345678abcdef", name: "Amara O.", paid: true },
+    { address: "0x07c3d4e5f60718293a4b5c6d7e8f9012345678abcdef04f2a1b9c3d8e7f6", name: "Bilal K.", paid: true },
+    { address: "0x0a1b2c3d4e5f60718293a4b5c6d7e8f9012345678abcdef04f2a1b9c3d8", name: "Chen W.", paid: false },
+    { address: "0x0d4e5f60718293a4b5c6d7e8f9012345678abcdef04f2a1b9c3d8e7f60a", name: "Dara M.", paid: false },
+  ],
+};
+
 export default function PayoutsPage() {
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [reminderSent, setReminderSent] = useState(false);
   const { visibleCount, hasMore, loadMore, sentinelRef, announcement } = useLoadMore(
     MOCK_PAYOUT_HISTORY.length,
     "dashboard:payouts"
@@ -330,20 +366,13 @@ export default function PayoutsPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <ShareMilestoneButton
-                          milestone={
-                            {
-                              id: payout.transaction_hash,
-                              title: `${payout.circle_name} payout`,
-                              description: `Round ${payout.round_number} payout of ${formatAmount(
-                                payout.amount,
-                                payout.token_symbol
-                              )}`,
-                              amount: payout.amount,
-                              tokenSymbol: payout.token_symbol,
-                              circleName: payout.circle_name,
-                              date: payout.payout_date,
-                            } as MilestoneData
-                          }
+                          milestone={{
+                            type: "payout_received",
+                            circleName: payout.circle_name,
+                            amount: formatAmount(payout.amount, payout.token_symbol),
+                            subtitle: `Round ${payout.round_number}`,
+                            date: formatDate(payout.payout_date),
+                          } satisfies MilestoneData}
                         />
                       </td>
                       <td className="px-6 py-4 text-sm">

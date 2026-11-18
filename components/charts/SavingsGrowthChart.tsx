@@ -248,6 +248,7 @@ export default function SavingsGrowthChart() {
                       onMouseEnter={() => setHoveredPoint(index)}
                       onFocus={() => setHoveredPoint(index)}
                       tabIndex={0}
+                      role="img"
                       aria-label={`${data[index].tooltipDate}: ${data[index].value.toLocaleString()} USDT`}
                     />
                   </g>

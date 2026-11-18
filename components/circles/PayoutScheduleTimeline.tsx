@@ -129,9 +129,10 @@ export default function PayoutScheduleTimeline(props: PayoutScheduleTimelineProp
   const currentUserAddress = props.rounds ? "" : props.currentUserAddress;
 
   // For pre-built rounds, isCurrentUser is already flagged on the item.
-  const isCurrentUserFn = props.rounds
-    ? (round: number) => props.rounds!.find((r) => r.round === round)?.isCurrentUser ?? false
-    : (recipient: string) => recipient.toLowerCase() === currentUserAddress.toLowerCase();
+  const isCurrentUser = (row: ScheduleRound) =>
+    props.rounds
+      ? props.rounds.find((r) => r.round === row.round)?.isCurrentUser ?? false
+      : row.recipient.toLowerCase() === currentUserAddress.toLowerCase();
 
   if (schedule.length === 0) return null;
 
@@ -166,9 +167,7 @@ export default function PayoutScheduleTimeline(props: PayoutScheduleTimelineProp
         {schedule.map((row, index) => {
           const config = STATUS_CONFIG[row.status];
           const Icon = config.icon;
-          const isYou = props.rounds
-            ? isCurrentUserFn(row.round)
-            : (isCurrentUserFn as (r: string) => boolean)(row.recipient);
+          const isYou = isCurrentUser(row);
           const isLast = index === schedule.length - 1;
 
           return (

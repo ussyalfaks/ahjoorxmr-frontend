@@ -1,5 +1,6 @@
-import { safeStorage } from "@/lib/safeStorage";
 "use client";
+
+import { safeStorage } from "@/lib/safeStorage";
 
 import { useState, useEffect, useCallback } from "react";
 import { SHIPPED_FEATURES } from "@/config/features";

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Copy, Check, ChevronDown, X, Search, KeyRound, Loader2 } from "lucide-react";
+import GlossaryTerm from "@/components/ui/GlossaryTerm";
 import { useWallet, AVAILABLE_WALLETS, truncateAddress, type WalletId } from "@/contexts/WalletContext";
 import { APP_NETWORK, NETWORK_LABELS, type StellarNetwork } from "@/config/network";
 import { isPasskeySupported } from "@/lib/passkeys";
@@ -83,7 +84,7 @@ function WalletSelectModal({
               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-[var(--ov-08)] hover:bg-[var(--ov-12)] border border-[var(--ov-0f)] hover:border-[#4B6B76] text-[var(--text)] text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             >
               <span className="w-8 h-8 rounded-full bg-[var(--ov-14)] flex items-center justify-center text-base" aria-hidden="true">
-                {wallet.id === "argent" ? "🔷" : "🔶"}
+                {wallet.id === "freighter" ? "🔷" : "🔶"}
               </span>
               <span>{wallet.name}</span>
             </button>

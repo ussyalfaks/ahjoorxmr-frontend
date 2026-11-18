@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { X, ArrowRight, ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import SavingsCalculator from "@/components/calculator/SavingsCalculator";

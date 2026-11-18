@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { useReconnectRefresh } from "@/contexts/ConnectionStatusContext";
 import { ArrowUpRight, Users, CheckCircle2, DollarSign, GripHorizontal, EyeOff, ArrowUp, ArrowDown, Settings2, RotateCcw, Plus } from "lucide-react";
 import SavingsCard from "@/components/cards/SavingsCard";
 import SavingsGrowthChart from "@/components/charts/SavingsGrowthChart";

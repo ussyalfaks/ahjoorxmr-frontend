@@ -18,14 +18,14 @@ import {
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useTheme, type FontSize } from "@/contexts/ThemeContext";
 import { useIdleTimer } from "@/hooks/useIdleTimer";
+import { useWallet } from "@/contexts/WalletContext";
 import PushNotificationPreferences from "@/components/settings/PushNotificationPreferences";
 import DoNotDisturbPreferences from "@/components/settings/DoNotDisturbPreferences";
-import LowBalanceAlertSettings from "@/components/wallet/LowBalanceAlert";
+import { LowBalanceAlertSettings } from "@/components/wallet/LowBalanceAlert";
 import TwoFactorSetup from "@/components/settings/TwoFactorSetup";
 import EmailNotificationPreferences from "@/components/settings/EmailNotificationPreferences";
 import ActiveSessionsManager from "@/components/settings/ActiveSessionsManager";
 import PasskeyManager from "@/components/settings/PasskeyManager";
-import NotificationDigestPreferences from "@/components/settings/NotificationDigestPreferences";
 import { OPEN_SHORTCUTS_EVENT } from "@/components/ui/ShortcutsModal";
 import { Toggle } from "@/components/ui/Toggle";
 import AccountDataExport from "@/components/settings/AccountDataExport";
@@ -48,8 +48,10 @@ const defaultProfileSettings: StoredProfileSettings = {
   contactSharing: defaultContactSharingSettings,
 };
 
+const MOCK_WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
+
 function truncateAddress(address?: string | null) {
-  if (!address) return "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
+  if (!address) return MOCK_WALLET_ADDRESS;
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
@@ -283,6 +285,8 @@ function SettingsContent() {
   const [activeTab, setActiveTab] = useState<SettingsTab>(tabParam ?? "general");
   const [profile, setProfile] = useState<StoredProfileSettings>(defaultProfileSettings);
   const [saved, setSaved] = useState(false);
+  const { activeWalletAddress } = useWallet();
+  const connectedAddress = activeWalletAddress ?? MOCK_WALLET_ADDRESS;
 
   useEffect(() => {
     if (tabParam && tabParam !== activeTab) {
@@ -310,7 +314,7 @@ function SettingsContent() {
 
   const handleSave = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    saveContactSharingSettings(profile.contactSharing);
+    saveContactSharingSettings(connectedAddress, profile.contactSharing);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -374,7 +378,7 @@ function SettingsContent() {
                 Wallet address
               </label>
               <p className="text-sm font-mono text-[var(--text)]">
-                {truncateAddress(null)}
+                {truncateAddress(activeWalletAddress)}
               </p>
             </div>
           </section>
@@ -411,7 +415,6 @@ function SettingsContent() {
 
       {activeTab === "notifications" && (
         <div className="space-y-6">
-          <NotificationDigestPreferences />
           <EmailNotificationPreferences />
           <PushNotificationPreferences />
           <DoNotDisturbPreferences />
@@ -421,7 +424,7 @@ function SettingsContent() {
 
       {activeTab === "security" && (
         <div className="space-y-6">
-          <TwoFactorSetup />
+          <TwoFactorSetup accountLabel={connectedAddress} />
           <PasskeyManager />
           <ActiveSessionsManager />
           <AutoLogoutSection />

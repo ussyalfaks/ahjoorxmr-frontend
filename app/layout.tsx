@@ -3,7 +3,6 @@ import "./global.css";
 import Providers from "./providers";
 import Toaster from "@/components/ui/Toaster";
 import CommandPalette from "@/components/ui/CommandPalette";
-import CookieConsent from "@/components/ui/CookieConsent";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://ahjoorxmr.com'),
@@ -58,7 +57,7 @@ export default function RootLayout({
         {/* Exposes stored cookie consent so analytics scripts can check it before loading. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var raw=localStorage.getItem('ahjoor-cookie-consent');window.__ahjoorConsent=raw?JSON.parse(raw):null;}catch(e){window.__ahjoorConsent=null;}})();`,
+            __html: `(function(){try{var raw=localStorage.getItem('cookie-consent');window.__ahjoorConsent=raw?JSON.parse(raw):null;}catch(e){window.__ahjoorConsent=null;}})();`,
           }}
         />
       </head>
@@ -73,7 +72,6 @@ export default function RootLayout({
           <Toaster />
           <CommandPalette />
           {children}
-          <CookieConsent />
         </Providers>
       </body>
     </html>

@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useId, useMemo, useState } from "react";
+import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3, TrendingUp, Users, DollarSign } from "lucide-react";
 import Link from "next/link";
 import ContributionFiatValueChart, { type ContributionRecord } from "@/components/charts/ContributionFiatValueChart";

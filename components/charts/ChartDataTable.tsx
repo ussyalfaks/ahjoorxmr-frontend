@@ -23,7 +23,8 @@ export function ChartViewToggle({ showTable, onToggle, controls }: ChartViewTogg
       type="button"
       onClick={onToggle}
       aria-pressed={showTable}
-      aria-controls={controls}
+      // Only reference the table while it is rendered; a dangling id is invalid ARIA.
+      aria-controls={showTable ? controls : undefined}
       className="rounded-full border border-[var(--ov-14)] px-3 py-1.5 text-xs font-medium text-[var(--muted)] transition-colors hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
     >
       {showTable ? "View as chart" : "View as table"}

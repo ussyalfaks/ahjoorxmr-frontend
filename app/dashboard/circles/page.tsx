@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, LayoutGrid, List, Search, Star } from "lucide-react";
+import SuggestedCirclesWidget from "@/components/circles/SuggestedCirclesWidget";
 import CreateCircleModal, { type CreateCircleData } from "@/components/modals/CreateCircleModal";
 import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
 import CircleGridCard from "@/components/circles/CircleGridCard";
@@ -202,11 +203,10 @@ function CirclesContent() {
    }, [circles, inviteId]);
 
    useEffect(() => {
-     if (action === "create") {
-      setCreateOpen(true);
+    if (action === "create") {
       if (requireVerified()) setCreateOpen(true);
-       router.replace("/dashboard/circles");
-     }
+      router.replace("/dashboard/circles");
+    }
    }, [action, router]);
 
    function openCreateCircle() {

@@ -1,5 +1,6 @@
-import { safeStorage } from "@/lib/safeStorage";
 "use client";
+
+import { safeStorage } from "@/lib/safeStorage";
 
 import {
   createContext,
@@ -116,25 +117,33 @@ async function fetchStellarBalance(address: string, network: StellarNetwork): Pr
 }
 
 async function connectFreighter(network: StellarNetwork): Promise<string> {
-  const { isConnected, requestAccess, setAllowed } = await import("@stellar/freighter-api");
-  const connected = await isConnected();
-  if (!connected) throw new Error("Freighter not installed or not enabled");
-  await setAllowed();
-  const address = await requestAccess();
-  if (!address) throw new Error("Freighter access denied by user");
+  const { isConnected, requestAccess } = await import("@stellar/freighter-api");
+  const connection = await isConnected();
+  if (connection.error || !connection.isConnected) {
+    throw new Error("Freighter not installed or not enabled");
+  }
+  const access = await requestAccess();
+  if (access.error || !access.address) throw new Error("Freighter access denied by user");
   void network;
-  return address;
+  return access.address;
 }
 
+let walletKitInitialized = false;
+
 async function connectWalletKit(walletId: WalletId, network: StellarNetwork): Promise<string> {
-  const { StellarWalletsKit, WalletNetwork } = await import("@creit.tech/stellar-wallets-kit");
-  const kit = new StellarWalletsKit({
-    network: network === "mainnet" ? WalletNetwork.PUBLIC : WalletNetwork.TESTNET,
-    selectedWalletId: walletId,
-  });
-  const { address: addr } = await kit.getAddress();
-  if (!addr) throw new Error(`Could not retrieve address from ${walletId}`);
-  return addr;
+  const [{ StellarWalletsKit, Networks }, { defaultModules }] = await Promise.all([
+    import("@creit.tech/stellar-wallets-kit"),
+    import("@creit.tech/stellar-wallets-kit/modules/utils"),
+  ]);
+  if (!walletKitInitialized) {
+    StellarWalletsKit.init({ modules: defaultModules() });
+    walletKitInitialized = true;
+  }
+  StellarWalletsKit.setNetwork(network === "mainnet" ? Networks.PUBLIC : Networks.TESTNET);
+  StellarWalletsKit.setWallet(walletId);
+  const { address } = await StellarWalletsKit.getAddress();
+  if (!address) throw new Error(`Could not retrieve address from ${walletId}`);
+  return address;
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
@@ -156,7 +165,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       if (storedWallets) {
         // Backfills network/hasUsdcTrustline for wallets persisted before those fields existed
-        const parsed = (JSON.parse(storedWallets) as LinkedWallet[]).map((w) => ({
+        type StoredWallet = Omit<LinkedWallet, "network" | "hasUsdcTrustline"> &
+          Partial<Pick<LinkedWallet, "network" | "hasUsdcTrustline">>;
+        const parsed = (JSON.parse(storedWallets) as StoredWallet[]).map((w): LinkedWallet => ({
           network: APP_NETWORK,
           hasUsdcTrustline: false,
           ...w,

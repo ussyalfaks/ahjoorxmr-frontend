@@ -13,6 +13,14 @@ export interface Participant {
 interface ParticipantListProps {
   participants: Participant[];
   onSendReminder?: (participants: Participant[]) => void | Promise<void>;
+  /** Total seats in the circle. When provided, remaining seats are shown. */
+  totalSeats?: number;
+  /** Scheduled start date. When provided, a countdown is shown. */
+  startDate?: string | Date;
+  /** Whether the current viewer is the organizer. */
+  isOrganizer?: boolean;
+  /** Called when the organizer starts the circle early. */
+  onStartCircle?: () => void;
 }
 
 type SortKey = "address" | "status";
@@ -97,7 +105,71 @@ function exportParticipants(participants: Participant[]) {
   URL.revokeObjectURL(url);
 }
 
-export function ParticipantList({ participants, onSendReminder }: ParticipantListProps) {
+/**
+ * Countdown to the scheduled start date. Reuses the same interval-based
+ * pattern as the deadline countdown timer.
+ */
+function StartCountdown({ startDate }: { startDate: string | Date }) {
+  const target = useMemo(
+    () => (startDate instanceof Date ? startDate : new Date(startDate)),
+    [startDate],
+  );
+
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const diff = target.getTime() - now;
+
+  if (Number.isNaN(target.getTime())) {
+    return null;
+  }
+
+  if (diff <= 0) {
+    return (
+      <span className="font-medium text-green-600 dark:text-green-400">
+        Starting now
+      </span>
+    );
+  }
+
+  const totalSeconds = Math.floor(diff / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const parts = [
+    days > 0 ? `${days}d` : null,
+    `${hours}h`,
+    `${minutes}m`,
+    `${seconds}s`,
+  ].filter(Boolean);
+
+  return (
+    <span className="font-mono font-medium text-gray-900 dark:text-[var(--text)]">
+      {parts.join(" ")}
+    </span>
+  );
+}
+
+export function ParticipantList({
+  participants,
+  onSendReminder,
+  totalSeats,
+  startDate,
+  isOrganizer = false,
+  onStartCircle,
+}: ParticipantListProps) {
+  const seatsRemaining =
+    typeof totalSeats === "number"
+      ? Math.max(totalSeats - participants.length, 0)
+      : undefined;
+  const seatsFilled = seatsRemaining === 0;
+
   const [sortKey, setSortKey] = useState<SortKey>("address");
   const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(new Set());
   const [reminderSent, setReminderSent] = useState(false);

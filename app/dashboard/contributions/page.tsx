@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, CalendarDays, CheckCircle2, Clock3, Download, Filter, Receipt, X, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CalendarDays, CheckCircle2, ChevronDown, Clock3, Download, Filter, Receipt, X, XCircle } from "lucide-react";
 import ExportButton from "@/components/ui/ExportButton";
 import { CONTRIBUTION_CIRCLE_OPTIONS, MOCK_CONTRIBUTIONS } from "@/data/contributions";
 import type { ContributionRecord, ContributionStatus } from "@/types/contribution";

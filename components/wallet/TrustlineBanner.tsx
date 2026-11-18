@@ -21,6 +21,7 @@ export default function TrustlineBanner() {
 
   const activeWallet = linkedWallets.find((w) => w.address === activeWalletAddress);
   if (!activeWallet || activeWallet.hasUsdcTrustline) return null;
+  const walletAddress = activeWallet.address;
 
   async function handleAddTrustline() {
     setSubmitting(true);
@@ -31,7 +32,7 @@ export default function TrustlineBanner() {
       // Konfirm/Ahjoor fee — worth saying explicitly since "the app is
       // charging me" is the natural first read of a reserve requirement.
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      addUsdcTrustline(activeWallet.address);
+      addUsdcTrustline(walletAddress);
       showToast({
         title: "USDC trustline added",
         message: "You can now receive USDC payouts from your circles.",

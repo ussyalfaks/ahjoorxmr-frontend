@@ -4,6 +4,9 @@ export const CIRCLE_CATEGORIES = [
   "work",
   "community",
   "students",
+  "business",
+  "emergency",
+  "other",
 ] as const;
 
 export type CircleCategory = (typeof CIRCLE_CATEGORIES)[number];
@@ -28,6 +31,9 @@ export const CATEGORY_LABELS: Record<CircleCategory, string> = {
   work: "Work",
   community: "Community",
   students: "Students",
+  business: "Business",
+  emergency: "Emergency",
+  other: "Other",
 };
 
 export const mockCircles: Circle[] = [

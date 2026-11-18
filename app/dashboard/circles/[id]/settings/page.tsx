@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Archive, RotateCcw, Shuffle, ShieldAlert } from "lucide-react";
+import CirclePauseControls from "@/components/circles/CirclePauseControls";
 import {
   OrganizerControls,
   type Circle as OrganizerCircle,

@@ -19,7 +19,9 @@ export interface CircleRecommendation {
 const CATEGORY_LABELS: Record<NonNullable<DiscoverCircle["category"]>, string> = {
   family: "family",
   friends: "friends",
+  work: "work",
   community: "community",
+  students: "student",
   business: "business",
   emergency: "emergency",
   other: "general",

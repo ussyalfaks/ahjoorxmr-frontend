@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, X as XIcon, Settings, BarChart3, LogOut, ChevronDown } from "lucide-react";
+import { ArrowLeft, Check, X as XIcon, Settings, BarChart3, LogOut, ChevronDown, Flag, Lock } from "lucide-react";
 import Link from "next/link";
 import LeaveCircleModal from "@/components/modals/LeaveCircleModal";
 import { addNotification } from "@/lib/notifications";
@@ -27,11 +27,10 @@ import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
 import BookmarkButton from "@/components/circles/BookmarkButton";
 import { getMockCircleHealth } from "@/lib/circleHealth";
 import { getPayoutDraw, type PayoutDraw } from "@/lib/payoutDraw";
-import { Lock } from "lucide-react";
 import AutoPaySection from "@/components/circles/AutoPaySection";
 import { enableAutoPay, getAutoPayConfig, recordAutoPayAttempt } from "@/lib/autoPay";
 import CircleRulesView from "@/components/circles/CircleRulesView";
-import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, type CircleRulesRecord } from "@/lib/circleRules";
+import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, rulesMarkdownToList, type CircleRulesRecord } from "@/lib/circleRules";
 import { getCircleFaq, CIRCLE_FAQ_UPDATED_EVENT, type FaqItem } from "@/lib/circleFaq";
 import CircleImage from "@/components/circles/CircleImage";
 import { DownloadAgreementButton } from "@/components/circles/DownloadAgreementButton";
@@ -41,6 +40,13 @@ import PayoutScheduleTimeline, { type PayoutRound } from "@/components/circles/P
 import PayoutMethodSelector from "@/components/circles/PayoutMethodSelector";
 import PayoutMethodBadge from "@/components/circles/PayoutMethodBadge";
 import { getCircleCurrency, isPayoutInProgress } from "@/lib/payoutMethods";
+import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
+import type { MilestoneData } from "@/types/milestone";
+import { useCirclePause } from "@/hooks/useCirclePause";
+import { detectCircleMilestones, celebrateMilestone } from "@/lib/milestoneCelebrations";
+import { recordLeftCircle } from "@/lib/circleRecommendations";
+import CirclePausedBanner from "@/components/circles/CirclePausedBanner";
+import ContactDirectory from "@/components/circles/ContactDirectory";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -350,11 +356,6 @@ function RoundHistoryTable({ rows }: { rows: RoundHistoryRow[] }) {
     </div>
   );
 }
-
-import { useCallback } from "react";
-import { Flag } from "lucide-react";
-import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
-import type { MilestoneData } from "@/types/milestone";
 
 export default function CircleDetailPage({
   params,
@@ -1136,7 +1137,7 @@ export default function CircleDetailPage({
                   currentRound: circle.currentRound,
                   status: circle.status,
                 },
-                rules: circleRules ? circleRules.rules : [],
+                rules: circleRules ? rulesMarkdownToList(circleRules.markdown) : [],
                 participants: circle.participants.map((p) => ({
                   address: p.address,
                   displayName: p.role,

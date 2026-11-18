@@ -4,6 +4,14 @@ export interface CircleRulesRecord {
   updatedAt: string;
 }
 
+/** Splits rules markdown into one plain-text rule per non-empty line (list markers and headings stripped). */
+export function rulesMarkdownToList(markdown: string): string[] {
+  return markdown
+    .split("\n")
+    .map((line) => line.replace(/^\s*(?:[-*+]|\d+[.)]|#{1,6})\s+/, "").trim())
+    .filter(Boolean);
+}
+
 const RULES_KEY = "ahjoorxmr:circle-rules";
 export const CIRCLE_RULES_UPDATED_EVENT = "ahjoorxmr:circle-rules-updated";
 

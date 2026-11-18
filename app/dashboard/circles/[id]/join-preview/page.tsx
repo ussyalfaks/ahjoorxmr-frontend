@@ -138,7 +138,7 @@ export default function JoinPreviewPage({ params }: { params: Promise<{ id: stri
           <CircleImage
             circleId={circle.id}
             circleName={circle.name}
-            kind="avatar"
+            kind="icon"
             alt={circle.name}
             className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
           />

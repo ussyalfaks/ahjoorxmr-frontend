@@ -8,13 +8,16 @@
 export const queryKeys = {
   circles: {
     all: () => ["circles"] as const,
+    list: () => ["circles", "list"] as const,
     detail: (id: string) => ["circles", id] as const,
   },
   contributions: {
     all: () => ["contributions"] as const,
+    list: () => ["contributions", "list"] as const,
   },
   payouts: {
     all: () => ["payouts"] as const,
+    list: () => ["payouts", "list"] as const,
   },
   notifications: {
     all: () => ["notifications"] as const,

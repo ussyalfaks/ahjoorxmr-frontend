@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useUndoableRemoval } from "@/hooks/useUndoableRemoval";
 import Link from "next/link";
 import {
   Bell,
@@ -16,8 +17,10 @@ import {
   Megaphone,
   Repeat,
   Send,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
-import type { NotificationType, NotificationCategory } from "@/types/notification";
+import type { Notification, NotificationType, NotificationCategory } from "@/types/notification";
 import { NOTIFICATION_CATEGORIES } from "@/types/notification";
 import { MOCK_NOTIFICATIONS } from "@/data/notifications";
 import RelativeTime from "@/components/ui/RelativeTime";
@@ -36,6 +39,8 @@ const TYPE_CONFIG: Record<
   announcement: { icon: Megaphone, color: "text-[#4B6B76]" },
   seat_transfer: { icon: Repeat, color: "text-[#4B6B76]" },
   circle_invite: { icon: Send, color: "text-[#4B6B76]" },
+  circle_paused: { icon: PauseCircle, color: "text-[#FBBF24]" },
+  circle_resumed: { icon: PlayCircle, color: "text-[var(--success)]" },
 };
 
 

@@ -22,7 +22,7 @@ import { useWallet, truncateAddress, AVAILABLE_WALLETS } from "@/contexts/Wallet
 import AddressBookSection from "@/components/wallet/AddressBookSection";
 import SendTransferModal from "@/components/wallet/SendTransferModal";
 import TwoFactorChallengeModal from "@/components/settings/TwoFactorChallengeModal";
-import LowBalanceAlertBanner, { LowBalanceAlertSettings } from "@/components/wallet/LowBalanceAlert";
+import { LowBalanceAlertBanner, LowBalanceAlertSettings } from "@/components/wallet/LowBalanceAlert";
 import { isTwoFactorEnabled } from "@/lib/twoFactor";
 import BalanceBreakdownWidget from "@/components/wallet/BalanceBreakdownWidget";
 import { FriendbotButton } from "@/components/wallet/FriendbotButton";
@@ -226,7 +226,7 @@ export default function WalletPage() {
             activity across all circles, including contributions, payouts, and memberships.
           </p>
           <button
-            onClick={() => requestConnect("argent")}
+            onClick={() => requestConnect("freighter")}
             className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           >
             <LogIn size={18} aria-hidden="true" />
@@ -286,7 +286,7 @@ export default function WalletPage() {
               Send
             </button>
             <button
-              onClick={() => requestConnect("argent")}
+              onClick={() => requestConnect("freighter")}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-black bg-white hover:bg-gray-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             >
               <Plus size={16} aria-hidden="true" />

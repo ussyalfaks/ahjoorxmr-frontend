@@ -300,7 +300,7 @@ export function DateRangePicker({
                     month: "long",
                     day: "numeric",
                   })}
-                  aria-selected={isSelected || isEndDate}
+                  aria-selected={Boolean(isSelected || isEndDate)}
                   aria-disabled={disabled}
                   className={`
                     flex h-8 w-8 items-center justify-center rounded text-sm

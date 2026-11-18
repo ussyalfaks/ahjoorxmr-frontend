@@ -62,7 +62,7 @@ export function formatCurrency(
   } = options || {};
 
   // Round amount based on currency decimals
-  let roundedAmount = roundAmount(amount, config.decimals, roundingMode);
+  const roundedAmount = roundAmount(amount, config.decimals, roundingMode);
 
   // Format with compact notation for large numbers
   let formattedNumber: string;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, TrendingUp, DollarSign, Users, Calendar, Download, Eye, ExternalLink } from "lucide-react";
+import { ArrowLeft, TrendingUp, DollarSign, Users, Calendar, Eye, ExternalLink } from "lucide-react";
 import ExportButton from "@/components/ui/ExportButton";
 import type { ExportRow } from "@/lib/export";
 
@@ -186,13 +186,11 @@ export default function OrganizerEarningsPage() {
           <p className="text-[var(--muted)] text-sm mt-1">Track fees earned from circles you organize</p>
         </div>
         <ExportButton
-          data={getExportRows()}
-          filename="organizer-earnings"
-          variant="secondary"
-          icon={<Download size={16} />}
-        >
-          Export
-        </ExportButton>
+          getRows={getExportRows}
+          scope="organizer-earnings"
+          prefix="earnings"
+          title="Organizer earnings"
+        />
       </div>
 
       {/* Summary Cards */}

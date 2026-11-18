@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { MessageSquare } from "lucide-react";
-import type { Comment } from "@/types/discussion";
+import type { Comment, ModerationEvent } from "@/types/discussion";
 import { ModerationMenu, RemovedMessagePlaceholder } from "./ModerationMenu";
 import { useCircleModeration } from "@/hooks/useCircleModeration";
 import RelativeTime from "@/components/ui/RelativeTime";
@@ -153,7 +153,7 @@ interface DiscussionThreadProps {
   circleId: string;
   organizerAddress: string;
   /** Callback when a moderation action occurs (for activity feed logging) */
-  onModerationAction?: (action: { type: "message_removed" | "participant_muted"; targetAddress: string; targetMessageId?: string; actorAddress: string; timestamp: Date; reason?: string }) => void;
+  onModerationAction?: (action: ModerationEvent) => void;
 }
 
 export default function DiscussionThread({

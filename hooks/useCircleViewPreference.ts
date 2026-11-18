@@ -1,5 +1,6 @@
-import { safeStorage } from "@/lib/safeStorage";
 "use client";
+
+import { safeStorage } from "@/lib/safeStorage";
 
 import { useCallback, useEffect, useState } from "react";
 
