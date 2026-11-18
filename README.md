@@ -170,11 +170,6 @@ pnpm test:watch    # Run tests in watch mode
 pnpm typecheck     # Run TypeScript type check
 ```
 
-## Code Formatting & Pre-Commit Hooks
+## Code Formatting
 
-Code formatting is enforced with Prettier and Tailwind CSS class sorting via Husky and lint-staged:
-
-```bash
-pnpm format        # Format all files
-pnpm format:check  # Check formatting without modifying
-```
+Formatting settings live in `.prettierrc` (Prettier with Tailwind CSS class sorting) and are picked up by your editor's Prettier integration.
