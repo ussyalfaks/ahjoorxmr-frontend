@@ -376,7 +376,7 @@ export default function PayoutsPage() {
                   Load more
                   <ChevronDown size={14} aria-hidden="true" />
                 </button>
-              )}
+              ) : null}
             </div>
           </>
         )}
