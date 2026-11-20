@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutGrid, Users, Lock, User, Settings, FileText } from "lucide-react";
+import { isNavigationItemActive } from "@/components/layout/dashboardNavigation";
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutGrid, label: "Overview" },
@@ -22,10 +23,7 @@ export default function MobileBottomNav() {
       aria-label="Mobile navigation"
     >
       {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
-        const isActive =
-          href === "/dashboard"
-            ? pathname === "/dashboard"
-            : pathname.startsWith(href);
+        const isActive = isNavigationItemActive(pathname, href);
 
         return (
           <Link
