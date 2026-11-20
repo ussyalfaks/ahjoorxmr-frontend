@@ -1,39 +1,32 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, ChevronDown, Loader2, Send, X, XCircle } from "lucide-react";
+import { useRef, useState } from "react";
+import { CheckCircle2, ChevronDown, Loader2, X, XCircle } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { truncateAddress } from "@/contexts/WalletContext";
 import { getContacts, isValidAddressFormat } from "@/lib/addressBook";
 import type { AddressBookContact } from "@/types/addressBook";
+import { isKnownExchangeAddress, validateMemo, type MemoType } from "@/lib/sendTransfer";
 
 interface SendTransferModalProps {
   open: boolean;
   onClose: () => void;
   fromAddress: string;
+  onSent: (transfer: { recipient: string; amount: number; memo?: string; memoType: MemoType }) => void;
 }
 
-type Status = "idle" | "pending" | "success" | "error";
+type Status = "idle" | "review" | "pending" | "success" | "error";
 
-export default function SendTransferModal({ open, onClose, fromAddress }: SendTransferModalProps) {
+export default function SendTransferModal({ open, onClose, fromAddress, onSent }: SendTransferModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const [contacts, setContacts] = useState<AddressBookContact[]>([]);
+  const [contacts] = useState<AddressBookContact[]>(() => getContacts());
   const [showContacts, setShowContacts] = useState(false);
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
+  const [memo, setMemo] = useState("");
+  const [memoType, setMemoType] = useState<MemoType>("text");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (open) {
-      setContacts(getContacts());
-      setRecipient("");
-      setAmount("");
-      setStatus("idle");
-      setError(null);
-      setShowContacts(false);
-    }
-  }, [open]);
 
   const close = () => {
     if (status === "pending") return;
@@ -44,7 +37,7 @@ export default function SendTransferModal({ open, onClose, fromAddress }: SendTr
 
   if (!open) return null;
 
-  async function handleSend() {
+  function handleReview() {
     if (!isValidAddressFormat(recipient)) {
       setError("Enter a valid recipient address.");
       return;
@@ -54,10 +47,21 @@ export default function SendTransferModal({ open, onClose, fromAddress }: SendTr
       setError("Enter an amount greater than 0.");
       return;
     }
+    const memoError = validateMemo(memo, memoType);
+    if (memoError) {
+      setError(memoError);
+      return;
+    }
+    setError(null);
+    setStatus("review");
+  }
+
+  async function handleSend() {
     setError(null);
     setStatus("pending");
     try {
       await new Promise((resolve) => setTimeout(resolve, 900));
+      onSent({ recipient: recipient.trim(), amount: Number(amount), memo: memo || undefined, memoType });
       setStatus("success");
     } catch {
       setStatus("error");
@@ -134,6 +138,11 @@ export default function SendTransferModal({ open, onClose, fromAddress }: SendTr
                 disabled={status === "pending"}
                 className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-2.5 text-sm font-mono text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
               />
+              {isKnownExchangeAddress(recipient, contacts) && !memo && (
+                <p className="mt-1.5 text-xs text-amber-500" role="status">
+                  This is a saved exchange address. A memo may be required to credit your deposit.
+                </p>
+              )}
             </div>
 
             <div>
@@ -153,6 +162,40 @@ export default function SendTransferModal({ open, onClose, fromAddress }: SendTr
               />
             </div>
 
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="send-memo" className="block text-xs text-[var(--muted)]">
+                  Memo <span className="text-[var(--faint)]">(optional)</span>
+                </label>
+                <label htmlFor="send-memo-type" className="sr-only">
+                  Memo type
+                </label>
+                <select
+                  id="send-memo-type"
+                  value={memoType}
+                  onChange={(e) => setMemoType(e.target.value as MemoType)}
+                  disabled={status === "pending"}
+                  className="rounded-lg border border-[var(--ov-14)] bg-[var(--ov-0a)] px-2 py-1 text-xs text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                >
+                  <option value="text">Text</option>
+                  <option value="id">ID</option>
+                </select>
+              </div>
+              <input
+                id="send-memo"
+                type="text"
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                disabled={status === "pending"}
+                maxLength={memoType === "text" ? 28 : 20}
+                placeholder={memoType === "text" ? "Up to 28 bytes" : "Unsigned 64-bit number"}
+                className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+              />
+              {memoType === "text" && (
+                <p className="mt-1 text-xs text-[var(--faint)]">Maximum 28 UTF-8 bytes.</p>
+              )}
+            </div>
+
             <p className="text-xs text-[var(--faint)]">
               From {truncateAddress(fromAddress)}
             </p>
@@ -168,7 +211,7 @@ export default function SendTransferModal({ open, onClose, fromAddress }: SendTr
                 Cancel
               </button>
               <button
-                onClick={handleSend}
+                onClick={handleReview}
                 disabled={status === "pending"}
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#4ADE80] text-[#0A0A0A] py-2.5 font-semibold hover:bg-[#3fc873] transition-colors disabled:opacity-70"
               >
@@ -177,10 +220,49 @@ export default function SendTransferModal({ open, onClose, fromAddress }: SendTr
                     <Loader2 size={18} className="animate-spin" /> Sending...
                   </>
                 ) : (
-                  <>
-                    <Send size={16} /> Send
-                  </>
+                  "Review transfer"
                 )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {status === "review" && (
+          <div className="space-y-4">
+            <h3 className="font-semibold text-[var(--text)]">Confirm transfer details</h3>
+            <dl className="space-y-3 rounded-xl bg-[var(--ov-05)] p-4 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--muted)]">Recipient</dt>
+                <dd className="font-mono text-[var(--text)]">{truncateAddress(recipient.trim())}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-[var(--muted)]">Amount</dt>
+                <dd className="font-medium text-[var(--text)]">{amount} USDT</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--muted)]">Memo</dt>
+                <dd className="break-all text-right text-[var(--text)]">
+                  {memo ? `${memo} (${memoType === "id" ? "ID" : "text"})` : "None"}
+                </dd>
+              </div>
+            </dl>
+            {isKnownExchangeAddress(recipient, contacts) && !memo && (
+              <p className="text-xs text-amber-500" role="alert">
+                You selected a saved exchange address without a memo. The exchange may not credit your deposit.
+              </p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStatus("idle")}
+                className="flex-1 rounded-xl border border-[var(--ov-1a)] text-[var(--text)] py-2.5 font-medium hover:bg-[var(--ov-0a)] transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleSend}
+                className="flex-1 rounded-xl bg-[#4ADE80] text-[#0A0A0A] py-2.5 font-semibold hover:bg-[#3fc873] transition-colors"
+              >
+                Confirm &amp; send
               </button>
             </div>
           </div>
@@ -192,6 +274,7 @@ export default function SendTransferModal({ open, onClose, fromAddress }: SendTr
             <p className="font-medium text-[var(--text)] mb-1">Transfer sent</p>
             <p className="text-sm text-[var(--muted)] mb-6">
               {amount} USDT sent to {truncateAddress(recipient)}.
+              {memo && <span className="block mt-2">Memo ({memoType}): {memo}</span>}
             </p>
             <button
               onClick={onClose}
