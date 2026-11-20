@@ -19,12 +19,21 @@ import {
   Send,
   PauseCircle,
   PlayCircle,
+  AlarmClock,
 } from "lucide-react";
 import type { Notification, NotificationType, NotificationCategory } from "@/types/notification";
 import { NOTIFICATION_CATEGORIES } from "@/types/notification";
 import { MOCK_NOTIFICATIONS } from "@/data/notifications";
 import RelativeTime from "@/components/ui/RelativeTime";
 import { useLoadMore } from "@/hooks/useLoadMore";
+import {
+  getActiveNotificationSnoozes,
+  getExpiredNotificationIds,
+  NOTIFICATION_SNOOZE_OPTIONS,
+  NOTIFICATIONS_EVENT,
+  restoreNotification,
+  snoozeNotification,
+} from "@/lib/notifications";
 
 const TYPE_CONFIG: Record<
   NotificationType,
@@ -50,6 +59,7 @@ function getFilterLabel(filter: NotificationCategory): string {
     payouts: "Payouts",
     contributions: "Contributions",
     system: "System",
+    snoozed: "Snoozed",
   };
   return labels[filter];
 }
@@ -57,6 +67,7 @@ function getFilterLabel(filter: NotificationCategory): string {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [selectedFilter, setSelectedFilter] = useState<NotificationCategory>("all");
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("ahjoorxmr:notifications") ?? "[]") as Array<Omit<Notification, "timestamp"> & { timestamp: string }>;
@@ -67,6 +78,32 @@ export default function NotificationsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const syncSnoozes = (event?: Event) => {
+      const { snoozedUntil: activeSnoozes, expiredIds } = getActiveNotificationSnoozes();
+      const returnedIds = event ? getExpiredNotificationIds(event) : [];
+      setSnoozedUntil(activeSnoozes);
+      const unreadIds = new Set([...expiredIds, ...returnedIds]);
+      if (unreadIds.size > 0) {
+        setNotifications((current) =>
+          current.map((notification) =>
+            unreadIds.has(notification.id) ? { ...notification, read: false } : notification
+          )
+        );
+      }
+    };
+    const handleChange = (event: Event) => syncSnoozes(event);
+    syncSnoozes();
+    const interval = setInterval(() => syncSnoozes(), 30 * 1000);
+    window.addEventListener(NOTIFICATIONS_EVENT, handleChange);
+    window.addEventListener("storage", handleChange);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(NOTIFICATIONS_EVENT, handleChange);
+      window.removeEventListener("storage", handleChange);
+    };
+  }, []);
+
   // #245: dismissing a notification is destructive (there's no "view
   // deleted notifications" anywhere), so it goes through the shared
   // undo-toast flow instead of filtering `notifications` directly —
@@ -74,13 +111,20 @@ export default function NotificationsPage() {
   // from `notifications` only happens if the 5s undo window closes.
   const { remove: removeWithUndo, isPending } = useUndoableRemoval<string>();
 
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  const snoozedIds = useMemo(() => new Set(Object.keys(snoozedUntil)), [snoozedUntil]);
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read && !snoozedIds.has(n.id)).length,
+    [notifications, snoozedIds]
+  );
 
   // Filter notifications based on selected category
   const filteredNotifications = useMemo(() => {
+    if (selectedFilter === "snoozed") {
+      return notifications.filter((n) => snoozedIds.has(n.id) && !isPending(n.id));
+    }
     const types = NOTIFICATION_CATEGORIES[selectedFilter];
-    return notifications.filter((n) => types.includes(n.type) && !isPending(n.id));
-  }, [notifications, selectedFilter, isPending]);
+    return notifications.filter((n) => types.includes(n.type) && !snoozedIds.has(n.id) && !isPending(n.id));
+  }, [notifications, selectedFilter, isPending, snoozedIds]);
 
   // Sort by date descending (newest first)
   const sortedNotifications = useMemo(
@@ -115,6 +159,13 @@ export default function NotificationsPage() {
     },
     [notifications, removeWithUndo],
   );
+
+  const handleSnooze = (notificationId: string, value: string) => {
+    const option = NOTIFICATION_SNOOZE_OPTIONS.find((candidate) => candidate.label === value);
+    if (option) snoozeNotification(notificationId, option.ms);
+  };
+
+  const handleRestore = (notificationId: string) => restoreNotification(notificationId);
 
   const handleFilterChange = (filter: NotificationCategory) => {
     setSelectedFilter(filter);
@@ -171,7 +222,7 @@ export default function NotificationsPage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {(["all", "payouts", "contributions", "system"] as const).map((filter) => (
+        {(["all", "payouts", "contributions", "system", "snoozed"] as const).map((filter) => (
           <button
             key={filter}
             onClick={() => handleFilterChange(filter)}
@@ -249,14 +300,40 @@ export default function NotificationsPage() {
                   </p>
                 </Link>
 
-                {/* Delete Button */}
-                <button
-                  onClick={() => deleteNotification(notification.id)}
-                  className="p-2 rounded-lg text-[var(--muted)] hover:text-[#FF5B5B] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B] shrink-0 mt-0.5"
-                  aria-label={`Delete notification: ${notification.title}`}
-                >
-                  <Trash2 size={16} aria-hidden="true" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  {snoozedIds.has(notification.id) ? (
+                    <button
+                      onClick={() => handleRestore(notification.id)}
+                      className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                      aria-label={`Unsnooze notification: ${notification.title}`}
+                    >
+                      <AlarmClock size={16} aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <select
+                      value=""
+                      onChange={(event) => handleSnooze(notification.id, event.target.value)}
+                      aria-label={`Snooze notification: ${notification.title}`}
+                      className="cursor-pointer rounded-lg border border-[var(--ov-14)] bg-transparent px-2.5 py-1.5 text-xs text-[var(--muted)] hover:bg-[var(--ov-0a)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                    >
+                      <option value="" disabled>
+                        Snooze…
+                      </option>
+                      {NOTIFICATION_SNOOZE_OPTIONS.map((option) => (
+                        <option key={option.label} value={option.label}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button
+                    onClick={() => deleteNotification(notification.id)}
+                    className="p-2 rounded-lg text-[var(--muted)] hover:text-[#FF5B5B] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B]"
+                    aria-label={`Delete notification: ${notification.title}`}
+                  >
+                    <Trash2 size={16} aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             );
           })
