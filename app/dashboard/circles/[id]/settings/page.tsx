@@ -296,6 +296,7 @@ export default function CircleSettingsPage({
         description: `${request.circleName} join request was ${nextStatus}.${organizerNote ? ` Note: ${organizerNote}` : ""}`,
         timestamp: updated.updatedAt,
         href: `/dashboard/circles/${request.circleId}`,
+        circleId: request.circleId,
         read: false,
       },
     ]));

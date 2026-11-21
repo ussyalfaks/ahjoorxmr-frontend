@@ -153,6 +153,7 @@ async function deliverInvite(invite: CircleInvite): Promise<void> {
     title: `Invite sent via ${INVITE_CHANNEL_LABELS[invite.channel]}`,
     description: `${invite.federationAddress ?? invite.recipient}: ${message.split("\n")[0]}`,
     href: `/dashboard/circles/${invite.circleId}/settings`,
+    circleId: invite.circleId,
   });
 }
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Bell,
   ChevronDown,
+  ChevronUp,
   CheckCircle2,
   DollarSign,
   AlertCircle,
@@ -25,6 +26,10 @@ import { NOTIFICATION_CATEGORIES } from "@/types/notification";
 import { MOCK_NOTIFICATIONS } from "@/data/notifications";
 import RelativeTime from "@/components/ui/RelativeTime";
 import { useLoadMore } from "@/hooks/useLoadMore";
+import {
+  NOTIFICATION_GROUPING_STORAGE_KEY,
+  selectNotificationGroups,
+} from "@/lib/notificationGroups";
 
 const TYPE_CONFIG: Record<
   NotificationType,
@@ -57,6 +62,8 @@ function getFilterLabel(filter: NotificationCategory): string {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [selectedFilter, setSelectedFilter] = useState<NotificationCategory>("all");
+  const [groupingEnabled, setGroupingEnabled] = useState(true);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("ahjoorxmr:notifications") ?? "[]") as Array<Omit<Notification, "timestamp"> & { timestamp: string }>;
@@ -64,6 +71,11 @@ export default function NotificationsPage() {
       // Notifications are persisted client-side until the API is available.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotifications((current) => [...stored.map((notification) => ({ ...notification, timestamp: new Date(notification.timestamp) })), ...current]);
+    }
+    try {
+      setGroupingEnabled(localStorage.getItem(NOTIFICATION_GROUPING_STORAGE_KEY) !== "false");
+    } catch {
+      // Keep grouping enabled when preferences cannot be read.
     }
   }, []);
 
@@ -76,45 +88,52 @@ export default function NotificationsPage() {
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
-  // Filter notifications based on selected category
-  const filteredNotifications = useMemo(() => {
+  const notificationGroups = useMemo(() => {
     const types = NOTIFICATION_CATEGORIES[selectedFilter];
-    return notifications.filter((n) => types.includes(n.type) && !isPending(n.id));
-  }, [notifications, selectedFilter, isPending]);
-
-  // Sort by date descending (newest first)
-  const sortedNotifications = useMemo(
-    () => [...filteredNotifications].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()),
-    [filteredNotifications]
-  );
+    return selectNotificationGroups(
+      notifications.filter((notification) => types.includes(notification.type)),
+      groupingEnabled,
+    ).filter((group) => !isPending(group.id));
+  }, [notifications, selectedFilter, groupingEnabled, isPending]);
 
   const { visibleCount, hasMore, loadMore, sentinelRef, announcement } = useLoadMore(
-    sortedNotifications.length,
+    notificationGroups.length,
     `dashboard:notifications:${selectedFilter}`
   );
-  const visibleNotifications = sortedNotifications.slice(0, visibleCount);
+  const visibleGroups = notificationGroups.slice(0, visibleCount);
 
   const markAllRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, []);
 
-  const markAsRead = useCallback((id: string) => {
+  const markGroupAsRead = useCallback((ids: string[]) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((notification) =>
+        ids.includes(notification.id) ? { ...notification, read: true } : notification
+      )
     );
   }, []);
 
   const deleteNotification = useCallback(
-    (id: string) => {
-      const target = notifications.find((n) => n.id === id);
-      removeWithUndo(id, {
-        title: "Notification dismissed",
-        message: target?.title,
-        commit: () => setNotifications((prev) => prev.filter((n) => n.id !== id)),
+    (group: ReturnType<typeof selectNotificationGroups>[number]) => {
+      const ids = new Set(group.notifications.map((notification) => notification.id));
+      removeWithUndo(group.id, {
+        title: group.count === 1 ? "Notification dismissed" : "Notification group dismissed",
+        message: group.count === 1 ? group.latest.title : `${group.count} notifications dismissed`,
+        commit: () => setNotifications((prev) => prev.filter((notification) => !ids.has(notification.id))),
       });
     },
-    [notifications, removeWithUndo],
+    [removeWithUndo],
   );
+
+  const toggleGroup = useCallback((groupId: string) => {
+    setExpandedGroups((current) => {
+      const next = new Set(current);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  }, []);
 
   const handleFilterChange = (filter: NotificationCategory) => {
     setSelectedFilter(filter);
@@ -189,8 +208,8 @@ export default function NotificationsPage() {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-[var(--muted)]">
-          Showing {visibleNotifications.length} of{" "}
-          {sortedNotifications.length} notification{sortedNotifications.length !== 1 ? "s" : ""}
+          Showing {visibleGroups.length} of{" "}
+          {notificationGroups.length} notification group{notificationGroups.length !== 1 ? "s" : ""}
         </p>
         {unreadCount > 0 && (
           <span className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--ov-0a)] rounded-lg text-sm font-medium text-[var(--muted)]">
@@ -202,61 +221,105 @@ export default function NotificationsPage() {
 
       {/* Notifications List */}
       <div className="space-y-2 bg-[var(--content)] rounded-3xl overflow-hidden">
-        {visibleNotifications.length === 0 ? (
+        {visibleGroups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Bell size={32} className="text-[var(--muted)] mb-3" aria-hidden="true" />
             <p className="text-[var(--muted)]">No notifications in this category</p>
           </div>
         ) : (
-          visibleNotifications.map((notification) => {
+          visibleGroups.map((group) => {
+            const notification = group.latest;
             const { icon: Icon, color } = TYPE_CONFIG[notification.type];
+            const expanded = expandedGroups.has(group.id);
+            const memberIds = group.notifications.map((member) => member.id);
             return (
               <div
-                key={notification.id}
-                className={`flex items-start gap-4 p-4 md:p-5 border-b border-[var(--ov-0f)] last:border-b-0 hover:bg-[var(--modal)] transition-colors ${
-                  !notification.read ? "bg-[var(--ov-03)]" : ""
+                key={group.id}
+                className={`border-b border-[var(--ov-0f)] last:border-b-0 ${
+                  !group.read ? "bg-[var(--ov-03)]" : ""
                 }`}
               >
-                {/* Icon */}
-                <div
-                  className={`w-10 h-10 rounded-lg bg-[var(--ov-0a)] flex items-center justify-center shrink-0 mt-0.5 ${color}`}
-                >
-                  <Icon size={18} aria-hidden="true" />
-                </div>
-
-                {/* Content */}
-                <Link
-                  href={notification.href}
-                  onClick={() => markAsRead(notification.id)}
-                  className="flex-1 min-w-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
-                >
-                  <div className="flex items-start justify-between gap-3 mb-1">
-                    <p className="text-sm font-semibold text-[var(--text)] group-hover:text-[#4B6B76] transition-colors">
-                      {notification.title}
-                    </p>
-                    {!notification.read && (
-                      <span
-                        className="w-2.5 h-2.5 rounded-full bg-[#4B6B76] shrink-0 mt-1"
-                        aria-label="Unread"
-                      />
-                    )}
+                <div className="flex items-start gap-4 p-4 md:p-5 hover:bg-[var(--modal)] transition-colors">
+                  <div
+                    className={`w-10 h-10 rounded-lg bg-[var(--ov-0a)] flex items-center justify-center shrink-0 mt-0.5 ${color}`}
+                  >
+                    <Icon size={18} aria-hidden="true" />
                   </div>
-                  <p className="text-xs text-[var(--muted)] line-clamp-2 mb-2">
-                    {notification.description}
-                  </p>
-                  <p className="text-xs text-[var(--faint)]">
-                    <RelativeTime date={notification.timestamp} className="text-[var(--faint)]" />
-                  </p>
-                </Link>
 
-                {/* Delete Button */}
-                <button
-                  onClick={() => deleteNotification(notification.id)}
-                  className="p-2 rounded-lg text-[var(--muted)] hover:text-[#FF5B5B] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B] shrink-0 mt-0.5"
-                  aria-label={`Delete notification: ${notification.title}`}
-                >
-                  <Trash2 size={16} aria-hidden="true" />
-                </button>
+                  <Link
+                    href={notification.href}
+                    onClick={() => markGroupAsRead(memberIds)}
+                    className="flex-1 min-w-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <p className="text-sm font-semibold text-[var(--text)] group-hover:text-[#4B6B76] transition-colors">
+                        {notification.title}
+                      </p>
+                      {!group.read && (
+                        <span
+                          className="w-2.5 h-2.5 rounded-full bg-[#4B6B76] shrink-0 mt-1"
+                          aria-label="Unread"
+                        />
+                      )}
+                    </div>
+                    <p className="text-xs text-[var(--muted)] line-clamp-2 mb-2">
+                      {notification.description}
+                    </p>
+                    <p className="text-xs text-[var(--faint)]">
+                      <RelativeTime date={notification.timestamp} className="text-[var(--faint)]" />
+                    </p>
+                  </Link>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {group.count > 1 && (
+                      <>
+                        <span
+                          aria-label={`${group.count} notifications`}
+                          className="rounded-full bg-[var(--ov-0a)] px-2 py-1 text-xs font-medium text-[var(--muted)]"
+                        >
+                          {group.count}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(group.id)}
+                          aria-expanded={expanded}
+                          aria-label={`${expanded ? "Collapse" : "Expand"} ${group.count} notifications`}
+                          className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                        >
+                          {expanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => deleteNotification(group)}
+                      className="p-2 rounded-lg text-[var(--muted)] hover:text-[#FF5B5B] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B]"
+                      aria-label={group.count === 1
+                        ? `Delete notification: ${notification.title}`
+                        : `Delete all ${group.count} notifications`}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+                {expanded && group.count > 1 && (
+                  <ul className="space-y-2 border-t border-[var(--ov-0f)] px-4 py-3 md:px-5">
+                    {group.notifications.map((member) => (
+                      <li key={member.id}>
+                        <Link
+                          href={member.href}
+                          onClick={() => markGroupAsRead(memberIds)}
+                          className="block rounded-lg px-3 py-2 hover:bg-[var(--modal)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                        >
+                          <span className="block text-xs font-medium text-[var(--text)]">{member.title}</span>
+                          <span className="mt-1 block text-xs text-[var(--muted)]">{member.description}</span>
+                          <span className="mt-1 block text-xs text-[var(--faint)]">
+                            <RelativeTime date={member.timestamp} className="text-[var(--faint)]" />
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })
@@ -266,7 +329,7 @@ export default function NotificationsPage() {
       <div ref={sentinelRef} aria-hidden="true" className="h-px" />
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-[var(--muted)]" role="status" aria-live="polite">
-          {announcement || `Showing ${visibleNotifications.length} of ${sortedNotifications.length} notifications`}
+          {announcement || `Showing ${visibleGroups.length} of ${notificationGroups.length} notification groups`}
         </p>
         {hasMore ? (
           <button
