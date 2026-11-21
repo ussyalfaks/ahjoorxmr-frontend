@@ -552,6 +552,7 @@ export default function CircleDetailPage({
       title: "A member left your circle",
       description: `${fmt(CURRENT_WALLET)} left ${circle.name}.`,
       href: `/dashboard/circles/${circle.id}`,
+      circleId: circle.id,
     });
     recordLeftCircle(circle.id);
     setLeaveOpen(false);

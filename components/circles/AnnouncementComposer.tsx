@@ -83,6 +83,7 @@ export default function AnnouncementComposer({
         title: priority === "urgent" ? `Urgent update from ${circleName}` : `New announcement from ${circleName}`,
         description: trimmed,
         href: `/dashboard/circles/${circleId}`,
+        circleId,
       });
       showToast({
         title: "Announcement sent",

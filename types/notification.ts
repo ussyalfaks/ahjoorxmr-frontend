@@ -9,6 +9,7 @@ export interface Notification {
   timestamp: Date;
   href: string;
   read: boolean;
+  circleId?: string;
 }
 
 export const NOTIFICATION_CATEGORIES: Record<NotificationCategory, NotificationType[]> = {
