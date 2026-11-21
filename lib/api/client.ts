@@ -16,12 +16,24 @@ import { publicEnv } from "@/lib/env";
 
 export type CircleDetail = DiscoverCircle;
 
+export interface AuthChallenge {
+  transaction: string;
+}
+
+export interface AuthTokenResponse {
+  token: string;
+  expiresAt?: string;
+  expiresIn?: number;
+}
+
 export interface ApiClient {
   getCircles(): Promise<DiscoverCircle[]>;
   getCircle(id: string): Promise<DiscoverCircle | null>;
   getContributions(): Promise<ContributionRecord[]>;
   getPayouts(): Promise<PayoutRecord[]>;
   getNotifications(): Promise<Notification[]>;
+  getAuthChallenge(address: string): Promise<AuthChallenge>;
+  exchangeAuthChallenge(transaction: string): Promise<AuthTokenResponse>;
 }
 
 function resolveAdapter(): ApiClient {

@@ -9,6 +9,9 @@ import { MOCK_CIRCLES } from "@/data/circles";
 import { MOCK_CONTRIBUTIONS } from "@/data/contributions";
 import { MOCK_PAYOUT_HISTORY } from "@/data/payouts";
 import type { Notification } from "@/types/notification";
+import { Account, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
+import { publicEnv } from "@/lib/env";
+import type { AuthChallenge, AuthTokenResponse } from "./client";
 
 const SIMULATED_LATENCY_MS = 400;
 
@@ -62,5 +65,27 @@ export const mockAdapter: ApiClient = {
   async getNotifications() {
     await delay(SIMULATED_LATENCY_MS);
     return SEED_NOTIFICATIONS;
+  },
+
+  async getAuthChallenge(address: string): Promise<AuthChallenge> {
+    const transaction = new TransactionBuilder(new Account(address, "0"), {
+      fee: "100",
+      networkPassphrase: publicEnv.stellarNetworkPassphrase,
+    })
+      .addOperation(Operation.manageData({ name: "web_auth_domain", value: "localhost" }))
+      .setTimeout(300)
+      .build();
+
+    await delay(SIMULATED_LATENCY_MS);
+    return { transaction: transaction.toXDR() };
+  },
+
+  async exchangeAuthChallenge(transaction: string): Promise<AuthTokenResponse> {
+    if (!transaction) throw new Error("A signed challenge transaction is required.");
+    await delay(SIMULATED_LATENCY_MS);
+    return {
+      token: `mock-${crypto.randomUUID()}`,
+      expiresIn: 60 * 60,
+    };
   },
 };
