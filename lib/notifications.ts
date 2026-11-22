@@ -28,6 +28,7 @@ interface NotificationInput {
   title: string;
   description: string;
   href: string;
+  circleId?: string;
 }
 
 function readList(key: string): StoredNotification[] {

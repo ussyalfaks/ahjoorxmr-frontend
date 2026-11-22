@@ -93,6 +93,7 @@ function notifyParticipants(
       title,
       description,
       href: `/dashboard/circles/${circleId}`,
+      circleId,
     });
   });
 }

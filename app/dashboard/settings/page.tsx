@@ -35,6 +35,7 @@ import {
   type ContactField,
   type ContactSharingSettings,
 } from "@/lib/contactDirectory";
+import { NOTIFICATION_GROUPING_STORAGE_KEY } from "@/lib/notificationGroups";
 
 const STORAGE_KEY = "ahjoorxmr:settings";
 
@@ -131,6 +132,40 @@ function HighContrastToggle() {
         </button>
       </div>
     </div>
+  );
+}
+
+function NotificationGroupingPreference() {
+  const [enabled, setEnabled] = useState(true);
+
+  useEffect(() => {
+    try {
+      // The preference is client-only and must be loaded after hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEnabled(localStorage.getItem(NOTIFICATION_GROUPING_STORAGE_KEY) !== "false");
+    } catch {
+      // Keep grouping enabled when preferences cannot be read.
+    }
+  }, []);
+
+  const updateEnabled = (nextEnabled: boolean) => {
+    localStorage.setItem(NOTIFICATION_GROUPING_STORAGE_KEY, String(nextEnabled));
+    setEnabled(nextEnabled);
+  };
+
+  return (
+    <section className="p-6 rounded-2xl bg-[var(--content)] border border-[var(--ov-10)]">
+      <h2 className="text-base font-bold font-sora text-[var(--text)] mb-2">
+        Notification grouping
+      </h2>
+      <Toggle
+        id="notification-grouping-enabled"
+        checked={enabled}
+        onChange={updateEnabled}
+        label="Group repeated notifications"
+        description="Combine notifications of the same type from the same circle when they arrive within an hour."
+      />
+    </section>
   );
 }
 
@@ -415,6 +450,7 @@ function SettingsContent() {
 
       {activeTab === "notifications" && (
         <div className="space-y-6">
+          <NotificationGroupingPreference />
           <EmailNotificationPreferences />
           <PushNotificationPreferences />
           <DoNotDisturbPreferences />
