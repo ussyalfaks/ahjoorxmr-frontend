@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { LayoutGrid, Lock, FileText, Settings, Users, LogOut, Wallet, Trophy, Bell, HelpCircle, Award, Target, type LucideIcon } from "lucide-react";
+import { LogOut } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
+import DashboardSidebarNav from "@/components/layout/DashboardSidebarNav";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import OnboardingModal from "@/components/modals/OnboardingModal";
 import DashboardHeaderSearch from "@/components/layout/DashboardHeaderSearch";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import InstallPWAButton from "@/components/ui/InstallPWAButton";
-import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
 import FeedbackWidget from "@/components/ui/FeedbackWidget";
 import ShortcutsModal from "@/components/ui/ShortcutsModal";
 import EmailVerificationBanner from "@/components/settings/EmailVerificationBanner";
@@ -19,25 +19,6 @@ import TrustlineBanner from "@/components/wallet/TrustlineBanner";
 
 const WALLET_ADDRESS = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 const WALLET_DISPLAY = "0x23g43gdaa...";
-
-const NAV_LINK_CLASS =
-  "flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]";
-
-const NAV_ITEMS: { href: string; label: string; icon: LucideIcon; spotlight?: string }[] = [
-  { href: "/dashboard/circles", label: "Circles", icon: Users },
-  { href: "/dashboard/locked-funds", label: "Locked Funds", icon: Lock },
-  { href: "/dashboard/payouts", label: "Payouts", icon: Wallet },
-  { href: "/dashboard/contributions", label: "Contributions", icon: FileText },
-  { href: "/dashboard/statements", label: "Statements", icon: FileText },
-  { href: "/dashboard/goals", label: "Goals", icon: Target },
-  { href: "/dashboard/wallet", label: "Wallet", icon: Wallet, spotlight: "multi-wallet" },
-  { href: "/dashboard/achievements", label: "Achievements", icon: Award },
-  { href: "/dashboard/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
-  { href: "/help", label: "Help Center", icon: HelpCircle },
-];
-
 
 export default function DashboardLayout({
   children,
@@ -59,39 +40,7 @@ export default function DashboardLayout({
           </div>
 
           {/* Navigation */}
-          <nav aria-label="Dashboard navigation">
-            <ul className="space-y-2 list-none p-0 m-0">
-              <li>
-                <Link
-                  href="/dashboard"
-                  aria-current="page"
-                  className="flex items-center gap-3 px-4 py-3 text-[var(--text)] bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-                >
-                  <LayoutGrid size={20} className="text-[var(--text)]" aria-hidden="true" />
-                  <span className="font-medium">Overview</span>
-                </Link>
-              </li>
-              {NAV_ITEMS.map(({ href, label, icon: Icon, spotlight }) => {
-                const link = (
-                  <Link href={href} className={NAV_LINK_CLASS}>
-                    <Icon size={20} aria-hidden="true" />
-                    <span className="font-medium">{label}</span>
-                  </Link>
-                );
-                return (
-                  <li key={href}>
-                    {spotlight ? (
-                      <FeatureSpotlight featureId={spotlight} align="left">
-                        {link}
-                      </FeatureSpotlight>
-                    ) : (
-                      link
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+          <DashboardSidebarNav />
 
           {/* Logout */}
           <div className="mt-auto pt-10">

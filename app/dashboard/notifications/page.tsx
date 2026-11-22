@@ -20,6 +20,7 @@ import {
   Send,
   PauseCircle,
   PlayCircle,
+  AlarmClock,
 } from "lucide-react";
 import type { Notification, NotificationType, NotificationCategory } from "@/types/notification";
 import { NOTIFICATION_CATEGORIES } from "@/types/notification";
@@ -27,9 +28,13 @@ import { MOCK_NOTIFICATIONS } from "@/data/notifications";
 import RelativeTime from "@/components/ui/RelativeTime";
 import { useLoadMore } from "@/hooks/useLoadMore";
 import {
-  NOTIFICATION_GROUPING_STORAGE_KEY,
-  selectNotificationGroups,
-} from "@/lib/notificationGroups";
+  getActiveNotificationSnoozes,
+  getExpiredNotificationIds,
+  NOTIFICATION_SNOOZE_OPTIONS,
+  NOTIFICATIONS_EVENT,
+  restoreNotification,
+  snoozeNotification,
+} from "@/lib/notifications";
 
 const TYPE_CONFIG: Record<
   NotificationType,
@@ -55,6 +60,7 @@ function getFilterLabel(filter: NotificationCategory): string {
     payouts: "Payouts",
     contributions: "Contributions",
     system: "System",
+    snoozed: "Snoozed",
   };
   return labels[filter];
 }
@@ -62,8 +68,7 @@ function getFilterLabel(filter: NotificationCategory): string {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [selectedFilter, setSelectedFilter] = useState<NotificationCategory>("all");
-  const [groupingEnabled, setGroupingEnabled] = useState(true);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("ahjoorxmr:notifications") ?? "[]") as Array<Omit<Notification, "timestamp"> & { timestamp: string }>;
@@ -79,6 +84,32 @@ export default function NotificationsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const syncSnoozes = (event?: Event) => {
+      const { snoozedUntil: activeSnoozes, expiredIds } = getActiveNotificationSnoozes();
+      const returnedIds = event ? getExpiredNotificationIds(event) : [];
+      setSnoozedUntil(activeSnoozes);
+      const unreadIds = new Set([...expiredIds, ...returnedIds]);
+      if (unreadIds.size > 0) {
+        setNotifications((current) =>
+          current.map((notification) =>
+            unreadIds.has(notification.id) ? { ...notification, read: false } : notification
+          )
+        );
+      }
+    };
+    const handleChange = (event: Event) => syncSnoozes(event);
+    syncSnoozes();
+    const interval = setInterval(() => syncSnoozes(), 30 * 1000);
+    window.addEventListener(NOTIFICATIONS_EVENT, handleChange);
+    window.addEventListener("storage", handleChange);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(NOTIFICATIONS_EVENT, handleChange);
+      window.removeEventListener("storage", handleChange);
+    };
+  }, []);
+
   // #245: dismissing a notification is destructive (there's no "view
   // deleted notifications" anywhere), so it goes through the shared
   // undo-toast flow instead of filtering `notifications` directly —
@@ -86,15 +117,26 @@ export default function NotificationsPage() {
   // from `notifications` only happens if the 5s undo window closes.
   const { remove: removeWithUndo, isPending } = useUndoableRemoval<string>();
 
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  const snoozedIds = useMemo(() => new Set(Object.keys(snoozedUntil)), [snoozedUntil]);
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read && !snoozedIds.has(n.id)).length,
+    [notifications, snoozedIds]
+  );
 
-  const notificationGroups = useMemo(() => {
+  // Filter notifications based on selected category
+  const filteredNotifications = useMemo(() => {
+    if (selectedFilter === "snoozed") {
+      return notifications.filter((n) => snoozedIds.has(n.id) && !isPending(n.id));
+    }
     const types = NOTIFICATION_CATEGORIES[selectedFilter];
-    return selectNotificationGroups(
-      notifications.filter((notification) => types.includes(notification.type)),
-      groupingEnabled,
-    ).filter((group) => !isPending(group.id));
-  }, [notifications, selectedFilter, groupingEnabled, isPending]);
+    return notifications.filter((n) => types.includes(n.type) && !snoozedIds.has(n.id) && !isPending(n.id));
+  }, [notifications, selectedFilter, isPending, snoozedIds]);
+
+  // Sort by date descending (newest first)
+  const sortedNotifications = useMemo(
+    () => [...filteredNotifications].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()),
+    [filteredNotifications]
+  );
 
   const { visibleCount, hasMore, loadMore, sentinelRef, announcement } = useLoadMore(
     notificationGroups.length,
@@ -126,14 +168,12 @@ export default function NotificationsPage() {
     [removeWithUndo],
   );
 
-  const toggleGroup = useCallback((groupId: string) => {
-    setExpandedGroups((current) => {
-      const next = new Set(current);
-      if (next.has(groupId)) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
-  }, []);
+  const handleSnooze = (notificationId: string, value: string) => {
+    const option = NOTIFICATION_SNOOZE_OPTIONS.find((candidate) => candidate.label === value);
+    if (option) snoozeNotification(notificationId, option.ms);
+  };
+
+  const handleRestore = (notificationId: string) => restoreNotification(notificationId);
 
   const handleFilterChange = (filter: NotificationCategory) => {
     setSelectedFilter(filter);
@@ -190,7 +230,7 @@ export default function NotificationsPage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {(["all", "payouts", "contributions", "system"] as const).map((filter) => (
+        {(["all", "payouts", "contributions", "system", "snoozed"] as const).map((filter) => (
           <button
             key={filter}
             onClick={() => handleFilterChange(filter)}
@@ -300,26 +340,48 @@ export default function NotificationsPage() {
                       <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
+                  <p className="text-xs text-[var(--muted)] line-clamp-2 mb-2">
+                    {notification.description}
+                  </p>
+                  <p className="text-xs text-[var(--faint)]">
+                    <RelativeTime date={notification.timestamp} className="text-[var(--faint)]" />
+                  </p>
+                </Link>
+
+                <div className="flex shrink-0 items-center gap-1">
+                  {snoozedIds.has(notification.id) ? (
+                    <button
+                      onClick={() => handleRestore(notification.id)}
+                      className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                      aria-label={`Unsnooze notification: ${notification.title}`}
+                    >
+                      <AlarmClock size={16} aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <select
+                      value=""
+                      onChange={(event) => handleSnooze(notification.id, event.target.value)}
+                      aria-label={`Snooze notification: ${notification.title}`}
+                      className="cursor-pointer rounded-lg border border-[var(--ov-14)] bg-transparent px-2.5 py-1.5 text-xs text-[var(--muted)] hover:bg-[var(--ov-0a)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                    >
+                      <option value="" disabled>
+                        Snooze…
+                      </option>
+                      {NOTIFICATION_SNOOZE_OPTIONS.map((option) => (
+                        <option key={option.label} value={option.label}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button
+                    onClick={() => deleteNotification(notification.id)}
+                    className="p-2 rounded-lg text-[var(--muted)] hover:text-[#FF5B5B] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B]"
+                    aria-label={`Delete notification: ${notification.title}`}
+                  >
+                    <Trash2 size={16} aria-hidden="true" />
+                  </button>
                 </div>
-                {expanded && group.count > 1 && (
-                  <ul className="space-y-2 border-t border-[var(--ov-0f)] px-4 py-3 md:px-5">
-                    {group.notifications.map((member) => (
-                      <li key={member.id}>
-                        <Link
-                          href={member.href}
-                          onClick={() => markGroupAsRead(memberIds)}
-                          className="block rounded-lg px-3 py-2 hover:bg-[var(--modal)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-                        >
-                          <span className="block text-xs font-medium text-[var(--text)]">{member.title}</span>
-                          <span className="mt-1 block text-xs text-[var(--muted)]">{member.description}</span>
-                          <span className="mt-1 block text-xs text-[var(--faint)]">
-                            <RelativeTime date={member.timestamp} className="text-[var(--faint)]" />
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
             );
           })

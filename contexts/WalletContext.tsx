@@ -12,6 +12,13 @@ import {
 } from "react";
 import { authenticateWithPasskey } from "@/lib/passkeys";
 import { APP_NETWORK } from "@/config/network";
+import { apiClient } from "@/lib/api/client";
+import {
+  authRequiredEventName,
+  clearAuthToken,
+  storeAuthToken,
+} from "@/lib/api/authToken";
+import { publicEnv } from "@/lib/env";
 
 // Stellar wallet IDs supported via @creit.tech/stellar-wallets-kit
 export type WalletId = "freighter" | "xbull" | "albedo" | "lobstr" | "passkey";
@@ -51,13 +58,16 @@ interface WalletContextValue {
   activeWalletAddress: string | null;
   network: StellarNetwork;
   isExtensionMissing: boolean;
+  needsReauthentication: boolean;
+  reauthenticationError: string | null;
 
   // Legacy compat
   address: string | null;
   walletName: string | null;
   isConnected: boolean;
 
-  connect: (walletId: WalletId) => Promise<void>;
+  connect: (walletId: WalletId) => Promise<string | null>;
+  authenticateWallet: (address: string, walletId: WalletId) => Promise<void>;
   signInWithPasskey: () => Promise<void>;
   disconnect: (address?: string) => void;
   setActiveWallet: (address: string) => void;
@@ -146,11 +156,76 @@ async function connectWalletKit(walletId: WalletId, network: StellarNetwork): Pr
   return address;
 }
 
+async function signChallenge(
+  walletId: WalletId,
+  address: string,
+  transaction: string
+): Promise<string> {
+  if (walletId === "passkey") {
+    throw new Error("SEP-10 signing is not supported for passkey wallets yet.");
+  }
+
+  if (walletId === "freighter") {
+    const { signTransaction } = await import("@stellar/freighter-api");
+    const result = await signTransaction(transaction, {
+      networkPassphrase: publicEnv.stellarNetworkPassphrase,
+      address,
+    });
+    if (result.error) throw new Error(result.error.message);
+    if (result.signerAddress && result.signerAddress !== address) {
+      throw new Error("The wallet signed the challenge with a different address.");
+    }
+    return result.signedTxXdr;
+  }
+
+  const [{ StellarWalletsKit, Networks }, { defaultModules }] = await Promise.all([
+    import("@creit.tech/stellar-wallets-kit"),
+    import("@creit.tech/stellar-wallets-kit/modules/utils"),
+  ]);
+  if (!walletKitInitialized) {
+    StellarWalletsKit.init({ modules: defaultModules() });
+    walletKitInitialized = true;
+  }
+  StellarWalletsKit.setNetwork(
+    publicEnv.stellarNetwork === "mainnet" ? Networks.PUBLIC : Networks.TESTNET
+  );
+  StellarWalletsKit.setWallet(walletId);
+  const result = await StellarWalletsKit.signTransaction(transaction, {
+    networkPassphrase: publicEnv.stellarNetworkPassphrase,
+    address,
+  });
+  if (result.signerAddress && result.signerAddress !== address) {
+    throw new Error("The wallet signed the challenge with a different address.");
+  }
+  return result.signedTxXdr;
+}
+
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [linkedWallets, setLinkedWallets] = useState<LinkedWallet[]>([]);
   const [activeWalletAddress, setActiveWalletAddress] = useState<string | null>(null);
   const [network, setNetwork] = useState<StellarNetwork>("testnet");
   const [isExtensionMissing, setIsExtensionMissing] = useState(false);
+  const [needsReauthentication, setNeedsReauthentication] = useState(false);
+  const [reauthenticationError, setReauthenticationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleAuthenticationRequired = () => {
+      setNeedsReauthentication(true);
+      setReauthenticationError(null);
+    };
+    window.addEventListener(authRequiredEventName, handleAuthenticationRequired);
+    return () => window.removeEventListener(authRequiredEventName, handleAuthenticationRequired);
+  }, []);
+
+  const authenticateWallet = useCallback(async (address: string, walletId: WalletId) => {
+    const challenge = await apiClient.getAuthChallenge(address);
+    const signedTransaction = await signChallenge(walletId, address, challenge.transaction);
+    const session = await apiClient.exchangeAuthChallenge(signedTransaction);
+    if (!session.token) throw new Error("The authentication endpoint did not return a session token.");
+    storeAuthToken(session.token, session.expiresAt, session.expiresIn);
+    setNeedsReauthentication(false);
+    setReauthenticationError(null);
+  }, []);
 
   // Load persisted wallets + auto-reconnect last-used wallet
   useEffect(() => {
@@ -202,7 +277,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const checkInstalled = getExtensionCheckFn(wid);
       if (!checkInstalled()) {
         setIsExtensionMissing(true);
-        return;
+        return null;
       }
       setIsExtensionMissing(false);
 
@@ -215,7 +290,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
       } catch {
         setIsExtensionMissing(true);
-        return;
+        return null;
       }
 
       const balance = await fetchStellarBalance(addr, network);
@@ -234,6 +309,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       try {
         localStorage.setItem(STORAGE_KEY_LAST_WALLET, wid);
       } catch {}
+
+      return addr;
     },
     [network]
   );
@@ -260,6 +337,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(
     (addrToRemove?: string) => {
+      if (!addrToRemove || addrToRemove === activeWalletAddress) {
+        clearAuthToken();
+        setNeedsReauthentication(false);
+      }
       setLinkedWallets((prev) => {
         const targetAddr = addrToRemove || activeWalletAddress;
         if (!targetAddr) return prev;
@@ -337,10 +418,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         activeWalletAddress,
         network,
         isExtensionMissing,
+        needsReauthentication,
+        reauthenticationError,
         address: activeWalletAddress,
         walletName,
         isConnected: !!activeWalletAddress,
         connect,
+        authenticateWallet,
         signInWithPasskey,
         disconnect,
         setActiveWallet,
@@ -350,6 +434,48 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      {needsReauthentication && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reauthentication-title"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+        >
+          <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl">
+            <h2 id="reauthentication-title" className="mb-2 text-lg font-semibold text-[var(--text)]">
+              Verify your wallet again
+            </h2>
+            <p className="mb-4 text-sm text-[var(--muted)]">
+              Your sign-in session expired or is no longer valid. Sign a fresh SEP-10 challenge to continue.
+            </p>
+            {reauthenticationError && (
+              <p role="alert" className="mb-4 text-sm text-red-500">
+                {reauthenticationError}
+              </p>
+            )}
+            {activeWallet && activeWallet.walletId !== "passkey" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setReauthenticationError(null);
+                  void authenticateWallet(activeWallet.address, activeWallet.walletId).catch((error: unknown) => {
+                    setReauthenticationError(
+                      error instanceof Error ? error.message : "Wallet authentication failed."
+                    );
+                  });
+                }}
+                className="w-full rounded-lg bg-[var(--primary)] px-4 py-2 font-medium text-white"
+              >
+                Sign again
+              </button>
+            ) : (
+              <a href="/login" className="block rounded-lg bg-[var(--primary)] px-4 py-2 text-center font-medium text-white">
+                Connect a wallet
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </WalletContext.Provider>
   );
 }
