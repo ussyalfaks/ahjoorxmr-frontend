@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, CalendarDays, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, ArrowDownCircle, ArrowUpCircle, Calendar as CalendarIcon, Download } from "lucide-react";
 import type { Circle } from "@/types/circle";
+import { useTimezone } from "@/hooks/useTimezone";
+import { generateCalendarIcs, downloadIcsFile } from "@/lib/calendarExport";
 
 interface Props {
   circles: Circle[];
@@ -60,8 +62,21 @@ function dateKey(d: Date): string {
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 export default function UpcomingPayoutsCalendar({ circles }: Props) {
+  const { timezone, timezoneAbbr, formatTime } = useTimezone();
   const activeCircles = useMemo(() => circles.filter((c) => c.status === "active"), [circles]);
   const entries = useMemo(() => buildEntries(circles), [circles]);
+
+  const handleExportIcs = () => {
+    if (entries.length === 0) return;
+    const calendarEvents = entries.map((entry) => ({
+      id: `${entry.circleId}-${entry.kind}-${entry.date.getTime()}`,
+      title: `${entry.circleName} (${entry.kind === "due" ? "Contribution Due" : "Payout Received"})`,
+      description: `${entry.kind === "due" ? "You owe" : "You receive"}: ${entry.amount}. Circle: ${entry.circleName}`,
+      startDate: entry.date,
+    }));
+    const icsData = generateCalendarIcs(calendarEvents, timezone);
+    downloadIcsFile("upcoming-payouts.ics", icsData);
+  };
 
   const today = useMemo(() => new Date(), []);
   const [viewDate, setViewDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -140,27 +155,41 @@ export default function UpcomingPayoutsCalendar({ circles }: Props) {
         <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
       </div>
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold text-[var(--text)]">{monthLabel}</span>
+          <span className="text-xs text-[var(--muted)]">({timezoneAbbr})</span>
         </div>
-        <div className="flex items-center gap-1 bg-[var(--modal)] rounded-lg border border-[var(--border)] p-1">
-          <button
-            type="button"
-            onClick={() => setViewDate(new Date(year, month - 1, 1))}
-            className="p-1 rounded hover:bg-[var(--ov-0a)] text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-            aria-label="Previous month"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewDate(new Date(year, month + 1, 1))}
-            className="p-1 rounded hover:bg-[var(--ov-0a)] text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-            aria-label="Next month"
-          >
-            <ChevronRight size={16} />
-          </button>
+        <div className="flex items-center gap-2">
+          {entries.length > 0 && (
+            <button
+              type="button"
+              onClick={handleExportIcs}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--modal)] text-xs font-medium text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              title={`Export calendar (.ics) in ${timezone}`}
+            >
+              <Download size={13} aria-hidden="true" />
+              Export (.ics)
+            </button>
+          )}
+          <div className="flex items-center gap-1 bg-[var(--modal)] rounded-lg border border-[var(--border)] p-1">
+            <button
+              type="button"
+              onClick={() => setViewDate(new Date(year, month - 1, 1))}
+              className="p-1 rounded hover:bg-[var(--ov-0a)] text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              aria-label="Previous month"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewDate(new Date(year, month + 1, 1))}
+              className="p-1 rounded hover:bg-[var(--ov-0a)] text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+              aria-label="Next month"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -227,9 +256,12 @@ export default function UpcomingPayoutsCalendar({ circles }: Props) {
                   role="dialog"
                   aria-label={`Events on ${date.toDateString()}`}
                 >
-                  <p className="text-xs font-semibold text-[var(--text)] mb-2">
-                    {date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-[var(--text)]">
+                      {date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                    </p>
+                    <span className="text-[10px] text-[var(--muted)] font-mono">{timezoneAbbr}</span>
+                  </div>
                   <div className="space-y-2">
                     {dayEntries.map((entry, i) => (
                       <Link
@@ -251,6 +283,9 @@ export default function UpcomingPayoutsCalendar({ circles }: Props) {
                             }`}
                           >
                             {entry.kind === "due" ? "You owe" : "You receive"} {entry.amount}
+                          </span>
+                          <span className="block text-[10px] text-[var(--faint)]">
+                            {formatTime(entry.date)}
                           </span>
                         </span>
                       </Link>
