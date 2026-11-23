@@ -9,6 +9,9 @@ export type PayoutStatus = "completed" | "pending";
 export interface PayoutRecord {
   transaction_hash: string;
   circle_name: string;
+  /** Optional stable circle ID. Circle-name matching is used as a fallback. */
+  circleId?: string;
+  circle_id?: string;
   /** Numeric amount, e.g. 50 */
   amount: number;
   token_symbol: string;
@@ -23,6 +26,7 @@ export const MOCK_PAYOUT_HISTORY: PayoutRecord[] = [
   {
     transaction_hash: "0x8f41a8dd0a13cc9c5f8d25c8e2f2f2a34e1d0b4f0a5a9d6c7b8c9d0e1f2a3b4c",
     circle_name: "Family Growth",
+    circleId: "1",
     amount: 50,
     token_symbol: "USDT",
     payout_date: "2026-07-25T16:20:00Z",
@@ -33,6 +37,7 @@ export const MOCK_PAYOUT_HISTORY: PayoutRecord[] = [
   {
     transaction_hash: "0x4c2f19ab31d8f4e5c9b0d7a23e1f4a8b6c5d4e3f2a1b09876543210fedcba98",
     circle_name: "School Fees",
+    circleId: "2",
     amount: 120,
     token_symbol: "USDC",
     payout_date: "2026-07-22T10:05:00Z",
@@ -63,6 +68,7 @@ export const MOCK_PAYOUT_HISTORY: PayoutRecord[] = [
   {
     transaction_hash: "0x2d4f6b8a1c3e5f7a9d0b2c4e6f8a1d3c5e7f9b0a2c4e6f8a1d3c5e7f9b0a2c4",
     circle_name: "Community Project",
+    circleId: "3",
     amount: 35,
     token_symbol: "USDC",
     payout_date: "2026-07-02T11:30:00Z",
@@ -93,6 +99,7 @@ export const MOCK_PAYOUT_HISTORY: PayoutRecord[] = [
   {
     transaction_hash: "0x3c5e7f9b0a2c4e6f8a1d3c5e7f9b0a2c4e6f8a1d3c5e7f9b0a2c4e6f8a1d3c",
     circle_name: "Emergency Fund",
+    circleId: "5",
     amount: 60,
     token_symbol: "USDC",
     payout_date: "2026-06-11T18:40:00Z",
