@@ -6,6 +6,8 @@
  * library while still producing a paginated, styled document.
  */
 
+import { toMachineReadableAmount } from "@/lib/currencyFormat";
+
 export type ExportFormat = "csv" | "pdf";
 
 /** One row of exported history. Columns are fixed by the export spec. */
@@ -47,7 +49,13 @@ function escapeCsvField(value: unknown): string {
 export function buildCsv(rows: ExportRow[]): string {
   const header = COLUMNS.map((c) => escapeCsvField(c.label)).join(",");
   const body = rows.map((row) =>
-    COLUMNS.map((c) => escapeCsvField(row[c.key])).join(",")
+    COLUMNS.map((c) => {
+      let val = row[c.key];
+      if (c.key === "amount") {
+        val = toMachineReadableAmount(val);
+      }
+      return escapeCsvField(val);
+    }).join(",")
   );
   // Leading BOM so Excel reads UTF-8 correctly.
   return `﻿${[header, ...body].join("\r\n")}`;

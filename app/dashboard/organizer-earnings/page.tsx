@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, TrendingUp, DollarSign, Users, Calendar, Eye, ExternalLink } from "lucide-react";
 import ExportButton from "@/components/ui/ExportButton";
 import type { ExportRow } from "@/lib/export";
+import { formatCurrency } from "@/lib/currencyFormat";
 
 interface CircleEarnings {
   circleId: string;
@@ -115,9 +116,6 @@ const MOCK_TRANSACTIONS: EarningTransaction[] = [
 
 type TimeFilter = "all" | "30d" | "90d" | "year";
 
-function formatCurrency(amount: number): string {
-  return `${amount.toFixed(2)} USDT`;
-}
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {

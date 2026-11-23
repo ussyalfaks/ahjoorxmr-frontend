@@ -6,6 +6,7 @@ import { ArrowLeft, BarChart3, TrendingUp, Users, DollarSign } from "lucide-reac
 import Link from "next/link";
 import ContributionFiatValueChart, { type ContributionRecord } from "@/components/charts/ContributionFiatValueChart";
 import ChartDataTable, { ChartViewToggle } from "@/components/charts/ChartDataTable";
+import { formatCurrency, formatNumber } from "@/lib/currencyFormat";
 
 interface Round {
   round: number;
@@ -87,7 +88,7 @@ function ContributionTrendChart({ rounds }: { rounds: Round[] }) {
   }));
 
   const linePath = points.map((p, i) => (i === 0 ? `M${p.x},${p.y}` : `L${p.x},${p.y}`)).join(" ");
-  const chartDescription = `Line chart of ${rounds.length} rounds. Contributions ranged from ${Math.min(...rounds.map((r) => r.contributions)).toLocaleString()} to ${maxContribution.toLocaleString()} USDT per round.`;
+  const chartDescription = `Line chart of ${rounds.length} rounds. Contributions ranged from ${formatCurrency(Math.min(...rounds.map((r) => r.contributions)), "USDT")} to ${formatCurrency(maxContribution, "USDT")} per round.`;
 
   return (
     <div className="rounded-2xl bg-[var(--modal)] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.28)]">
@@ -115,9 +116,9 @@ function ContributionTrendChart({ rounds }: { rounds: Round[] }) {
             ]}
             rows={rounds.map((round) => ({
               round: `Round ${round.round}`,
-              contributions: round.contributions.toLocaleString(),
+              contributions: formatNumber(round.contributions),
               contributors: round.contributors,
-              paidOut: round.paidOut.toLocaleString(),
+              paidOut: formatNumber(round.paidOut),
               completedAt: round.completedAt,
             }))}
           />
@@ -165,7 +166,7 @@ function ContributionTrendChart({ rounds }: { rounds: Round[] }) {
         {rounds.map((round) => (
           <div key={round.round} className="bg-[var(--content)] rounded-lg p-3">
             <p className="text-xs text-[var(--muted)] font-medium mb-1">Round {round.round}</p>
-            <p className="text-sm font-semibold text-[var(--text)]">{round.contributions.toLocaleString()} USDT</p>
+            <p className="text-sm font-semibold text-[var(--text)]">{formatCurrency(round.contributions, "USDT")}</p>
             <p className="text-xs text-[var(--muted)]">{round.contributors} contributors</p>
           </div>
         ))}
@@ -269,14 +270,14 @@ export default function CircleAnalyticsPage({ params }: { params: Promise<{ id: 
             <DollarSign className="h-4 w-4" />
             <span className="text-xs font-medium uppercase tracking-[0.2em]">Total Saved</span>
           </div>
-          <p className="mt-3 text-2xl font-bold text-[var(--text)]">{analytics.totalSaved.toLocaleString()} USDT</p>
+          <p className="mt-3 text-2xl font-bold text-[var(--text)]">{formatCurrency(analytics.totalSaved, "USDT")}</p>
         </div>
         <div className="rounded-2xl bg-[var(--modal)] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.28)]">
           <div className="flex items-center gap-2 text-[var(--muted)]">
             <TrendingUp className="h-4 w-4" />
             <span className="text-xs font-medium uppercase tracking-[0.2em]">Total Paid Out</span>
           </div>
-          <p className="mt-3 text-2xl font-bold text-[var(--text)]">{analytics.totalPaidOut.toLocaleString()} USDT</p>
+          <p className="mt-3 text-2xl font-bold text-[var(--text)]">{formatCurrency(analytics.totalPaidOut, "USDT")}</p>
         </div>
         <div className="rounded-2xl bg-[var(--modal)] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.28)]">
           <div className="flex items-center gap-2 text-[var(--muted)]">

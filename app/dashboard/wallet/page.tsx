@@ -23,6 +23,7 @@ import AddressBookSection from "@/components/wallet/AddressBookSection";
 import SendTransferModal from "@/components/wallet/SendTransferModal";
 import TwoFactorChallengeModal from "@/components/settings/TwoFactorChallengeModal";
 import { LowBalanceAlertBanner, LowBalanceAlertSettings } from "@/components/wallet/LowBalanceAlert";
+import { formatCurrency } from "@/lib/currencyFormat";
 import { isTwoFactorEnabled } from "@/lib/twoFactor";
 import BalanceBreakdownWidget from "@/components/wallet/BalanceBreakdownWidget";
 import { FriendbotButton } from "@/components/wallet/FriendbotButton";
@@ -323,7 +324,7 @@ export default function WalletPage() {
                   <div className="flex items-center gap-3 mt-1 text-xs text-[var(--muted)]">
                     <span>{AVAILABLE_WALLETS.find(w => w.id === wallet.walletId)?.name || wallet.walletId}</span>
                     <span className="w-1 h-1 rounded-full bg-[var(--ov-1a)]"></span>
-                    <span>${wallet.balance?.toLocaleString()}</span>
+                    <span>{wallet.balance !== undefined ? formatCurrency(wallet.balance, "USD") : "—"}</span>
                   </div>
                 </div>
               </div>
