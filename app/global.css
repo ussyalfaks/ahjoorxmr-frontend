@@ -233,6 +233,33 @@ body {
 }
 
 /* ============================================================
+   RTL Layout & Logical Properties Support
+   ============================================================ */
+
+/* Text alignment defaults for RTL */
+[dir="rtl"] {
+  text-align: start;
+}
+
+/* Ensure table headers and cells align to start in both LTR and RTL */
+table th,
+table td {
+  text-align: start;
+}
+
+/* Mirror directional icons in RTL */
+[dir="rtl"] .rtl-flip,
+[dir="rtl"] [data-rtl-flip="true"],
+[dir="rtl"] .lucide-arrow-right,
+[dir="rtl"] .lucide-arrow-left,
+[dir="rtl"] .lucide-chevron-right,
+[dir="rtl"] .lucide-chevron-left,
+[dir="rtl"] .lucide-arrow-up-right,
+[dir="rtl"] .lucide-log-out {
+  transform: scaleX(-1);
+}
+
+/* ============================================================
    Print styles — payout receipt
    Scoped to .receipt-root so these rules only fire on the
    dedicated receipt route, not anywhere else in the app.

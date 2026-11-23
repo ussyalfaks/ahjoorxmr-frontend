@@ -20,6 +20,7 @@ import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { useToast } from "@/components/ui/Toast";
 import { INVITE_REF_PARAM, markInviteStatus } from "@/lib/circleInvites";
 import { CURRENT_WALLET, filterCirclesByQuery, type DiscoverCircle } from "@/data/circles";
+import { getStoredCircles, saveStoredCircle, CIRCLE_RENEWAL_UPDATED_EVENT } from "@/lib/circleRenewal";
 import { useCircles } from "@/lib/hooks/useCircles";
 import { queryKeys } from "@/lib/queryKeys";
 import { SavingsCardSkeletonGrid } from "@/components/skeleton/SavingsCardSkeleton";
@@ -157,9 +158,18 @@ function CirclesContent() {
   // Circle list now comes from the typed API client (lib/api) via TanStack
   // Query instead of a direct `data/circles.ts` import.
   const { data: fetchedCircles, isLoading, isError } = useCircles();
-  // Circles created locally in this session (there is no real backend to
-  // persist them to) are layered on top of whatever the query returns.
-  const [localCircles, setLocalCircles] = useState<DiscoverCircle[]>([]);
+  // Circles created locally or renewed from previous cycles
+  const [localCircles, setLocalCircles] = useState<DiscoverCircle[]>(() => getStoredCircles());
+
+  useEffect(() => {
+    const sync = () => {
+      setLocalCircles(getStoredCircles());
+    };
+    sync();
+    window.addEventListener(CIRCLE_RENEWAL_UPDATED_EVENT, sync);
+    return () => window.removeEventListener(CIRCLE_RENEWAL_UPDATED_EVENT, sync);
+  }, []);
+
   const circles = useMemo(
     () => [...localCircles, ...(fetchedCircles ?? [])],
     [localCircles, fetchedCircles]
@@ -250,7 +260,8 @@ function CirclesContent() {
       penaltyType: data.penaltyType,
       penaltyValue: data.penaltyValue,
     };
-    setLocalCircles((current) => [newCircle, ...current]);
+    saveStoredCircle(newCircle as any);
+    setLocalCircles((current) => [newCircle, ...current.filter((c) => c.id !== newCircle.id)]);
     setDuplicateValues(undefined);
     // No real "create circle" endpoint yet; invalidating keeps the list in
     // sync with the server once one exists, same as the join-circle flow.
