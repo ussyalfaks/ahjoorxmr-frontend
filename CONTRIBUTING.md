@@ -1,6 +1,6 @@
-# Contributing to Ahjoorxmr Frontend
+# Contributing to Ahjoor Frontend
 
-Thank you for your interest in contributing to the Ahjoorxmr Frontend project! We welcome contributions from the community and appreciate your help in making this project better.
+Thank you for your interest in contributing to Ahjoor! We welcome contributions from the community and appreciate your help in making the project better.
 
 ## Table of Contents
 
@@ -17,15 +17,15 @@ Before you begin contributing, please:
 
 1. Read through this contributing guide
 2. Review the [README.md](./README.md) for project overview
-3. Check existing [issues](https://github.com/jaynomyaks/ahjoorxmr-frontend/issues) and [pull requests](https://github.com/jaynomyaks/ahjoorxmr-frontend/pulls)
+3. Check existing [issues](https://github.com/nikkybel/ahjoorxmr-frontend/issues) and [pull requests](https://github.com/nikkybel/ahjoorxmr-frontend/pulls)
 4. Join our community discussions if available
 
 ## Setup Instructions
 
 ### Prerequisites
 
-- Node.js (v18 or higher recommended)
-- npm or yarn package manager
+- Node.js 20 or later
+- pnpm 9 (the version used by CI)
 - Git
 
 ### Local Development Setup
@@ -44,33 +44,23 @@ Before you begin contributing, please:
 3. **Add upstream remote**
    
    ```bash
-   git remote add upstream https://github.com/jaynomyaks/ahjoorxmr-frontend.git
+   git remote add upstream https://github.com/nikkybel/ahjoorxmr-frontend.git
    ```
 
 4. **Install dependencies**
    
    ```bash
-   npm install
-   # or
-   yarn install
+   pnpm install --frozen-lockfile
    ```
 
 5. **Set up environment variables**
    
-   Copy the example environment file and configure it:
-   
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Fill in the required environment variables in `.env.local`.
+   Copy `.env.example` to `.env.local` and adjust values if needed. The variables are optional for local development; see the [README environment-variable reference](./README.md#environment-variables).
 
 6. **Run the development server**
    
    ```bash
-   npm run dev
-   # or
-   yarn dev
+   pnpm dev
    ```
    
    Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -98,9 +88,9 @@ We follow a structured branching strategy to keep the codebase organized:
 1. **Always branch from the latest main**
    
    ```bash
-   git checkout main
+   git switch main
    git pull upstream main
-   git checkout -b feat/123-your-feature
+   git switch -c feat/123-your-feature
    ```
 
 2. **Keep your branch up to date**
@@ -108,9 +98,9 @@ We follow a structured branching strategy to keep the codebase organized:
    Regularly sync with the main branch:
    
    ```bash
-   git checkout main
+   git switch main
    git pull upstream main
-   git checkout feat/123-your-feature
+   git switch feat/123-your-feature
    git rebase main
    ```
 
@@ -125,7 +115,7 @@ We follow a structured branching strategy to keep the codebase organized:
 ### Before Submitting a PR
 
 - [ ] Ensure your code follows the project's code standards
-- [ ] Test your changes locally
+- [ ] Run the relevant checks locally (see [Testing](#testing))
 - [ ] Update documentation if needed
 - [ ] Ensure all tests pass
 - [ ] Rebase your branch on the latest main
@@ -177,6 +167,7 @@ We follow a structured branching strategy to keep the codebase organized:
 1. Delete your feature branch:
    
    ```bash
+   git switch main
    git branch -d feat/123-your-feature
    git push origin --delete feat/123-your-feature
    ```
@@ -184,7 +175,7 @@ We follow a structured branching strategy to keep the codebase organized:
 2. Update your local main:
    
    ```bash
-   git checkout main
+   git switch main
    git pull upstream main
    ```
 
@@ -195,7 +186,7 @@ We follow a structured branching strategy to keep the codebase organized:
 - Use TypeScript for all new code
 - Follow existing code style and conventions
 - Use meaningful variable and function names
-- Add comments for complex logic
+- Add comments only where they clarify non-obvious logic
 - Keep functions small and focused
 
 ### React Components
@@ -216,7 +207,14 @@ We follow a structured branching strategy to keep the codebase organized:
 
 - Write tests for new features
 - Update existing tests when modifying code
-- Ensure all tests pass before submitting PR
+- Ensure relevant checks pass before submitting a PR:
+  ```bash
+  pnpm run lint
+  pnpm run typecheck
+  pnpm run test
+  pnpm run build
+  ```
+- For end-to-end tests, run `pnpm run test:e2e`. Install the Playwright browser first with `pnpm exec playwright install chromium`.
 
 ## Commit Message Guidelines
 
@@ -270,4 +268,4 @@ Please be respectful and constructive in all interactions. We are committed to p
 
 ---
 
-Thank you for contributing to Ahjoorxmr Frontend! 🚀
+Thank you for contributing to Ahjoor! 🚀
