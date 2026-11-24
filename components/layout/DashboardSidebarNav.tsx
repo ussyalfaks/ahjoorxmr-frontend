@@ -7,10 +7,10 @@ import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
 import { isNavigationItemActive, NAV_ITEMS } from "@/components/layout/dashboardNavigation";
 
 const ACTIVE_NAV_LINK_CLASS =
-  "flex items-center gap-3 px-4 py-3 text-[var(--text)] bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]";
+  "flex items-center gap-3 px-4 py-3 text-[var(--text)] bg-[var(--ov-0a)] rounded-lg transition-colors border-s-2 border-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]";
 
 const NAV_LINK_CLASS =
-  "flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-l-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]";
+  "flex items-center gap-3 px-4 py-3 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded-lg transition-colors border-s-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]";
 
 export default function DashboardSidebarNav() {
   const pathname = usePathname();

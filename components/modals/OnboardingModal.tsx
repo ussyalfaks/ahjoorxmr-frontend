@@ -44,7 +44,7 @@ export default function OnboardingModal() {
       >
         <button
           onClick={dismiss}
-          className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+          className="absolute top-4 end-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
           aria-label="Skip onboarding"
         >
           <X size={20} />

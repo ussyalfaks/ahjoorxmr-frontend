@@ -28,6 +28,8 @@ import {
   type FaqItem,
 } from "@/lib/circleFaq";
 import { getParticipantProfile, getTrustScore } from "@/lib/participantProfile";
+import CircleAutoRenewCard from "@/components/circles/CircleAutoRenewCard";
+import { getStoredCircle } from "@/lib/circleRenewal";
 
 const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
@@ -108,7 +110,25 @@ export default function CircleSettingsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const circle = CIRCLES[id];
+  const storedCircle = getStoredCircle(id);
+  const circle: SettingsCircle | null =
+    CIRCLES[id] ??
+    (storedCircle
+      ? {
+          id: storedCircle.id,
+          name: storedCircle.name,
+          description: storedCircle.description ?? "",
+          creator: storedCircle.creator,
+          status: storedCircle.status,
+          participants: (storedCircle.participants ?? []).map((p) => ({
+            address: p.address,
+            role: p.role,
+          })),
+          contribution: storedCircle.contribution,
+          duration: storedCircle.duration,
+          hasContributions: false,
+        }
+      : null);
   const { showToast } = useToast();
 
   const [name, setName] = useState(circle?.name ?? "");
@@ -561,6 +581,24 @@ export default function CircleSettingsPage({
           )}
         </section>
       )}
+
+      {/* Auto-Renew & Next Cycle Section */}
+      <CircleAutoRenewCard
+        circle={
+          storedCircle ?? {
+            id: circle.id,
+            name: circle.name,
+            creator: circle.creator,
+            status: circle.status,
+            currentRound: 1,
+            totalRounds: circle.participants.length,
+            contribution: circle.contribution,
+            duration: circle.duration,
+            participants: circle.participants,
+          }
+        }
+        currentWallet={CURRENT_WALLET}
+      />
 
       <CircleInvitePanel circleId={circle.id} circleName={circle.name} />
 

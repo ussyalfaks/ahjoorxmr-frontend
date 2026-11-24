@@ -47,19 +47,8 @@ import { detectCircleMilestones, celebrateMilestone } from "@/lib/milestoneCeleb
 import { recordLeftCircle } from "@/lib/circleRecommendations";
 import CirclePausedBanner from "@/components/circles/CirclePausedBanner";
 import ContactDirectory from "@/components/circles/ContactDirectory";
-import { parseContribution } from "@/lib/contributionBreakdown";
-import { buildSettlementReport, type SettlementReport } from "@/lib/settlementReport";
-import {
-  getContributionAmountDue,
-  getContributionCreditBalance,
-  type ContributionCreditEntry,
-} from "@/lib/contributionCredit";
-import {
-  CONTRIBUTION_CREDITS_UPDATED_EVENT,
-  getContributionCreditLedger,
-  recordContributionPayment,
-  refundCompletedCircleCredits,
-} from "@/lib/contributionCreditStore";
+import CircleAutoRenewCard from "@/components/circles/CircleAutoRenewCard";
+import { getStoredCircle } from "@/lib/circleRenewal";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -402,10 +391,10 @@ function RoundHistoryTable({ rows }: { rows: RoundHistoryRow[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--ov-0a)]">
-            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Round</th>
-            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Recipient</th>
-            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Payout</th>
-            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Completed</th>
+            <th className="text-start text-xs text-[var(--muted)] font-medium px-4 py-3">Round</th>
+            <th className="text-start text-xs text-[var(--muted)] font-medium px-4 py-3">Recipient</th>
+            <th className="text-start text-xs text-[var(--muted)] font-medium px-4 py-3">Payout</th>
+            <th className="text-start text-xs text-[var(--muted)] font-medium px-4 py-3">Completed</th>
           </tr>
         </thead>
         <tbody>
@@ -429,7 +418,17 @@ export default function CircleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const circle = CIRCLES[id];
+  const rawCircle = CIRCLES[id] ?? getStoredCircle(id);
+  const circle = useMemo(() => {
+    if (!rawCircle) return null;
+    return {
+      ...rawCircle,
+      isOrganizer: rawCircle.creator.toLowerCase() === CURRENT_WALLET.toLowerCase(),
+      isMember: rawCircle.participants.some(
+        (p) => p.address.toLowerCase() === CURRENT_WALLET.toLowerCase()
+      ),
+    };
+  }, [rawCircle]);
   const { showToast } = useToast();
   const router = useRouter();
 
@@ -932,6 +931,13 @@ export default function CircleDetailPage({
         hidden={activeTab !== "overview"}
         className={activeTab === "overview" ? "space-y-10" : ""}
       >
+        {/* Auto-Renew & Next Cycle */}
+        <CircleAutoRenewCard
+          circle={circle}
+          currentWallet={CURRENT_WALLET}
+          onCycleCreated={(newCircleId) => router.push(`/dashboard/circles/${newCircleId}`)}
+        />
+
         {/* Circle Info */}
         <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl space-y-6">
           <div>

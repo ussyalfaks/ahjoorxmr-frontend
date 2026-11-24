@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Trophy, Flame, PiggyBank, Medal } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
+import { formatCurrency, formatNumber } from "@/lib/currencyFormat";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -223,7 +224,7 @@ export default function LeaderboardPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-sm font-semibold text-white">
-                          {entry.totalSaved.toLocaleString()} {entry.tokenSymbol}
+                          {formatCurrency(entry.totalSaved, entry.tokenSymbol)}
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <span className="inline-flex items-center gap-1.5 text-[#C7C7C7]">
@@ -278,7 +279,7 @@ export default function LeaderboardPage() {
                       <div>
                         <dt className="text-[11px] text-[#9A9A9A]">Saved</dt>
                         <dd className="mt-0.5 text-sm font-semibold text-white">
-                          {entry.totalSaved.toLocaleString()}
+                          {formatNumber(entry.totalSaved)}
                         </dd>
                       </div>
                       <div>

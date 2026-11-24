@@ -8,6 +8,7 @@ import { CONTRIBUTION_CIRCLE_OPTIONS, MOCK_CONTRIBUTIONS } from "@/data/contribu
 import type { ContributionRecord, ContributionStatus } from "@/types/contribution";
 import type { ExportRow } from "@/lib/export";
 import { useLoadMore } from "@/hooks/useLoadMore";
+import { formatCurrency } from "@/lib/currencyFormat";
 
 const STATUS_OPTIONS: Array<{ value: "all" | ContributionStatus; label: string }> = [
     { value: "all", label: "All statuses" },
@@ -44,7 +45,7 @@ function ContributionRow({ record }: { record: ContributionRecord }) {
                         <p className="mt-1 text-xs text-[var(--muted)]">Round {record.round} · Due {formatDate(record.dueDate)}</p>
                     </div>
                     <div className="text-right">
-                        <p className="font-semibold tabular-nums text-[var(--text)]">{record.amount.toLocaleString()} USDT</p>
+                        <p className="font-semibold tabular-nums text-[var(--text)]">{formatCurrency(record.amount, "USDT")}</p>
                         <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${meta.className}`}>{meta.label}</span>
                     </div>
                 </div>

@@ -1,3 +1,5 @@
+import { formatCurrency as formatCurrencyUtil } from "@/lib/currencyFormat";
+
 /**
  * Utility functions for calculating contribution breakdowns and fees
  */
@@ -128,7 +130,10 @@ export function calculateTotalMemberContribution(
  * Format currency amount with symbol
  */
 export function formatCurrency(amount: number, currency: string, decimals: number = 2): string {
-  return `${amount.toFixed(decimals)} ${currency}`;
+  return formatCurrencyUtil(amount, currency, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 }
 
 /**

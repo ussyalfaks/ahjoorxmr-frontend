@@ -1,3 +1,5 @@
+import { formatCurrency } from "@/lib/currencyFormat";
+
 /**
  * Shared payout mock data.
  * Imported by both the payout history page and the per-receipt page.
@@ -116,7 +118,7 @@ export function findPayoutByHash(txHash: string): PayoutRecord | undefined {
 }
 
 export function formatPayoutAmount(amount: number, tokenSymbol: string): string {
-  return `${amount.toLocaleString("en-US")} ${tokenSymbol}`;
+  return formatCurrency(amount, tokenSymbol);
 }
 
 export function formatPayoutDate(dateValue: string): string {
