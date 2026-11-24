@@ -21,6 +21,7 @@ import {
   resendContributionReceipt,
 } from "@/lib/contributionReceipts";
 import type { ContributionStatus } from "@/types/contribution";
+import { formatCurrency } from "@/lib/currencyFormat";
 
 // Layout mirrors the payout receipt (app/dashboard/payouts/receipt/[txHash])
 // so both emailed receipts look like the same document family.
@@ -112,7 +113,7 @@ export default function ContributionReceiptPage({
   const receiptId = getContributionReceiptId(contribution);
   const recipient = email ?? "the email address on your account";
   const subject = `Your contribution receipt — ${contribution.circleName}, Round ${contribution.round}`;
-  const amount = `${contribution.amount.toLocaleString()} USDT`;
+  const amount = formatCurrency(contribution.amount, "USDT");
 
   const handleResend = async () => {
     setSending(true);
