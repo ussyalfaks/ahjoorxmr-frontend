@@ -290,7 +290,7 @@ export default function PayoutsPage() {
           <>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-[var(--ov-0f)]">
-                <thead className="bg-[var(--ov-05)] text-left text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+                <thead className="bg-[var(--ov-05)] text-start text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
                   <tr>
                     <th scope="col" className="px-6 py-4 font-medium">
                       Circle Name

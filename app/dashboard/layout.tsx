@@ -29,7 +29,7 @@ export default function DashboardLayout({
     <ConnectionStatusProvider>
     <div className="flex min-h-screen bg-[var(--bg)] text-[var(--text)]">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex print:hidden w-[260px] flex-col border-r border-[var(--ov-0f)] bg-[var(--surface)]">
+      <aside className="hidden md:flex print:hidden w-[260px] flex-col border-e border-[var(--ov-0f)] bg-[var(--surface)]">
         <div className="p-8 flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-2 mb-12">

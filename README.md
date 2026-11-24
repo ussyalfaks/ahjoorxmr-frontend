@@ -41,10 +41,10 @@
 
 * [Next.js](https://nextjs.org/) 16 (App Router) + [React](https://react.dev/) 19, written in TypeScript.
 * [Tailwind CSS](https://tailwindcss.com/) 4 for styling.
-* [TanStack Query](https://tanstack.com/query) for server-state data fetching/caching (see `lib/api` and `lib/hooks`).
-* A typed API client layer (`lib/api`) that serves mock data locally and switches to a real HTTP backend via `NEXT_PUBLIC_API_URL` — see [Environment variables](#environment-variables).
+* [TanStack Query](https://tanstack.com/query) for server-state data fetching/caching (see `lib/api`, `lib/queryKeys.ts`, and `hooks/`).
+* A typed API client layer (`lib/api`) that serves mock data locally and switches to a real HTTP backend via `NEXT_PUBLIC_API_ADAPTER` and `NEXT_PUBLIC_API_URL` — see [API Adapters & Data Fetching Guide](docs/API_ADAPTERS.md) and [Environment variables](#environment-variables).
 
-See [Project Architecture](docs/ARCHITECTURE.md) for folder responsibilities, data flow, and conventions for adding pages and feature spotlights.
+See [Project Architecture](docs/ARCHITECTURE.md) for folder responsibilities, data flow, and conventions for adding pages and feature spotlights. Detailed step-by-step documentation on adding endpoints, working with adapters, query keys, and hooks can be found in the [API Adapters Guide](docs/API_ADAPTERS.md).
 
 ---
 

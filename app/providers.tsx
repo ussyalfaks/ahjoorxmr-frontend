@@ -7,6 +7,7 @@ import { isDevelopment } from "@/lib/env";
 import { WalletProvider } from "@/contexts/WalletContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import NetworkMismatchModal from "@/components/wallet/NetworkMismatchModal";
 
 function makeQueryClient() {
@@ -276,16 +277,18 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <DensityProvider>
-          <WalletProvider>
-            <ToastProvider>
-              {children}
-              <CookieConsent />
-            </ToastProvider>
-          </WalletProvider>
-        </DensityProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <DensityProvider>
+            <WalletProvider>
+              <ToastProvider>
+                {children}
+                <CookieConsent />
+              </ToastProvider>
+            </WalletProvider>
+          </DensityProvider>
+        </ThemeProvider>
+      </LanguageProvider>
       {isDevelopment && (
         <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
       )}
