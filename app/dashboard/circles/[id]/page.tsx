@@ -51,6 +51,12 @@ import CirclePausedBanner from "@/components/circles/CirclePausedBanner";
 import ContactDirectory from "@/components/circles/ContactDirectory";
 import CircleAutoRenewCard from "@/components/circles/CircleAutoRenewCard";
 import { getStoredCircle } from "@/lib/circleRenewal";
+import {
+  getContributionCreditLedger,
+  getCircleReserveBalance,
+  distributeCompletedCircleReserve,
+  type ContributionCreditEntry,
+} from "@/lib/contributionCreditStore";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -482,6 +488,19 @@ export default function CircleDetailPage({
           variant: "success",
         });
       }
+      // Distribute leftover reserve back to members proportionally
+      const reserveDistributions = distributeCompletedCircleReserve(
+        circle.id,
+        circle.participants.map((p) => p.address)
+      );
+      if (reserveDistributions.length > 0) {
+        setCreditLedger(getContributionCreditLedger());
+        showToast({
+          title: "Reserve distributed",
+          message: `${reserveDistributions.length} member${reserveDistributions.length === 1 ? "" : "s"} received reserve distributions.`,
+          variant: "success",
+        });
+      }
     } catch (error) {
       showToast({
         title: "Could not refund contribution credits",
@@ -708,6 +727,14 @@ export default function CircleDetailPage({
     CURRENT_WALLET,
     contributionAmount.amount
   );
+  const currentReserveBalance = getCircleReserveBalance(circle.id);
+  const circleReserveConfig = (circle as any).reserveEnabled
+    ? {
+        enabled: true,
+        percentage: (circle as any).reservePercentage || 0,
+        balance: currentReserveBalance,
+      }
+    : null;
   const currentRoundPaymentRecorded = creditLedger.some(
     (entry) =>
       entry.type === "payment" &&
@@ -771,12 +798,15 @@ export default function CircleDetailPage({
     const paidAmount = Number(paymentAmount);
     if (!Number.isFinite(paidAmount) || paidAmount < 0) return;
     try {
+      const reservePercentage = circleReserveConfig?.percentage || 0;
       const result = recordContributionPayment({
         circleId: circle.id,
         memberAddress: CURRENT_WALLET,
         round: circle.currentRound,
         requiredAmount: contributionAmount.amount,
         paidAmount,
+        reservePercentage,
+        reserveBalance: currentReserveBalance,
       });
       setCreditLedger(result.entries);
       setShowContributionForm(false);
@@ -787,6 +817,9 @@ export default function CircleDetailPage({
           : "",
         result.overpayment > 0
           ? `${formatSettlementAmount(result.overpayment, contributionAmount.currency)} added as credit.`
+          : "",
+        result.reserveContributed > 0
+          ? `${formatSettlementAmount(result.reserveContributed, contributionAmount.currency)} added to reserve.`
           : "",
       ].filter(Boolean);
       showToast({
@@ -965,6 +998,28 @@ export default function CircleDetailPage({
               <p className="text-lg font-semibold text-[var(--text)]">{circle.currentRound} / {circle.totalRounds}</p>
             </div>
           </div>
+          {/* Reserve / Emergency Fund — shown when enabled */}
+          {(circle as any).reserveEnabled && (
+            <div className="mt-4 pt-4 border-t border-[var(--ov-14)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-[var(--muted)] mb-0.5">Reserve / Emergency Fund</p>
+                  <p className="text-sm text-[var(--text)]">
+                    {(circle as any).reservePercentage || 0}% of each contribution
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-[var(--muted)] mb-0.5">Reserve Balance</p>
+                  <p className="text-lg font-semibold text-[var(--text)]">
+                    {formatSettlementAmount(currentReserveBalance, contributionAmount.currency)}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                <strong className="text-[var(--text)]">How it works:</strong> Each member contributes {(circle as any).reservePercentage || 0}% of their payment into a shared reserve. If a member misses a payment, the reserve covers the shortfall so payouts stay on schedule. At the end of the circle, any unused reserve is split back to members proportionally.
+              </p>
+            </div>
+          )}
           <p className="text-xs text-[var(--muted)]">Created {circle.createdAt}</p>
         </div>
 {/* Waitlist position — only meaningful for a non-member with a pending join request. */}

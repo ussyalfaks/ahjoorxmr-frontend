@@ -242,6 +242,9 @@ export interface RenewCircleCycleParams {
     penaltyValue?: string;
     penalty?: { enabled: boolean; type: "percentage" | "fixed"; value: string };
     totalSlots?: number;
+    reserveEnabled?: boolean;
+    reservePercentage?: number;
+    reserveBalance?: number;
   };
   config: CircleRenewalConfig;
   currentWallet?: string;
@@ -319,6 +322,8 @@ export function renewCircleCycle({
     parentCircle.penaltyType ?? parentCircle.penalty?.type ?? "percentage";
   const penaltyValue =
     parentCircle.penaltyValue ?? parentCircle.penalty?.value ?? "10";
+  const reserveEnabled = parentCircle.reserveEnabled ?? false;
+  const reservePercentage = parentCircle.reservePercentage ?? 0;
 
   const newCircle: StoredCycleCircle = {
     id: newCircleId,
@@ -334,6 +339,9 @@ export function renewCircleCycle({
     penaltyEnabled,
     penaltyType,
     penaltyValue,
+    reserveEnabled,
+    reservePercentage,
+    reserveBalance: 0,
     currentRound: 1,
     totalRounds: optedInAddresses.length,
     status: "active",

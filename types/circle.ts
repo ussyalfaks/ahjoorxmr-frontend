@@ -12,6 +12,7 @@ export interface Circle {
   deadline?: Date | null;
   contributionButtonLabel: string;
   claimButtonVariant: "primary" | "secondary" | "disabled";
+  reserve?: ReserveConfig;
 }
 
 export type PenaltyType = "fixed" | "percentage";
@@ -20,6 +21,15 @@ export interface PenaltyConfig {
   enabled: boolean;
   type: PenaltyType;
   value: string;
+}
+
+/** Reserve / emergency fund configuration for a circle. */
+export interface ReserveConfig {
+  enabled: boolean;
+  /** Percentage of each contribution (0-100) set aside into the reserve. */
+  percentage: number;
+  /** Current reserve balance available to cover missed contributions. */
+  balance: number;
 }
 
 export type JoinRequestStatus = "pending" | "approved" | "rejected";

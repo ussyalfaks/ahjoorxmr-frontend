@@ -145,6 +145,19 @@ export default function CircleGridCard({
           </div>
         </div>
       </div>
+      {/* Reserve indicator — shown when enabled */}
+      {circle.reserveEnabled && circle.reservePercentage && (
+        <div className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+            {circle.reservePercentage}% Reserve
+          </span>
+          {circle.reserveBalance !== undefined && circle.reserveBalance > 0 && (
+            <span className="text-[var(--text)] font-medium">
+              Balance: {circle.reserveBalance} USDT
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Member fill bar */}
       <div
