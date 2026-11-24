@@ -2,7 +2,8 @@ export type MilestoneType =
   | "circle_completed"
   | "payout_received"
   | "savings_goal"
-  | "streak";
+  | "streak"
+  | "annual_summary";
 
 export interface MilestoneData {
   type: MilestoneType;

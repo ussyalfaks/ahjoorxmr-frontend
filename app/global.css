@@ -13,6 +13,9 @@
 }
 
 :root {
+  /* Base font size for accessibility scaling */
+  --base-font-size: 16px;
+
   /* Light theme (default) */
   --bg: #ffffff;
   --bg2: #f3f3f8;
@@ -33,14 +36,27 @@
   --text: #101014;
   --muted: #5b5b68;
   --muted2: #3d3d47;
-  --faint: #a8a8b4;
+  /* Faint is used for secondary text (timestamps, captions, placeholders), so
+     it must still clear WCAG AA 4.5:1 on --card2, the darkest light surface. */
+  --faint: #676773;
   --nav-bg: rgba(255, 255, 255, 0.82);
   --white: #ffffff;
 
   /* Status text colors. The dark-theme values are bright and only legible on a
      dark surface, so light theme uses darkened equivalents. */
-  --success: #15803d;
+  --success: #166534;
   --info: #1d63c4;
+
+  /* Status badges (paid / on-time, late, pending, missed). Foregrounds are
+     checked against their own tint composited over --card2 and meet 4.5:1. */
+  --status-paid: #065f46;
+  --status-paid-bg: rgba(16, 185, 129, 0.12);
+  --status-late: #92400e;
+  --status-late-bg: rgba(245, 158, 11, 0.12);
+  --status-pending: #92400e;
+  --status-pending-bg: rgba(245, 158, 11, 0.12);
+  --status-missed: #991b1b;
+  --status-missed-bg: rgba(239, 68, 68, 0.12);
 
   /* Subtle tint overlays (hover states, dividers, faint fills) — black-based
      in light theme, white-based in dark theme. Suffix matches the alpha hex
@@ -61,6 +77,17 @@
   color-scheme: light;
 }
 
+/* High contrast mode - overrides text colors for better readability */
+html.high-contrast {
+  --text: #000000 !important;
+  --muted: #1a1a1a !important;
+}
+
+html.high-contrast.dark {
+  --text: #ffffff !important;
+  --muted: #e5e5e5 !important;
+}
+
 .dark {
   /* Dark theme — matches the app's original hardcoded palette. */
   --bg: #0a0a0f;
@@ -77,10 +104,19 @@
   --text: #eeeef8;
   --muted: #a1a1aa;
   --muted2: #c0c0c0;
-  --faint: #555555;
+  --faint: #94949f;
   --nav-bg: rgba(10, 10, 15, 0.82);
   --success: #4ADE80;
   --info: #8FC7FF;
+
+  --status-paid: #34d399;
+  --status-paid-bg: rgba(16, 185, 129, 0.15);
+  --status-late: #fbbf24;
+  --status-late-bg: rgba(245, 158, 11, 0.15);
+  --status-pending: #fbbf24;
+  --status-pending-bg: rgba(245, 158, 11, 0.15);
+  --status-missed: #fca5a5;
+  --status-missed-bg: rgba(239, 68, 68, 0.15);
 
   --ov-03: rgba(255, 255, 255, 0.012);
   --ov-05: rgba(255, 255, 255, 0.02);
@@ -106,7 +142,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
-  font-size: 16px;
+  font-size: var(--base-font-size, 16px);
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -136,6 +172,12 @@ body {
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* Milestone celebration card entrance (skipped under prefers-reduced-motion) */
+@keyframes celebrate-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .animate-fade-up {
@@ -171,6 +213,51 @@ body {
 .delay-3 { animation-delay: 0.3s; }
 .delay-4 { animation-delay: 0.4s; }
 .delay-5 { animation-delay: 0.5s; }
+
+/* Respect the OS "reduce motion" setting: drop non-essential animations,
+   transitions and smooth scrolling. JS-driven animations use the
+   usePrefersReducedMotion hook instead. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   RTL Layout & Logical Properties Support
+   ============================================================ */
+
+/* Text alignment defaults for RTL */
+[dir="rtl"] {
+  text-align: start;
+}
+
+/* Ensure table headers and cells align to start in both LTR and RTL */
+table th,
+table td {
+  text-align: start;
+}
+
+/* Mirror directional icons in RTL */
+[dir="rtl"] .rtl-flip,
+[dir="rtl"] [data-rtl-flip="true"],
+[dir="rtl"] .lucide-arrow-right,
+[dir="rtl"] .lucide-arrow-left,
+[dir="rtl"] .lucide-chevron-right,
+[dir="rtl"] .lucide-chevron-left,
+[dir="rtl"] .lucide-arrow-up-right,
+[dir="rtl"] .lucide-log-out {
+  transform: scaleX(-1);
+}
 
 /* ============================================================
    Print styles — payout receipt

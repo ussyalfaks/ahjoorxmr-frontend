@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useUndoableRemoval } from "@/hooks/useUndoableRemoval";
 import Link from "next/link";
 import {
   Bell,
+  ChevronDown,
+  ChevronUp,
   CheckCircle2,
   DollarSign,
   AlertCircle,
@@ -13,103 +16,25 @@ import {
   UserPlus,
   UserMinus,
   Megaphone,
+  Repeat,
+  Send,
+  PauseCircle,
+  PlayCircle,
+  AlarmClock,
 } from "lucide-react";
 import type { Notification, NotificationType, NotificationCategory } from "@/types/notification";
 import { NOTIFICATION_CATEGORIES } from "@/types/notification";
-
-// Mock notification data
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    type: "your_turn",
-    title: "It's Your Turn",
-    description: "You're next to receive the payout in Family Savings circle.",
-    timestamp: new Date(Date.now() - 5 * 60 * 1000),
-    href: "/dashboard",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "round_complete",
-    title: "Round Completed",
-    description: "Round 2 of School Fees circle has been completed.",
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    href: "/dashboard",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "payout_ready",
-    title: "Payout Ready",
-    description: "Your payout of 200 USDT is ready to claim.",
-    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    href: "/dashboard",
-    read: false,
-  },
-  {
-    id: "4",
-    type: "missed_contribution",
-    title: "Missed Contribution",
-    description: "A member missed their contribution in Community Fund.",
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    href: "/dashboard/circles",
-    read: true,
-  },
-  {
-    id: "5",
-    type: "payout_ready",
-    title: "Payout Ready",
-    description: "Your payout of 150 USDC is ready to claim from Wedding Fund.",
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    href: "/dashboard",
-    read: true,
-  },
-  {
-    id: "6",
-    type: "round_complete",
-    title: "Round Completed",
-    description: "Round 1 of Car Repairs circle has been completed.",
-    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    href: "/dashboard",
-    read: true,
-  },
-  {
-    id: "7",
-    type: "missed_contribution",
-    title: "Missed Contribution",
-    description: "Emeka missed their contribution in Family Savings.",
-    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    href: "/dashboard/circles",
-    read: true,
-  },
-  {
-    id: "8",
-    type: "your_turn",
-    title: "It's Your Turn",
-    description: "You're next to receive the payout in Travel Fund circle.",
-    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    href: "/dashboard",
-    read: true,
-  },
-  {
-    id: "9",
-    type: "payout_ready",
-    title: "Payout Ready",
-    description: "Your payout of 75 STRK is ready to claim.",
-    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    href: "/dashboard",
-    read: true,
-  },
-  {
-    id: "10",
-    type: "round_complete",
-    title: "Round Completed",
-    description: "Round 3 of Savings Challenge circle has been completed.",
-    timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    href: "/dashboard",
-    read: true,
-  },
-];
+import { MOCK_NOTIFICATIONS } from "@/data/notifications";
+import RelativeTime from "@/components/ui/RelativeTime";
+import { useLoadMore } from "@/hooks/useLoadMore";
+import {
+  getActiveNotificationSnoozes,
+  getExpiredNotificationIds,
+  NOTIFICATION_SNOOZE_OPTIONS,
+  NOTIFICATIONS_EVENT,
+  restoreNotification,
+  snoozeNotification,
+} from "@/lib/notifications";
 
 const TYPE_CONFIG: Record<
   NotificationType,
@@ -122,20 +47,12 @@ const TYPE_CONFIG: Record<
   join_request: { icon: UserPlus, color: "text-[#4B6B76]" },
   member_left: { icon: UserMinus, color: "text-[#FF5B5B]" },
   announcement: { icon: Megaphone, color: "text-[#4B6B76]" },
+  seat_transfer: { icon: Repeat, color: "text-[#4B6B76]" },
+  circle_invite: { icon: Send, color: "text-[#4B6B76]" },
+  circle_paused: { icon: PauseCircle, color: "text-[#FBBF24]" },
+  circle_resumed: { icon: PlayCircle, color: "text-[var(--success)]" },
 };
 
-function relativeTime(date: Date): string {
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
 
 function getFilterLabel(filter: NotificationCategory): string {
   const labels: Record<NotificationCategory, string> = {
@@ -143,6 +60,7 @@ function getFilterLabel(filter: NotificationCategory): string {
     payouts: "Payouts",
     contributions: "Contributions",
     system: "System",
+    snoozed: "Snoozed",
   };
   return labels[filter];
 }
@@ -150,8 +68,7 @@ function getFilterLabel(filter: NotificationCategory): string {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [selectedFilter, setSelectedFilter] = useState<NotificationCategory>("all");
-  const [itemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("ahjoorxmr:notifications") ?? "[]") as Array<Omit<Notification, "timestamp"> & { timestamp: string }>;
@@ -160,15 +77,60 @@ export default function NotificationsPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotifications((current) => [...stored.map((notification) => ({ ...notification, timestamp: new Date(notification.timestamp) })), ...current]);
     }
+    try {
+      setGroupingEnabled(localStorage.getItem(NOTIFICATION_GROUPING_STORAGE_KEY) !== "false");
+    } catch {
+      // Keep grouping enabled when preferences cannot be read.
+    }
   }, []);
 
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  useEffect(() => {
+    const syncSnoozes = (event?: Event) => {
+      const { snoozedUntil: activeSnoozes, expiredIds } = getActiveNotificationSnoozes();
+      const returnedIds = event ? getExpiredNotificationIds(event) : [];
+      setSnoozedUntil(activeSnoozes);
+      const unreadIds = new Set([...expiredIds, ...returnedIds]);
+      if (unreadIds.size > 0) {
+        setNotifications((current) =>
+          current.map((notification) =>
+            unreadIds.has(notification.id) ? { ...notification, read: false } : notification
+          )
+        );
+      }
+    };
+    const handleChange = (event: Event) => syncSnoozes(event);
+    syncSnoozes();
+    const interval = setInterval(() => syncSnoozes(), 30 * 1000);
+    window.addEventListener(NOTIFICATIONS_EVENT, handleChange);
+    window.addEventListener("storage", handleChange);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(NOTIFICATIONS_EVENT, handleChange);
+      window.removeEventListener("storage", handleChange);
+    };
+  }, []);
+
+  // #245: dismissing a notification is destructive (there's no "view
+  // deleted notifications" anywhere), so it goes through the shared
+  // undo-toast flow instead of filtering `notifications` directly —
+  // `pendingIds` hides it from view immediately, but the real removal
+  // from `notifications` only happens if the 5s undo window closes.
+  const { remove: removeWithUndo, isPending } = useUndoableRemoval<string>();
+
+  const snoozedIds = useMemo(() => new Set(Object.keys(snoozedUntil)), [snoozedUntil]);
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read && !snoozedIds.has(n.id)).length,
+    [notifications, snoozedIds]
+  );
 
   // Filter notifications based on selected category
   const filteredNotifications = useMemo(() => {
+    if (selectedFilter === "snoozed") {
+      return notifications.filter((n) => snoozedIds.has(n.id) && !isPending(n.id));
+    }
     const types = NOTIFICATION_CATEGORIES[selectedFilter];
-    return notifications.filter((n) => types.includes(n.type));
-  }, [notifications, selectedFilter]);
+    return notifications.filter((n) => types.includes(n.type) && !snoozedIds.has(n.id) && !isPending(n.id));
+  }, [notifications, selectedFilter, isPending, snoozedIds]);
 
   // Sort by date descending (newest first)
   const sortedNotifications = useMemo(
@@ -176,31 +138,45 @@ export default function NotificationsPage() {
     [filteredNotifications]
   );
 
-  // Paginate
-  const paginatedNotifications = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedNotifications.slice(start, start + itemsPerPage);
-  }, [sortedNotifications, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(sortedNotifications.length / itemsPerPage);
+  const { visibleCount, hasMore, loadMore, sentinelRef, announcement } = useLoadMore(
+    notificationGroups.length,
+    `dashboard:notifications:${selectedFilter}`
+  );
+  const visibleGroups = notificationGroups.slice(0, visibleCount);
 
   const markAllRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, []);
 
-  const markAsRead = useCallback((id: string) => {
+  const markGroupAsRead = useCallback((ids: string[]) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((notification) =>
+        ids.includes(notification.id) ? { ...notification, read: true } : notification
+      )
     );
   }, []);
 
-  const deleteNotification = useCallback((id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }, []);
+  const deleteNotification = useCallback(
+    (group: ReturnType<typeof selectNotificationGroups>[number]) => {
+      const ids = new Set(group.notifications.map((notification) => notification.id));
+      removeWithUndo(group.id, {
+        title: group.count === 1 ? "Notification dismissed" : "Notification group dismissed",
+        message: group.count === 1 ? group.latest.title : `${group.count} notifications dismissed`,
+        commit: () => setNotifications((prev) => prev.filter((notification) => !ids.has(notification.id))),
+      });
+    },
+    [removeWithUndo],
+  );
+
+  const handleSnooze = (notificationId: string, value: string) => {
+    const option = NOTIFICATION_SNOOZE_OPTIONS.find((candidate) => candidate.label === value);
+    if (option) snoozeNotification(notificationId, option.ms);
+  };
+
+  const handleRestore = (notificationId: string) => restoreNotification(notificationId);
 
   const handleFilterChange = (filter: NotificationCategory) => {
     setSelectedFilter(filter);
-    setCurrentPage(1);
   };
 
   if (notifications.length === 0) {
@@ -254,7 +230,7 @@ export default function NotificationsPage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {(["all", "payouts", "contributions", "system"] as const).map((filter) => (
+        {(["all", "payouts", "contributions", "system", "snoozed"] as const).map((filter) => (
           <button
             key={filter}
             onClick={() => handleFilterChange(filter)}
@@ -272,8 +248,8 @@ export default function NotificationsPage() {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-[var(--muted)]">
-          Showing {Math.min(itemsPerPage, sortedNotifications.length)} of{" "}
-          {sortedNotifications.length} notification{sortedNotifications.length !== 1 ? "s" : ""}
+          Showing {visibleGroups.length} of{" "}
+          {notificationGroups.length} notification group{notificationGroups.length !== 1 ? "s" : ""}
         </p>
         {unreadCount > 0 && (
           <span className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--ov-0a)] rounded-lg text-sm font-medium text-[var(--muted)]">
@@ -285,99 +261,151 @@ export default function NotificationsPage() {
 
       {/* Notifications List */}
       <div className="space-y-2 bg-[var(--content)] rounded-3xl overflow-hidden">
-        {paginatedNotifications.length === 0 ? (
+        {visibleGroups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Bell size={32} className="text-[var(--muted)] mb-3" aria-hidden="true" />
             <p className="text-[var(--muted)]">No notifications in this category</p>
           </div>
         ) : (
-          paginatedNotifications.map((notification) => {
+          visibleGroups.map((group) => {
+            const notification = group.latest;
             const { icon: Icon, color } = TYPE_CONFIG[notification.type];
+            const expanded = expandedGroups.has(group.id);
+            const memberIds = group.notifications.map((member) => member.id);
             return (
               <div
-                key={notification.id}
-                className={`flex items-start gap-4 p-4 md:p-5 border-b border-[var(--ov-0f)] last:border-b-0 hover:bg-[var(--modal)] transition-colors ${
-                  !notification.read ? "bg-[var(--ov-03)]" : ""
+                key={group.id}
+                className={`border-b border-[var(--ov-0f)] last:border-b-0 ${
+                  !group.read ? "bg-[var(--ov-03)]" : ""
                 }`}
               >
-                {/* Icon */}
-                <div
-                  className={`w-10 h-10 rounded-lg bg-[var(--ov-0a)] flex items-center justify-center shrink-0 mt-0.5 ${color}`}
-                >
-                  <Icon size={18} aria-hidden="true" />
-                </div>
+                <div className="flex items-start gap-4 p-4 md:p-5 hover:bg-[var(--modal)] transition-colors">
+                  <div
+                    className={`w-10 h-10 rounded-lg bg-[var(--ov-0a)] flex items-center justify-center shrink-0 mt-0.5 ${color}`}
+                  >
+                    <Icon size={18} aria-hidden="true" />
+                  </div>
 
-                {/* Content */}
-                <Link
-                  href={notification.href}
-                  onClick={() => markAsRead(notification.id)}
-                  className="flex-1 min-w-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
-                >
-                  <div className="flex items-start justify-between gap-3 mb-1">
-                    <p className="text-sm font-semibold text-[var(--text)] group-hover:text-[#4B6B76] transition-colors">
-                      {notification.title}
+                  <Link
+                    href={notification.href}
+                    onClick={() => markGroupAsRead(memberIds)}
+                    className="flex-1 min-w-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <p className="text-sm font-semibold text-[var(--text)] group-hover:text-[#4B6B76] transition-colors">
+                        {notification.title}
+                      </p>
+                      {!group.read && (
+                        <span
+                          className="w-2.5 h-2.5 rounded-full bg-[#4B6B76] shrink-0 mt-1"
+                          aria-label="Unread"
+                        />
+                      )}
+                    </div>
+                    <p className="text-xs text-[var(--muted)] line-clamp-2 mb-2">
+                      {notification.description}
                     </p>
-                    {!notification.read && (
-                      <span
-                        className="w-2.5 h-2.5 rounded-full bg-[#4B6B76] shrink-0 mt-1"
-                        aria-label="Unread"
-                      />
+                    <p className="text-xs text-[var(--faint)]">
+                      <RelativeTime date={notification.timestamp} className="text-[var(--faint)]" />
+                    </p>
+                  </Link>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {group.count > 1 && (
+                      <>
+                        <span
+                          aria-label={`${group.count} notifications`}
+                          className="rounded-full bg-[var(--ov-0a)] px-2 py-1 text-xs font-medium text-[var(--muted)]"
+                        >
+                          {group.count}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(group.id)}
+                          aria-expanded={expanded}
+                          aria-label={`${expanded ? "Collapse" : "Expand"} ${group.count} notifications`}
+                          className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                        >
+                          {expanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
+                        </button>
+                      </>
                     )}
+                    <button
+                      onClick={() => deleteNotification(group)}
+                      className="p-2 rounded-lg text-[var(--muted)] hover:text-[#FF5B5B] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B]"
+                      aria-label={group.count === 1
+                        ? `Delete notification: ${notification.title}`
+                        : `Delete all ${group.count} notifications`}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
                   </div>
                   <p className="text-xs text-[var(--muted)] line-clamp-2 mb-2">
                     {notification.description}
                   </p>
-                  <p className="text-xs text-[var(--faint)]">{relativeTime(notification.timestamp)}</p>
+                  <p className="text-xs text-[var(--faint)]">
+                    <RelativeTime date={notification.timestamp} className="text-[var(--faint)]" />
+                  </p>
                 </Link>
 
-                {/* Delete Button */}
-                <button
-                  onClick={() => deleteNotification(notification.id)}
-                  className="p-2 rounded-lg text-[var(--muted)] hover:text-[#FF5B5B] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B] shrink-0 mt-0.5"
-                  aria-label={`Delete notification: ${notification.title}`}
-                >
-                  <Trash2 size={16} aria-hidden="true" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  {snoozedIds.has(notification.id) ? (
+                    <button
+                      onClick={() => handleRestore(notification.id)}
+                      className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                      aria-label={`Unsnooze notification: ${notification.title}`}
+                    >
+                      <AlarmClock size={16} aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <select
+                      value=""
+                      onChange={(event) => handleSnooze(notification.id, event.target.value)}
+                      aria-label={`Snooze notification: ${notification.title}`}
+                      className="cursor-pointer rounded-lg border border-[var(--ov-14)] bg-transparent px-2.5 py-1.5 text-xs text-[var(--muted)] hover:bg-[var(--ov-0a)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                    >
+                      <option value="" disabled>
+                        Snooze…
+                      </option>
+                      {NOTIFICATION_SNOOZE_OPTIONS.map((option) => (
+                        <option key={option.label} value={option.label}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button
+                    onClick={() => deleteNotification(notification.id)}
+                    className="p-2 rounded-lg text-[var(--muted)] hover:text-[#FF5B5B] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5B5B]"
+                    aria-label={`Delete notification: ${notification.title}`}
+                  >
+                    <Trash2 size={16} aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             );
           })
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-8">
+      <div ref={sentinelRef} aria-hidden="true" className="h-px" />
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm text-[var(--muted)]" role="status" aria-live="polite">
+          {announcement || `Showing ${visibleGroups.length} of ${notificationGroups.length} notification groups`}
+        </p>
+        {hasMore ? (
           <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted)] bg-[var(--ov-0a)] hover:text-[var(--text)] hover:bg-[var(--ov-1a)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            type="button"
+            onClick={loadMore}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-[var(--text)] bg-[var(--ov-0a)] hover:bg-[var(--ov-1a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           >
-            Previous
+            Load more
+            <ChevronDown size={16} aria-hidden="true" />
           </button>
-          <div className="flex items-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-                  currentPage === page
-                    ? "bg-white text-black"
-                    : "bg-[var(--ov-0a)] text-[var(--muted)] hover:text-[var(--text)]"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted)] bg-[var(--ov-0a)] hover:text-[var(--text)] hover:bg-[var(--ov-1a)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-          >
-            Next
-          </button>
-        </div>
-      )}
+        ) : (
+          <span className="text-sm text-[var(--muted)]">All notifications loaded</span>
+        )}
+      </div>
     </div>
   );
 }

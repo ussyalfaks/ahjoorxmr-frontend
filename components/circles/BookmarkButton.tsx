@@ -3,6 +3,7 @@
 import { Star } from "lucide-react";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useToast } from "@/components/ui/Toast";
+import { useUndoableRemoval } from "@/hooks/useUndoableRemoval";
 
 interface BookmarkButtonProps {
   circleId: string;
@@ -19,17 +20,40 @@ export default function BookmarkButton({
 }: BookmarkButtonProps) {
   const { isBookmarked, toggle } = useBookmarks();
   const { showToast } = useToast();
-  const bookmarked = isBookmarked(circleId);
+  // #245: removing a bookmark is the destructive half of this toggle —
+  // adding one isn't (it's instantly reversible by clicking the same
+  // star again, no undo needed). The actual `toggle()` persistence call
+  // for a removal is deferred to the undo window's commit; while pending,
+  // this circle's star renders unbookmarked optimistically even though
+  // storage hasn't changed yet.
+  const { remove, undo, isPending } = useUndoableRemoval<string>();
+  const pendingRemoval = isPending(circleId);
+  const bookmarked = pendingRemoval ? false : isBookmarked(circleId);
 
   function handleClick(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    const nowBookmarked = toggle(circleId);
+
+    if (pendingRemoval) {
+      // Clicking again before the undo window closes is the undo action
+      // itself — storage was never actually touched, so just cancel it.
+      undo(circleId);
+      return;
+    }
+
+    if (bookmarked) {
+      remove(circleId, {
+        title: "Bookmark removed",
+        message: `${circleName} was removed from your bookmarks.`,
+        commit: () => toggle(circleId),
+      });
+      return;
+    }
+
+    toggle(circleId);
     showToast({
-      title: nowBookmarked ? "Circle bookmarked" : "Bookmark removed",
-      message: nowBookmarked
-        ? `${circleName} was added to your bookmarks.`
-        : `${circleName} was removed from your bookmarks.`,
+      title: "Circle bookmarked",
+      message: `${circleName} was added to your bookmarks.`,
       variant: "success",
     });
   }

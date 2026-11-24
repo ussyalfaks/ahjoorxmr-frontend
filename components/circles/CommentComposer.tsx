@@ -9,12 +9,15 @@ interface CommentComposerProps {
   onSubmit: (body: string) => Promise<void> | void;
   /** Disable the entire form (e.g. user is not a circle member). */
   disabled?: boolean;
+  /** Show when user is muted */
+  isMuted?: boolean;
   placeholder?: string;
 }
 
 export default function CommentComposer({
   onSubmit,
   disabled = false,
+  isMuted = false,
   placeholder = "Write a message…",
 }: CommentComposerProps) {
   const [body, setBody] = useState("");
@@ -80,11 +83,11 @@ export default function CommentComposer({
             if (error) setError(null);
           }}
           onKeyDown={handleKeyDown}
-          disabled={disabled || busy}
-          placeholder={disabled ? "Only circle members can post." : placeholder}
+          disabled={disabled || busy || isMuted}
+          placeholder={disabled ? "Only circle members can post." : isMuted ? "You have been muted by the organizer." : placeholder}
           aria-label="Comment body"
           aria-describedby={error ? "composer-error" : "composer-hint"}
-          maxLength={COMMENT_MAX_LENGTH + 50} /* soft guard; we validate manually */
+          maxLength={COMMENT_MAX_LENGTH + 50}
           className="w-full resize-none rounded-t-2xl bg-transparent px-4 pt-4 pb-2 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />
 
@@ -108,11 +111,11 @@ export default function CommentComposer({
 
           <button
             type="submit"
-            disabled={!canSubmit}
+            disabled={!canSubmit || isMuted}
             className="inline-flex items-center gap-2 rounded-lg bg-[#4B6B76] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#3D5A64] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <SendHorizonal size={14} aria-hidden="true" />
-            {busy ? "Posting…" : "Post"}
+            {isMuted ? "Muted" : busy ? "Posting…" : "Post"}
           </button>
         </div>
       </div>

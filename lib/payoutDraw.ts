@@ -1,3 +1,4 @@
+import { safeStorage } from "@/lib/safeStorage";
 export interface PayoutDraw {
   circleId: string;
   order: string[]; // participant addresses in payout order
@@ -13,7 +14,7 @@ const STORAGE_KEY = "ahjoor:payout-draws";
 function readAll(): Record<string, PayoutDraw> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = safeStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -22,7 +23,7 @@ function readAll(): Record<string, PayoutDraw> {
 
 function writeAll(draws: Record<string, PayoutDraw>) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(draws));
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(draws));
   } catch {
     // ignore storage errors
   }

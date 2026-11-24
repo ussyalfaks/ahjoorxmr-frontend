@@ -23,6 +23,7 @@ const TYPE_LABELS: Record<MilestoneType, string> = {
   payout_received: "Payout Received",
   savings_goal: "Savings Goal Hit",
   streak: "Streak Achieved",
+  annual_summary: "Annual Savings Wrapped",
 };
 
 const TYPE_ACCENT: Record<MilestoneType, string> = {
@@ -30,6 +31,7 @@ const TYPE_ACCENT: Record<MilestoneType, string> = {
   payout_received: "text-[#FBBF24]",
   savings_goal: "text-[var(--accent)]",
   streak: "text-[#FF5B5B]",
+  annual_summary: "text-[#6c5ce7]",
 };
 
 // ---------------------------------------------------------------------------

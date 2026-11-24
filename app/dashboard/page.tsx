@@ -1,21 +1,37 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { useReconnectRefresh } from "@/contexts/ConnectionStatusContext";
 import { ArrowUpRight, Users, CheckCircle2, DollarSign, GripHorizontal, EyeOff, ArrowUp, ArrowDown, Settings2, RotateCcw, Plus } from "lucide-react";
 import SavingsCard from "@/components/cards/SavingsCard";
 import SavingsGrowthChart from "@/components/charts/SavingsGrowthChart";
 import UpcomingPayoutsCalendar from "@/components/dashboard/UpcomingPayoutsCalendar";
-import TxConfirmModal, { TxType } from "@/components/modals/TxConfirmModal";
+import RecentAchievementCard from "@/components/dashboard/RecentAchievementCard";
+import TxConfirmModal, { TxType, type TxAttempt, type TxFailure } from "@/components/modals/TxConfirmModal";
 import FeatureSpotlight from "@/components/ui/FeatureSpotlight";
 import type { Circle } from "@/types/circle";
+import BalanceBreakdownWidget from "@/components/wallet/BalanceBreakdownWidget"
+import AnnualSavingsSummary from "@/components/dashboard/AnnualSavingsSummary";
+import SavingsGoalsWidget from "@/components/dashboard/SavingsGoalsWidget";
+import CircleHealthAlertsPanel from "@/components/dashboard/CircleHealthAlertsPanel";
+import TrustlineBanner from "@/components/wallet/TrustlineBanner";
+import { useNetworkGuard } from "@/hooks/useNetworkGuard";
+import { useToast } from "@/components/ui/Toast";
 
 interface PendingTx {
   type: TxType;
   circle: Circle;
   amount: number;
+  retryFailure?: TxFailure;
 }
 
-type WidgetId = 'stats' | 'chart' | 'active-savings' | 'payouts-calendar';
+interface FailedDashboardTx extends TxFailure {
+  type: TxType;
+  circle: Circle;
+  amount: number;
+}
+
+type WidgetId = 'health-alerts' | 'stats' | 'balance-breakdown' | 'recent-achievement' | 'chart' | 'active-savings' | 'payouts-calendar';
 
 interface WidgetLayout {
   id: WidgetId;
@@ -23,14 +39,20 @@ interface WidgetLayout {
 }
 
 const DEFAULT_LAYOUT: WidgetLayout[] = [
+  { id: 'health-alerts', visible: true },
   { id: 'stats', visible: true },
+  { id: 'balance-breakdown', visible: true },
+  { id: 'recent-achievement', visible: true },
   { id: 'chart', visible: true },
   { id: 'active-savings', visible: true },
   { id: 'payouts-calendar', visible: true },
 ];
 
 const WIDGET_TITLES: Record<WidgetId, string> = {
+  'health-alerts': 'Circle Health Alerts',
   'stats': 'Overview Stats',
+  'balance-breakdown': 'Balance Breakdown',
+  'recent-achievement': 'Recent Achievement',
   'chart': 'Savings Growth',
   'active-savings': 'Active Savings',
   'payouts-calendar': 'Upcoming Payouts'
@@ -51,10 +73,13 @@ function getContributionAmount(circle: Circle): number {
 
 export default function DashboardOverviewPage() {
   const [pendingTx, setPendingTx] = useState<PendingTx | null>(null);
+  const [failedTx, setFailedTx] = useState<FailedDashboardTx | null>(null);
   const [layout, setLayout] = useState<WidgetLayout[]>(DEFAULT_LAYOUT);
   const [isClient, setIsClient] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  // Bumps whenever the live connection is restored so dashboard data is re-derived.
+  const refreshToken = useReconnectRefresh();
 
   useEffect(() => {
     setIsClient(true);
@@ -62,9 +87,15 @@ export default function DashboardOverviewPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as WidgetLayout[];
-        // Basic validation
-        if (Array.isArray(parsed) && parsed.length === DEFAULT_LAYOUT.length) {
-          setLayout(parsed);
+        if (Array.isArray(parsed)) {
+          const existingIds = new Set(parsed.map((w) => w.id));
+          const merged = [
+            ...parsed.filter((p) => p.id in WIDGET_TITLES),
+            ...DEFAULT_LAYOUT.filter((d) => !existingIds.has(d.id)),
+          ];
+          if (merged.length > 0) {
+            setLayout(merged);
+          }
         }
       } catch (e) {
         // ignore
@@ -114,11 +145,11 @@ export default function DashboardOverviewPage() {
   const handleDrop = (e: React.DragEvent, targetIdx: number) => {
     e.preventDefault();
     if (draggedIdx === null || draggedIdx === targetIdx) return;
-    
+
     const newLayout = [...layout];
     const [removed] = newLayout.splice(draggedIdx, 1);
     newLayout.splice(targetIdx, 0, removed);
-    
+
     saveLayout(newLayout);
     setDraggedIdx(null);
   };
@@ -134,7 +165,8 @@ export default function DashboardOverviewPage() {
       card3: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       card4: null,
     }),
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [refreshToken]
   );
 
   const circles: Circle[] = useMemo(
@@ -203,7 +235,27 @@ export default function DashboardOverviewPage() {
     [deadlines]
   );
 
+  // #220: re-checked here, right before any signing flow opens — not just
+  // relying on the global blocking modal having already caught it on
+  // connect, since a real wallet's network can change at any time.
+  const { isMismatched: networkMismatched } = useNetworkGuard();
+  const { showToast } = useToast();
+
+  const guardTransaction = (): boolean => {
+    if (networkMismatched) {
+      showToast({
+        title: "Wrong network",
+        message: "Switch your wallet back to the app's network before continuing.",
+        variant: "error",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleContributeClick = (circle: Circle) => {
+    if (!guardTransaction()) return;
+    setFailedTx(null);
     setPendingTx({
       type: "contribute",
       circle,
@@ -212,6 +264,8 @@ export default function DashboardOverviewPage() {
   };
 
   const handleClaimClick = (circle: Circle) => {
+    if (!guardTransaction()) return;
+    setFailedTx(null);
     setPendingTx({
       type: "claim",
       circle,
@@ -219,18 +273,25 @@ export default function DashboardOverviewPage() {
     });
   };
 
-  const submitContribution = async (circle: Circle, amount: number): Promise<string> => {
+  const submitContribution = async (circle: Circle, amount: number, attempt: TxAttempt): Promise<string> => {
+    void circle;
+    void amount;
+    void attempt;
     await new Promise((resolve) => setTimeout(resolve, 1500));
     return "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd";
   };
 
-  const submitClaim = async (circle: Circle): Promise<string> => {
+  const submitClaim = async (circle: Circle, attempt: TxAttempt): Promise<string> => {
+    void circle;
+    void attempt;
     await new Promise((resolve) => setTimeout(resolve, 1500));
     return "0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567";
   };
 
   const renderWidgetContent = (id: WidgetId) => {
     switch (id) {
+      case 'health-alerts':
+        return <CircleHealthAlertsPanel />;
       case 'stats':
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -294,6 +355,8 @@ export default function DashboardOverviewPage() {
             </div>
           </div>
         );
+      case 'balance-breakdown':
+        return <BalanceBreakdownWidget />;
       case 'chart':
         return <SavingsGrowthChart />;
       case 'active-savings':
@@ -326,12 +389,18 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="pb-20 md:pb-0 relative min-h-screen">
+      {/* #217: dismisses itself (returns null) once the active wallet has
+          a trustline — no separate dismiss button/state needed. */}
+      <div className="mb-6">
+        <TrustlineBanner />
+      </div>
+
       {/* Top action bar */}
       {isClient && (
         <div className="flex justify-end mb-6 relative">
           <div className="relative">
             <FeatureSpotlight featureId="dashboard-customize" align="right">
-              <button 
+              <button
                 onClick={() => setIsCustomizeOpen(!isCustomizeOpen)}
                 className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full bg-[var(--modal)] border border-[var(--border)] hover:bg-[var(--content-hover)] transition-colors text-[var(--text)]"
               >
@@ -339,7 +408,7 @@ export default function DashboardOverviewPage() {
                 Customize Layout
               </button>
             </FeatureSpotlight>
-            
+
             {isCustomizeOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 bg-[var(--modal)] border border-[var(--border)] rounded-xl shadow-xl p-4 z-50">
                 <h4 className="text-sm font-semibold mb-3 text-[var(--text)]">Hidden Widgets</h4>
@@ -348,7 +417,7 @@ export default function DashboardOverviewPage() {
                     {hiddenWidgets.map(w => (
                       <div key={w.id} className="flex items-center justify-between bg-[var(--background)] px-3 py-2 rounded-lg border border-[var(--border)]">
                         <span className="text-sm text-[var(--text)]">{WIDGET_TITLES[w.id]}</span>
-                        <button 
+                        <button
                           onClick={() => toggleVisibility(w.id, true)}
                           className="p-1 hover:bg-[var(--ov-0a)] rounded text-[var(--text)]"
                           title="Show Widget"
@@ -361,9 +430,9 @@ export default function DashboardOverviewPage() {
                 ) : (
                   <p className="text-xs text-[var(--muted)] mb-4">All widgets are currently visible.</p>
                 )}
-                
+
                 <div className="h-px bg-[var(--border)] w-full mb-3" />
-                <button 
+                <button
                   onClick={resetLayout}
                   className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
                 >
@@ -376,14 +445,16 @@ export default function DashboardOverviewPage() {
         </div>
       )}
 
-      {/* Widgets Flow */}
-      <div className="space-y-6">
+      {/* Widgets Flow — re-keyed on reconnect so widgets re-read fresh data */}
+      <div key={refreshToken} className="space-y-6">
+        <AnnualSavingsSummary />
+        <SavingsGoalsWidget />
         {isClient ? layout.map((widget, idx) => {
           if (!widget.visible) return null;
           const isDragged = draggedIdx === idx;
-          
+
           return (
-            <div 
+            <div
               key={widget.id}
               draggable
               onDragStart={(e) => handleDragStart(e, idx)}
@@ -394,26 +465,26 @@ export default function DashboardOverviewPage() {
             >
               <div className="flex items-center justify-between mb-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity h-8 px-1">
                 <div className="flex items-center gap-2 text-[var(--muted)]">
-                  <button 
-                    className="cursor-grab active:cursor-grabbing p-1 hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded transition-colors" 
+                  <button
+                    className="cursor-grab active:cursor-grabbing p-1 hover:text-[var(--text)] hover:bg-[var(--ov-0a)] rounded transition-colors"
                     aria-label={`Drag ${WIDGET_TITLES[widget.id]}`}
                   >
                     <GripHorizontal size={16} />
                   </button>
                   <span className="text-xs font-semibold uppercase tracking-wider">{WIDGET_TITLES[widget.id]}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-1 bg-[var(--modal)] rounded-lg border border-[var(--border)] p-1 shadow-sm">
-                  <button 
-                    onClick={() => moveWidget(idx, -1)} 
+                  <button
+                    onClick={() => moveWidget(idx, -1)}
                     disabled={idx === 0}
                     className="p-1 rounded hover:bg-[var(--ov-0a)] text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     aria-label="Move Up"
                   >
                     <ArrowUp size={14} />
                   </button>
-                  <button 
-                    onClick={() => moveWidget(idx, 1)} 
+                  <button
+                    onClick={() => moveWidget(idx, 1)}
                     disabled={idx === layout.length - 1}
                     className="p-1 rounded hover:bg-[var(--ov-0a)] text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     aria-label="Move Down"
@@ -421,7 +492,7 @@ export default function DashboardOverviewPage() {
                     <ArrowDown size={14} />
                   </button>
                   <div className="w-px h-4 bg-[var(--border)] mx-1" />
-                  <button 
+                  <button
                     onClick={() => toggleVisibility(widget.id, false)}
                     className="p-1 rounded hover:bg-red-500/10 text-[var(--muted)] hover:text-red-500 transition-colors"
                     aria-label="Hide Widget"
@@ -430,7 +501,7 @@ export default function DashboardOverviewPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div className={isDragged ? 'pointer-events-none' : ''}>
                 {renderWidgetContent(widget.id)}
               </div>
@@ -447,6 +518,43 @@ export default function DashboardOverviewPage() {
         )}
       </div>
 
+      {failedTx && !pendingTx && (
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4" role="alert">
+          <div className="min-w-0">
+            <p className="font-semibold text-red-500">Transaction failed</p>
+            <p className="mt-1 text-sm text-[var(--text)]">{failedTx.reason}</p>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              {failedTx.type === "contribute" ? "Contribution" : "Claim"} for {failedTx.circle.name} · Attempt {failedTx.attempt}
+            </p>
+            {failedTx.hash && (
+              <a
+                href={`https://starkscan.co/tx/${failedTx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex text-xs text-[var(--muted)] underline"
+              >
+                View failed transaction {failedTx.hash.slice(0, 10)}...
+              </a>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setPendingTx({
+                type: failedTx.type,
+                circle: failedTx.circle,
+                amount: failedTx.amount,
+                retryFailure: failedTx,
+              });
+              setFailedTx(null);
+            }}
+            className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {pendingTx && (
         <TxConfirmModal
           isOpen={!!pendingTx}
@@ -454,10 +562,12 @@ export default function DashboardOverviewPage() {
           type={pendingTx.type}
           circleName={pendingTx.circle.name}
           amount={pendingTx.amount}
-          onConfirm={() =>
+          retryFailure={pendingTx.retryFailure}
+          onFailure={(failure) => setFailedTx({ ...failure, type: pendingTx.type, circle: pendingTx.circle, amount: pendingTx.amount })}
+          onConfirm={(attempt) =>
             pendingTx.type === "contribute"
-              ? submitContribution(pendingTx.circle, pendingTx.amount)
-              : submitClaim(pendingTx.circle)
+              ? submitContribution(pendingTx.circle, pendingTx.amount, attempt)
+              : submitClaim(pendingTx.circle, attempt)
           }
         />
       )}

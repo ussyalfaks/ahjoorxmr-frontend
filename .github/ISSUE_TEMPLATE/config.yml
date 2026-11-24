@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a Question
+    url: https://github.com/jaynomyaks/ahjoorxmr-frontend/discussions
+    about: Ask questions and discuss with the community
+  - name: Security Issue
+    url: https://github.com/jaynomyaks/ahjoorxmr-frontend/security
+    about: Report security vulnerabilities privately

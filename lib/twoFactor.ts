@@ -1,3 +1,4 @@
+import { safeStorage } from "@/lib/safeStorage";
 import * as OTPAuth from "otpauth";
 import QRCode from "qrcode";
 
@@ -24,7 +25,7 @@ export interface PendingSetup {
 export function getTwoFactorState(): TwoFactorState | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = safeStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as TwoFactorState) : null;
   } catch {
     return null;
@@ -37,8 +38,8 @@ export function isTwoFactorEnabled(): boolean {
 
 function saveState(state: TwoFactorState | null) {
   try {
-    if (state) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    else localStorage.removeItem(STORAGE_KEY);
+    if (state) safeStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    else safeStorage.removeItem(STORAGE_KEY);
   } catch {
     // ignore storage errors
   }

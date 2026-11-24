@@ -1,10 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, CheckCircle2, XCircle, ExternalLink, X } from "lucide-react";
+import { addPendingTransaction } from "@/lib/pendingTransactions";
+import GasFeeEstimate from "@/components/modals/GasFeeEstimate";
+import GlossaryTerm from "@/components/ui/GlossaryTerm";
+import { useGasFeeEstimate } from "@/hooks/useGasFeeEstimate";
+import type { GasFeeEstimate as GasFeeEstimateData, GasFeeRequest } from "@/lib/gasFee";
 
 export type TxType = "contribute" | "claim";
 export type TxStatus = "idle" | "pending" | "success" | "error";
+
+export interface TxFailure {
+  reason: string;
+  hash?: string;
+  code?: string;
+  attempt: number;
+}
+
+export interface TxAttempt {
+  isRetry: boolean;
+  attempt: number;
+  fee: GasFeeEstimateData | null;
+  previousFailure?: TxFailure;
+}
 
 interface TxConfirmModalProps {
   isOpen: boolean;
@@ -16,9 +35,11 @@ interface TxConfirmModalProps {
    * Submits the actual on-chain transaction.
    * Should resolve with the tx hash on success, or throw on failure.
    */
-  onConfirm: () => Promise<string>;
-  /** Placeholder gas estimate; replace with a real estimate when available */
-  estimatedGasFee?: string;
+  onConfirm: (attempt: TxAttempt) => Promise<string>;
+  walletAddress?: string;
+  estimateFee?: (request: GasFeeRequest) => Promise<GasFeeEstimateData | null>;
+  onFailure?: (failure: TxFailure) => void;
+  retryFailure?: TxFailure;
 }
 
 const EXPLORER_BASE_URL = "https://starkscan.co/tx";
@@ -30,17 +51,29 @@ export default function TxConfirmModal({
   circleName,
   amount,
   onConfirm,
-  estimatedGasFee = "~0.0008 ETH",
+  walletAddress,
+  estimateFee,
+  onFailure,
+  retryFailure,
 }: TxConfirmModalProps) {
   const [status, setStatus] = useState<TxStatus>("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [failure, setFailure] = useState<TxFailure | null>(null);
+  const attemptRef = useRef(0);
+  const feeRequest = useMemo(() => ({ operation: type, walletAddress }), [type, walletAddress]);
+  const { fee, loading: feeLoading, refresh } = useGasFeeEstimate(isOpen, feeRequest, estimateFee);
 
   useEffect(() => {
     if (isOpen) {
-      setStatus("idle");
-      setTxHash(null);
-      setErrorMessage(null);
+      const resetId = window.setTimeout(() => {
+        setStatus("idle");
+        setTxHash(null);
+        setErrorMessage(null);
+        setFailure(null);
+        attemptRef.current = 0;
+      }, 0);
+      return () => window.clearTimeout(resetId);
     }
   }, [isOpen]);
 
@@ -50,16 +83,39 @@ export default function TxConfirmModal({
   const actionVerb = type === "contribute" ? "contributing" : "claiming";
 
   const handleConfirm = async () => {
+    if (status === "pending") return;
+    const isRetry = status === "error" || Boolean(retryFailure);
+    const attempt = attemptRef.current + 1;
+    attemptRef.current = attempt;
     setStatus("pending");
     setErrorMessage(null);
     try {
-      const hash = await onConfirm();
+      const latestFee = isRetry ? await refresh() : fee;
+      const hash = await onConfirm({
+        isRetry,
+        attempt,
+        fee: latestFee,
+        previousFailure: failure ?? retryFailure,
+      });
       setTxHash(hash);
+      addPendingTransaction({
+        hash,
+        network: "starknet",
+        label: type === "contribute" ? `Contribution to ${circleName}` : `Claim from ${circleName}`,
+        amount: `${amount.toLocaleString()} USDT`,
+      });
       setStatus("success");
     } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : "Something went wrong. Please try again."
-      );
+      const candidate = err as { message?: unknown; hash?: unknown; txHash?: unknown; code?: unknown };
+      const nextFailure: TxFailure = {
+        reason: typeof candidate.message === "string" ? candidate.message : "The wallet or network rejected the transaction.",
+        hash: typeof candidate.hash === "string" ? candidate.hash : typeof candidate.txHash === "string" ? candidate.txHash : undefined,
+        code: typeof candidate.code === "string" ? candidate.code : undefined,
+        attempt,
+      };
+      setFailure(nextFailure);
+      setErrorMessage(nextFailure.reason);
+      onFailure?.(nextFailure);
       setStatus("error");
     }
   };
@@ -112,11 +168,14 @@ export default function TxConfirmModal({
                 <dt className="text-[var(--muted)]">Amount</dt>
                 <dd className="font-medium text-[var(--text)]">{amount.toLocaleString()} USDT</dd>
               </div>
-              <div className="flex justify-between text-sm">
-                <dt className="text-[var(--muted)]">Estimated gas fee</dt>
-                <dd className="font-medium text-[var(--text)]">{estimatedGasFee}</dd>
-              </div>
             </dl>
+            <GasFeeEstimate fee={fee} loading={feeLoading} />
+            <p className="mt-3 mb-6 text-xs leading-5 text-[var(--muted)]">
+              Your wallet will ask for a{" "}
+              <GlossaryTerm term="wallet-signature">wallet signature</GlossaryTerm> to approve this.
+              It&apos;s complete once it receives a{" "}
+              <GlossaryTerm term="block-confirmation">block confirmation</GlossaryTerm>.
+            </p>
 
             <div className="flex gap-3">
               <button
@@ -164,6 +223,11 @@ export default function TxConfirmModal({
                 View on Starkscan <ExternalLink size={14} />
               </a>
             )}
+            {txHash && (
+              <span className="ml-1 align-middle">
+                <GlossaryTerm term="block-explorer" iconOnly />
+              </span>
+            )}
             <button
               onClick={onClose}
               className="mt-6 w-full rounded-xl bg-[#4ADE80] text-[#0A0A0A] py-2.5 font-semibold hover:bg-[#3fc873] transition-colors"
@@ -178,7 +242,18 @@ export default function TxConfirmModal({
           <div className="text-center py-2">
             <XCircle className="mx-auto mb-3 text-red-500" size={48} />
             <p className="font-medium text-[var(--text)] mb-1">Transaction failed</p>
-            <p className="text-sm text-[var(--muted)] mb-6">{errorMessage}</p>
+            <p className="text-sm text-[var(--muted)] mb-2">{errorMessage}</p>
+            {failure?.code && <p className="text-xs text-[var(--muted)] mb-2">Error code: {failure.code}</p>}
+            {failure?.hash && (
+              <a
+                href={`${EXPLORER_BASE_URL}/${failure.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-[var(--muted)] hover:underline mb-4"
+              >
+                View failed transaction {failure.hash.slice(0, 10)}... <ExternalLink size={14} />
+              </a>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={onClose}

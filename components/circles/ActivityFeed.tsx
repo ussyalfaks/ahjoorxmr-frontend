@@ -11,28 +11,16 @@ import {
   Megaphone,
   Pin,
   PinOff,
+  Link2,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import type { CircleEvent, EventType } from "@/types/circle";
+import RelativeTime from "@/components/ui/RelativeTime";
 
 interface Props {
   events: CircleEvent[];
   pageSize?: number;
-}
-
-function getRelativeTime(date: Date): string {
-  const now = Date.now();
-  const diffMs = now - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHr / 24);
-
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-
-  if (diffSec < 60) return rtf.format(-diffSec, "second");
-  if (diffMin < 60) return rtf.format(-diffMin, "minute");
-  if (diffHr < 24) return rtf.format(-diffHr, "hour");
-  return rtf.format(-diffDay, "day");
 }
 
 function truncateAddress(address: string): string {
@@ -83,6 +71,20 @@ const EVENT_CONFIG: Record<
     label: "unpinned a message",
     icon: <PinOff size={16} />,
     color: "text-[var(--muted)] bg-[var(--ov-0a)]",
+  invite_used: {
+    label: "Invite link used",
+    icon: <Link2 size={16} />,
+    color: "text-[#8b7cf8] bg-[#8b7cf815]",
+  },
+  circle_paused: {
+    label: "paused the circle",
+    icon: <PauseCircle size={16} />,
+    color: "text-[#FBBF24] bg-[#FBBF2415]",
+  },
+  circle_resumed: {
+    label: "resumed the circle",
+    icon: <PlayCircle size={16} />,
+    color: "text-[var(--success)] bg-[#4ADE8015]",
   },
 };
 
@@ -115,7 +117,7 @@ export default function ActivityFeed({ events, pageSize = 10 }: Props) {
         {visible.map((event) => {
           const config = EVENT_CONFIG[event.type];
           const isSystemEvent =
-            event.type === "round_started" || event.type === "circle_closed";
+            event.type === "round_started" || event.type === "circle_closed" || event.type === "invite_used";
 
           return (
             <li key={event.id} className="mb-6 ml-6">
@@ -153,12 +155,10 @@ export default function ActivityFeed({ events, pageSize = 10 }: Props) {
                     </span>
                   )}
                 </p>
-                <time
-                  dateTime={event.timestamp.toISOString()}
+                <RelativeTime
+                  date={event.timestamp}
                   className="text-xs text-[var(--faint)] shrink-0"
-                >
-                  {getRelativeTime(event.timestamp)}
-                </time>
+                />
               </div>
             </li>
           );

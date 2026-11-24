@@ -45,6 +45,9 @@ export type EventType =
   | "announcement_sent"
   | "comment_pinned"
   | "comment_unpinned";
+  | "invite_used"
+  | "circle_paused"
+  | "circle_resumed";
 
 export interface CircleEvent {
   id: string;

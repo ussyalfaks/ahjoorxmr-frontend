@@ -6,12 +6,15 @@ import {
   exportCsv,
   exportPdf,
   buildFilename,
+  type ExportColumn,
+  type ExportRecord,
   type ExportRow,
 } from "@/lib/export";
 
-interface ExportButtonProps {
+interface ExportButtonProps<Row extends ExportRecord = ExportRow> {
   /** Called lazily so large datasets are only materialized on click. */
-  getRows: () => ExportRow[];
+  getRows: () => Row[];
+  columns?: ExportColumn[];
   /** Used in the filename and PDF heading, e.g. a circle name. */
   scope: string;
   /** Filename prefix, e.g. "contributions" or "payouts". */
@@ -21,14 +24,15 @@ interface ExportButtonProps {
   className?: string;
 }
 
-export default function ExportButton({
+export default function ExportButton<Row extends ExportRecord = ExportRow>({
   getRows,
+  columns,
   scope,
   prefix,
   title,
   disabled = false,
   className = "",
-}: ExportButtonProps) {
+}: ExportButtonProps<Row>) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,7 +65,7 @@ export default function ExportButton({
         const rows = getRows();
         const now = new Date();
         if (format === "csv") {
-          exportCsv(rows, buildFilename(prefix, scope, "csv", now));
+          exportCsv(rows, buildFilename(prefix, scope, "csv", now), columns);
         } else {
           const stamp = new Intl.DateTimeFormat("en-US", {
             dateStyle: "medium",
@@ -69,7 +73,8 @@ export default function ExportButton({
           exportPdf(
             rows,
             title,
-            `${scope} · ${rows.length} record${rows.length === 1 ? "" : "s"} · Exported ${stamp}`
+            `${scope} · ${rows.length} record${rows.length === 1 ? "" : "s"} · Exported ${stamp}`,
+            columns
           );
         }
       } finally {

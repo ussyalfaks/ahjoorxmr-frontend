@@ -7,7 +7,7 @@ export default function Toaster() {
   const { toasts, dismissToast } = useToast();
 
   return (
-    <div className="pointer-events-none fixed right-4 top-4 z-[100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 sm:right-6 sm:top-6 sm:w-full">
+    <div className="pointer-events-none fixed end-4 top-4 z-[100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 sm:end-6 sm:top-6 sm:w-full">
       {toasts.map((toast) => {
         const styles = toastVariantStyles(toast.variant);
         const Icon = styles.icon;
@@ -34,6 +34,18 @@ export default function Toaster() {
                 <div className={`text-sm font-semibold ${styles.title}`}>{toast.title}</div>
                 {toast.message && (
                   <p className={`mt-1 text-sm leading-5 ${styles.message}`}>{toast.message}</p>
+                )}
+                {toast.action && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toast.action?.onClick();
+                      dismissToast(toast.id);
+                    }}
+                    className={`mt-2 text-sm font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded ${styles.title}`}
+                  >
+                    {toast.action.label}
+                  </button>
                 )}
               </div>
 

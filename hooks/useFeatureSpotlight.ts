@@ -1,5 +1,7 @@
 "use client";
 
+import { safeStorage } from "@/lib/safeStorage";
+
 import { useState, useEffect, useCallback } from "react";
 import { SHIPPED_FEATURES } from "@/config/features";
 
@@ -11,7 +13,7 @@ export function useFeatureSpotlight(featureId: string) {
 
   useEffect(() => {
     try {
-      const dismissed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const dismissed = JSON.parse(safeStorage.getItem(STORAGE_KEY) || "[]");
       setIsDismissed(dismissed.includes(featureId));
     } catch {
       setIsDismissed(false); // Default show if parse error
@@ -20,10 +22,10 @@ export function useFeatureSpotlight(featureId: string) {
 
   const dismiss = useCallback(() => {
     try {
-      const dismissed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const dismissed = JSON.parse(safeStorage.getItem(STORAGE_KEY) || "[]");
       if (!dismissed.includes(featureId)) {
         dismissed.push(featureId);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
+        safeStorage.setItem(STORAGE_KEY, JSON.stringify(dismissed));
       }
     } catch {
       // ignore

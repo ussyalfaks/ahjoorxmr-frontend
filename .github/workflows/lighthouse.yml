@@ -1,0 +1,135 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    outputs:
+      assertions: ${{ steps.lighthouse.outputs.assertionResults }}
+      links: ${{ steps.lighthouse.outputs.links }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Run Lighthouse CI
+        id: lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            http://localhost:3000/
+            http://localhost:3000/dashboard
+          configPath: ./.lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  lighthouse-report:
+    name: Post Lighthouse results
+    needs: lighthouse
+    if: always() && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Comment Lighthouse results on pull request
+        uses: actions/github-script@v7
+        env:
+          LHCI_ASSERTIONS: ${{ needs.lighthouse.outputs.assertions }}
+          LHCI_LINKS: ${{ needs.lighthouse.outputs.links }}
+        with:
+          script: |
+            const marker = "<!-- lighthouse-ci-report -->";
+            let assertions = [];
+            let links = {};
+
+            try {
+              assertions = JSON.parse(process.env.LHCI_ASSERTIONS || "[]");
+            } catch {}
+            try {
+              links = JSON.parse(process.env.LHCI_LINKS || "{}");
+            } catch {}
+
+            const categories = [
+              ["Performance", "performance", 85],
+              ["Accessibility", "accessibility", 95],
+              ["SEO", "seo", 90],
+            ];
+            const urls = [
+              "http://localhost:3000/",
+              "http://localhost:3000/dashboard",
+            ];
+            const rows = urls.map((url) => {
+              const scores = categories.map(([label, category, minimum]) => {
+                const result = assertions.find(
+                  (item) => item.url === url && item.name === `categories:${category}`,
+                );
+                const score = Number(result?.actual);
+                const display = Number.isFinite(score)
+                  ? `${Math.round(score * 100)}%`
+                  : "Unavailable";
+                return `${label}: ${display} (min ${minimum})`;
+              });
+              const report = links[url] ? `[Report](${links[url]})` : "Unavailable";
+              return `| ${url} | ${scores.join("<br>")} | ${report} |`;
+            });
+
+            const body = [
+              marker,
+              "## Lighthouse CI",
+              "| URL | Scores | Report |",
+              "| --- | --- | --- |",
+              ...rows,
+              "",
+              "Minimums: Performance 85, Accessibility 95, SEO 90. The Lighthouse CI status check is authoritative.",
+            ].join("\n");
+
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) =>
+              comment.body?.includes(marker) && comment.user?.type === "Bot",
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }

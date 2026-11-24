@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Dices, Lock, RotateCcw, Shuffle, X } from "lucide-react";
+import { Dices, Loader2, Lock, RotateCcw, Shuffle, X } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   generateSeed,
@@ -47,8 +47,12 @@ export default function PayoutDrawModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  const isPending = phase === "shuffling";
+
   const close = () => {
-    if (phase === "shuffling") return;
+    if (isPending) {
+      if (!window.confirm("A payout draw is in progress. Close anyway?")) return;
+    }
     onClose();
   };
 
@@ -57,6 +61,7 @@ export default function PayoutDrawModal({
   if (!open) return null;
 
   function runDraw() {
+    if (isPending) return;
     setPhase("shuffling");
     const seed = generateSeed();
     const finalOrder = seededShuffle(participantAddresses, seed);
@@ -104,7 +109,7 @@ export default function PayoutDrawModal({
             <Dices size={20} aria-hidden="true" />
             Payout Order Draw
           </h2>
-          {phase !== "shuffling" && (
+          {!isPending && (
             <button onClick={close} aria-label="Close" className="text-[var(--muted)] hover:text-[var(--text)]">
               <X size={20} />
             </button>
@@ -130,10 +135,20 @@ export default function PayoutDrawModal({
             </ul>
             <button
               onClick={runDraw}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4B6B76] hover:bg-[#3D5A64] text-white py-2.5 font-semibold transition-colors"
+              disabled={isPending}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4B6B76] hover:bg-[#3D5A64] text-white py-2.5 font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Shuffle size={16} aria-hidden="true" />
-              Run Payout Draw
+              {isPending ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                  Confirming…
+                </>
+              ) : (
+                <>
+                  <Shuffle size={16} aria-hidden="true" />
+                  Run Payout Draw
+                </>
+              )}
             </button>
           </>
         )}
@@ -155,7 +170,10 @@ export default function PayoutDrawModal({
             </ul>
 
             {phase === "shuffling" && (
-              <p className="text-center text-sm text-[var(--muted)] animate-pulse">Shuffling…</p>
+              <p className="flex items-center justify-center gap-2 text-center text-sm text-[var(--muted)] animate-pulse">
+                <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                Confirming…
+              </p>
             )}
 
             {phase === "done" && finalDraw && (

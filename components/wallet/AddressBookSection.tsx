@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BookUser, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { BookUser, Pencil, Plus, Trash2, X, Download, Upload } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { useToast } from "@/components/ui/Toast";
+import { useUndoableRemoval } from "@/hooks/useUndoableRemoval";
 import { truncateAddress } from "@/contexts/WalletContext";
 import {
   addContact,
@@ -12,7 +13,13 @@ import {
   isValidAddressFormat,
   removeContact,
   updateContact,
+  downloadAddressBookCsv,
+  parseAddressBookCsv,
+  previewAddressBookImport,
+  applyAddressBookImport,
+  type AddressBookImportPreview,
 } from "@/lib/addressBook";
+import AddressBookImportModal from "@/components/wallet/AddressBookImportModal";
 import type { AddressBookContact } from "@/types/addressBook";
 
 interface ContactFormState {
@@ -136,24 +143,84 @@ function ContactForm({
 }
 
 export default function AddressBookSection() {
-  const { showToast } = useToast();
   const [contacts, setContacts] = useState<AddressBookContact[]>([]);
   const [mode, setMode] = useState<"idle" | "adding" | { editingId: string }>("idle");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // #245: the "Delete? Confirm" step above is a separate safety net
+  // (catches a stray click); this is the actual undo window required by
+  // the issue, deferring the persisted `removeContact()` call itself
+  // until it closes.
+  const { remove, isPending } = useUndoableRemoval<string>();
+  const { showToast } = useToast();
+
+  const [importPreview, setImportPreview] = useState<AddressBookImportPreview | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isApplyingImport, setIsApplyingImport] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setContacts(getContacts());
   }, []);
 
   function handleDelete(id: string) {
-    setContacts(removeContact(id));
+    const target = contacts.find((c) => c.id === id);
     setDeletingId(null);
-    showToast({ title: "Contact removed", variant: "success" });
+    remove(id, {
+      title: "Contact removed",
+      message: target?.label,
+      commit: () => setContacts(removeContact(id)),
+    });
   }
+
+  const handleExportCsv = () => {
+    downloadAddressBookCsv();
+    showToast({ title: "Address book exported to CSV", variant: "success" });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const rawContacts = parseAddressBookCsv(text);
+      if (rawContacts.length === 0) {
+        showToast({ title: "No contact entries found in file", variant: "error" });
+        return;
+      }
+
+      const preview = previewAddressBookImport(rawContacts, contacts);
+      setImportPreview(preview);
+      setIsImportModalOpen(true);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleConfirmImport = () => {
+    if (!importPreview) return;
+    setIsApplyingImport(true);
+    try {
+      const result = applyAddressBookImport(importPreview, contacts);
+      setContacts(result.contacts);
+      setIsImportModalOpen(false);
+      setImportPreview(null);
+      showToast({
+        title: "Import complete",
+        message: `Added ${result.added}, merged ${result.merged}, skipped ${result.skipped}.`,
+        variant: "success",
+      });
+    } finally {
+      setIsApplyingImport(false);
+    }
+  };
 
   return (
     <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div className="flex items-center gap-2">
           <BookUser size={18} className="text-[var(--muted)]" aria-hidden="true" />
           <div>
@@ -161,15 +228,43 @@ export default function AddressBookSection() {
             <p className="text-[var(--muted)] text-sm">Label frequently used wallet addresses for quick sends</p>
           </div>
         </div>
-        {mode === "idle" && (
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setMode("adding")}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-black bg-white hover:bg-gray-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            type="button"
+            onClick={handleExportCsv}
+            disabled={contacts.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[var(--text)] bg-[var(--modal)] hover:bg-[var(--ov-0a)] border border-[var(--border)] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            title="Export saved contacts to CSV"
           >
-            <Plus size={16} aria-hidden="true" />
-            Add Contact
+            <Download size={15} aria-hidden="true" />
+            Export CSV
           </button>
-        )}
+
+          <label
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[var(--text)] bg-[var(--modal)] hover:bg-[var(--ov-0a)] border border-[var(--border)] rounded-lg transition-colors cursor-pointer focus-within:ring-2 focus-within:ring-[#4B6B76]"
+            title="Import contacts from CSV"
+          >
+            <Upload size={15} aria-hidden="true" />
+            Import CSV
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFileSelect}
+              className="sr-only"
+            />
+          </label>
+
+          {mode === "idle" && (
+            <button
+              onClick={() => setMode("adding")}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-black bg-white hover:bg-gray-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+            >
+              <Plus size={16} aria-hidden="true" />
+              Add Contact
+            </button>
+          )}
+        </div>
       </div>
 
       {mode === "adding" && (
@@ -186,11 +281,11 @@ export default function AddressBookSection() {
         </div>
       )}
 
-      {contacts.length === 0 && mode === "idle" ? (
+      {contacts.filter((c) => !isPending(c.id)).length === 0 && mode === "idle" ? (
         <p className="text-sm text-[var(--muted)]">No saved contacts yet.</p>
       ) : (
         <div className="space-y-2">
-          {contacts.map((contact) => {
+          {contacts.filter((c) => !isPending(c.id)).map((contact) => {
             const isEditing = typeof mode === "object" && mode.editingId === contact.id;
             if (isEditing) {
               return (
@@ -267,6 +362,17 @@ export default function AddressBookSection() {
           })}
         </div>
       )}
+
+      <AddressBookImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => {
+          setIsImportModalOpen(false);
+          setImportPreview(null);
+        }}
+        preview={importPreview}
+        onConfirm={handleConfirmImport}
+        isApplying={isApplyingImport}
+      />
     </div>
   );
 }

@@ -2,8 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { CircleJoinRequest, PenaltyConfig } from "@/types/circle";
+import CircleRulesView from "@/components/circles/CircleRulesView";
+import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, type CircleRulesRecord } from "@/lib/circleRules";
+import { JOIN_REQUESTS_UPDATED_EVENT } from "@/lib/joinRequests";
+import WaitlistPositionCard from "@/components/circles/WaitlistPositionCard";
 
 const REQUESTS_KEY = "ahjoorxmr:circle-join-requests";
 
@@ -24,32 +29,49 @@ interface Props {
   circle: JoinCircleData | null;
   currentWallet: string;
   onRequestSubmitted?: (request: CircleJoinRequest) => void;
+  /** Called after the user successfully joins (e.g. to attribute an invite). */
+  onJoined?: (circleId: string) => void;
 }
 
-export default function JoinCircleModal({ open, onClose, circle, currentWallet, onRequestSubmitted }: Props) {
+export default function JoinCircleModal({ open, onClose, circle, currentWallet, onRequestSubmitted, onJoined }: Props) {
   const [joining, setJoining] = useState(false);
   const [success, setSuccess] = useState(false);
   const [requestNote, setRequestNote] = useState("");
   const [requestStatus, setRequestStatus] = useState<CircleJoinRequest["status"] | null>(null);
+  const [rules, setRules] = useState<CircleRulesRecord | null>(null);
+  const [rulesAcknowledged, setRulesAcknowledged] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useFocusTrap(ref, open, handleClose);
 
   useEffect(() => {
-    if (!open || !circle?.isPrivate) return;
-    const circleId = circle.id;
-    function refreshStatus() {
-      const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) ?? "[]") as CircleJoinRequest[];
-      const existing = requests.find((request) => request.circleId === circleId && request.requester === currentWallet);
-      setRequestStatus(existing?.status ?? null);
-    }
-    refreshStatus();
-    window.addEventListener("storage", refreshStatus);
-    return () => window.removeEventListener("storage", refreshStatus);
-  }, [circle, currentWallet, open]);
+  if (!open || !circle?.isPrivate) return;
+  const circleId = circle.id;
+  function refreshStatus() {
+    const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) ?? "[]") as CircleJoinRequest[];
+    const existing = requests.find((request) => request.circleId === circleId && request.requester === currentWallet);
+    setRequestStatus(existing?.status ?? null);
+  }
+  refreshStatus();
+  window.addEventListener("storage", refreshStatus);
+  window.addEventListener(JOIN_REQUESTS_UPDATED_EVENT, refreshStatus);
+  return () => {
+    window.removeEventListener("storage", refreshStatus);
+    window.removeEventListener(JOIN_REQUESTS_UPDATED_EVENT, refreshStatus);
+  };
+}, [circle, currentWallet, open]);
+
+  useEffect(() => {
+    if (!open || !circle) return;
+    const refreshRules = () => setRules(getCircleRules(circle.id));
+    refreshRules();
+    window.addEventListener(CIRCLE_RULES_UPDATED_EVENT, refreshRules);
+    return () => window.removeEventListener(CIRCLE_RULES_UPDATED_EVENT, refreshRules);
+  }, [circle, open]);
 
   function handleClose() {
     setSuccess(false);
+    setRulesAcknowledged(false);
     onClose();
   }
 
@@ -58,6 +80,7 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
     await new Promise((r) => setTimeout(r, 1200));
     setJoining(false);
     setSuccess(true);
+    if (circle) onJoined?.(circle.id);
   }
 
   function handleRequest() {
@@ -78,7 +101,8 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
       ...requests.filter((item) => !(item.circleId === circle.id && item.requester === currentWallet)),
       request,
     ]));
-    setRequestStatus("pending");
+    window.dispatchEvent(new CustomEvent(JOIN_REQUESTS_UPDATED_EVENT, { detail: { circleId: circle.id } }));
+setRequestStatus("pending");;
     onRequestSubmitted?.(request);
   }
 
@@ -87,6 +111,7 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
   const isMember = circle.members.includes(currentWallet);
   const isFull = circle.members.length >= circle.totalSlots;
   const isPrivate = circle.isPrivate === true;
+  const requiresRulesAcknowledgement = rules !== null;
   const penaltySummary = circle.penalty?.enabled
     ? circle.penalty.type === "percentage"
       ? `${circle.penalty.value}% of the contribution when late`
@@ -104,7 +129,7 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
       >
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+          className="absolute top-4 end-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
           aria-label="Close"
         >
           <X size={20} />
@@ -156,6 +181,9 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
             <p className="text-sm text-[var(--muted)]">
               {requestStatus === "pending" ? "The organizer will review your request." : requestStatus === "approved" ? "Your request was approved. You can now join this circle." : "The organizer declined your request."}
             </p>
+            {requestStatus === "pending" && (
+  <WaitlistPositionCard circleId={circle.id} currentWallet={currentWallet} />
+)}
             <button onClick={handleClose} className="w-full py-2.5 bg-[var(--ov-0a)] text-[var(--text)] font-medium rounded-xl">Close</button>
           </div>
         ) : (
@@ -179,9 +207,25 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
             {isFull ? (
               <p className="text-red-400 text-sm text-center">This circle is full.</p>
             ) : (
-              <p className="text-[var(--muted)] text-xs">
-                By joining, you agree to contribute {circle.contribution} each round and accept the listed late contribution terms.
-              </p>
+              <>
+                <p className="text-[var(--muted)] text-xs">By joining, you agree to contribute {circle.contribution} each round and accept the listed late contribution terms.</p>
+                {rules ? (
+                  <div className="rounded-xl border border-[var(--ov-14)] bg-[var(--ov-05)] p-4">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--text)]">Circle rules</p>
+                        <Link href={`/dashboard/circles/${circle.id}`} className="text-xs font-medium text-[#4B6B76] hover:underline">View full rules</Link>
+                      </div>
+                      <span className="text-[10px] text-[var(--muted)]">Updated {new Date(rules.updatedAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="max-h-36 overflow-y-auto"><CircleRulesView rules={rules} /></div>
+                    <label className="mt-4 flex items-start gap-2 text-xs text-[var(--text)]">
+                      <input type="checkbox" checked={rulesAcknowledged} onChange={(event) => setRulesAcknowledged(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-[var(--ov-14)] text-[#4B6B76] focus:ring-[#4B6B76]" />
+                      <span>I have read and agree to follow these circle rules.</span>
+                    </label>
+                  </div>
+                ) : <p className="text-xs text-[var(--muted)]">This circle has no published rules yet.</p>}
+              </>
             )}
             {isPrivate && (
               <textarea
@@ -201,7 +245,7 @@ export default function JoinCircleModal({ open, onClose, circle, currentWallet, 
               </button>
               <button
                 onClick={isPrivate ? handleRequest : handleJoin}
-                disabled={joining || isFull}
+                disabled={joining || isFull || (requiresRulesAcknowledgement && !rulesAcknowledged)}
                 className="flex-1 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
               >
                 {joining ? "Joining…" : isPrivate ? "Request to Join" : "Confirm Join"}

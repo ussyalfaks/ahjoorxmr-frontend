@@ -2,21 +2,38 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Copy, Check, ChevronDown, X, Search } from "lucide-react";
+import { Copy, Check, ChevronDown, X, Search, KeyRound, Loader2 } from "lucide-react";
+import GlossaryTerm from "@/components/ui/GlossaryTerm";
 import { useWallet, AVAILABLE_WALLETS, truncateAddress, type WalletId } from "@/contexts/WalletContext";
+import { APP_NETWORK, NETWORK_LABELS, type StellarNetwork } from "@/config/network";
+import { isPasskeySupported } from "@/lib/passkeys";
 import { OPEN_COMMAND_PALETTE_EVENT } from "@/components/ui/CommandPalette";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import InstallPWAButton from "@/components/ui/InstallPWAButton";
+import PendingTransactionsTracker from "@/components/layout/Navbar/PendingTransactionsTracker";
+import { hasUnseenChangelog as checkUnseenChangelog } from "@/data/changelog";
 
 const navLinks = [
   { label: "Home", href: "#" },
   { label: "How it Works", href: "#how" },
   { label: "Features", href: "#why" },
   { label: "FAQs", href: "#faq" },
+  { label: "What's New", href: "/changelog" },
 ];
 
-function WalletSelectModal({ onClose, onSelect }: { onClose: () => void; onSelect: (id: WalletId) => void }) {
+function WalletSelectModal({
+  onClose,
+  onSelect,
+  onPasskey,
+}: {
+  onClose: () => void;
+  onSelect: (id: WalletId) => void;
+  onPasskey: () => Promise<void>;
+}) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
+  const passkeySupported = isPasskeySupported();
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -55,7 +72,8 @@ function WalletSelectModal({ onClose, onSelect }: { onClose: () => void; onSelec
         </div>
 
         <p className="text-[var(--muted)] text-sm mb-5">
-          Choose a Starknet-compatible wallet to connect.
+          Choose a <GlossaryTerm term="starknet">Starknet</GlossaryTerm>-compatible{" "}
+          <GlossaryTerm term="wallet">wallet</GlossaryTerm> to connect.
         </p>
 
         <div className="space-y-3">
@@ -66,12 +84,47 @@ function WalletSelectModal({ onClose, onSelect }: { onClose: () => void; onSelec
               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-[var(--ov-08)] hover:bg-[var(--ov-12)] border border-[var(--ov-0f)] hover:border-[#4B6B76] text-[var(--text)] text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             >
               <span className="w-8 h-8 rounded-full bg-[var(--ov-14)] flex items-center justify-center text-base" aria-hidden="true">
-                {wallet.id === "argent" ? "🔷" : "🔶"}
+                {wallet.id === "freighter" ? "🔷" : "🔶"}
               </span>
               <span>{wallet.name}</span>
             </button>
           ))}
         </div>
+
+        <div className="my-5 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--faint)]">
+          <span className="h-px flex-1 bg-[var(--ov-10)]" />
+          <span>or</span>
+          <span className="h-px flex-1 bg-[var(--ov-10)]" />
+        </div>
+
+        <button
+          type="button"
+          disabled={!passkeySupported || passkeyBusy}
+          onClick={async () => {
+            setPasskeyBusy(true);
+            setPasskeyError(null);
+            try {
+              await onPasskey();
+            } catch (error) {
+              setPasskeyError(error instanceof Error ? error.message : "Passkey sign-in failed.");
+            } finally {
+              setPasskeyBusy(false);
+            }
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#4B6B76]/50 px-4 py-3.5 text-sm font-semibold text-[var(--text)] transition-colors hover:bg-[#4B6B76]/10 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {passkeyBusy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <KeyRound size={16} aria-hidden="true" />}
+          {passkeyBusy ? "Waiting for passkey..." : "Sign in with passkey"}
+        </button>
+        <p className="mt-2 flex items-center justify-center gap-1 text-[11px] text-[var(--muted)]">
+          New to passkeys? <GlossaryTerm term="passkey" iconOnly />
+        </p>
+        {passkeyError && <p role="alert" className="mt-2 text-xs leading-relaxed text-red-500">{passkeyError}</p>}
+        {!passkeySupported && (
+          <p className="mt-2 text-center text-[11px] text-[var(--muted)]">
+            Passkeys are unavailable here. Choose a wallet above instead.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -84,6 +137,9 @@ function ConnectedDropdown({ address, onCopy, onDisconnect, onClose }: {
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const { linkedWallets, setWalletNetwork } = useWallet();
+  const network = linkedWallets.find((w) => w.address === address)?.network ?? APP_NETWORK;
+  const mismatched = network !== APP_NETWORK;
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -109,6 +165,26 @@ function ConnectedDropdown({ address, onCopy, onDisconnect, onClose }: {
         <div className="px-4 py-3 border-b border-[var(--ov-0f)]">
           <p className="text-xs text-[var(--muted)] mb-0.5">Connected</p>
           <p className="text-sm text-[var(--text)] font-mono">{truncateAddress(address)}</p>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <span className={`text-xs ${mismatched ? "font-semibold text-amber-400" : "text-[var(--muted)]"}`}>
+              Network: {NETWORK_LABELS[network]}
+              {mismatched && " (mismatch)"}
+            </span>
+            {/* #220: demo-only — there's no real wallet extension here
+                whose network could actually differ, so this is how the
+                guard gets exercised/tested. A real integration wouldn't
+                have this control; the wallet's own network just is
+                whatever it is. */}
+            <button
+              type="button"
+              onClick={() =>
+                setWalletNetwork(address, mismatched ? APP_NETWORK : (APP_NETWORK === "testnet" ? "mainnet" : "testnet") as StellarNetwork)
+              }
+              className="text-xs text-[#4B6B76] underline-offset-2 hover:underline"
+            >
+              {mismatched ? "Fix" : "Simulate mismatch"}
+            </button>
+          </div>
         </div>
         <button
           onClick={onCopy}
@@ -135,13 +211,24 @@ export default function Navbar() {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hasUnseenChangelog, setHasUnseenChangelog] = useState(false);
 
-  const { address, isConnected, connect, disconnect } = useWallet();
+  useEffect(() => {
+    const sync = () => setHasUnseenChangelog(checkUnseenChangelog());
+    sync();
+  }, []);
+
+  const { address, isConnected, connect, signInWithPasskey, disconnect } = useWallet();
 
   const handleSelectWallet = useCallback(async (walletId: WalletId) => {
     await connect(walletId);
     setShowWalletModal(false);
   }, [connect]);
+
+  const handlePasskeySignIn = useCallback(async () => {
+    await signInWithPasskey();
+    setShowWalletModal(false);
+  }, [signInWithPasskey]);
 
   const handleCopyAddress = useCallback(() => {
     if (!address) return;
@@ -201,6 +288,9 @@ export default function Navbar() {
                   className="text-[14px] font-medium text-[var(--muted)] no-underline transition-colors duration-200 hover:text-[var(--text)] relative group"
                 >
                   {l.label}
+                  {l.href === "/changelog" && hasUnseenChangelog && (
+                    <span className="absolute -top-1 -right-2.5 w-2 h-2 rounded-full bg-[#8b7cf8]" aria-label="New updates" />
+                  )}
                   <span className="absolute -bottom-[3px] left-0 w-0 h-px bg-[#8b7cf8] transition-all duration-200 group-hover:w-full" aria-hidden="true" />
                 </Link>
               </li>
@@ -222,6 +312,7 @@ export default function Navbar() {
             </button>
             <InstallPWAButton />
             <ThemeToggle />
+            <PendingTransactionsTracker />
             {isConnected && address ? (
               <div className="relative">
                 <button
@@ -262,6 +353,7 @@ export default function Navbar() {
 
           {/* Mobile search + hamburger */}
           <div className="hidden max-md:flex items-center gap-3">
+          <PendingTransactionsTracker />
           <button
             onClick={() => window.dispatchEvent(new Event(OPEN_COMMAND_PALETTE_EVENT))}
             className="flex items-center justify-center w-8 h-8 text-[var(--muted)] hover:text-[var(--text)] transition-colors"
@@ -347,6 +439,7 @@ export default function Navbar() {
         <WalletSelectModal
           onClose={() => setShowWalletModal(false)}
           onSelect={handleSelectWallet}
+          onPasskey={handlePasskeySignIn}
         />
       )}
     </>

@@ -62,6 +62,18 @@ function useConfirm() {
   return { requestConfirm, cancel, isArmed };
 }
 
+/**
+ * Inline spinner shown while a transaction is pending.
+ */
+function Spinner() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+    />
+  );
+}
+
 export function OrganizerControls({
   circle,
   connectedAddress,
@@ -86,6 +98,7 @@ export function OrganizerControls({
   }
 
   async function handleRemove(address: string) {
+    if (busy) return;
     setBusy(true);
     try {
       await onRemoveMember(address);
@@ -96,6 +109,7 @@ export function OrganizerControls({
   }
 
   async function handleRoleChange(address: string, role: CircleRole) {
+    if (busy) return;
     setBusy(true);
     try {
       await onChangeRole(address, role);
@@ -106,6 +120,7 @@ export function OrganizerControls({
   }
 
   async function handleConfirmedClose() {
+    if (busy) return;
     setBusy(true);
     try {
       await onCloseCircle();
@@ -116,12 +131,24 @@ export function OrganizerControls({
   }
 
   async function handleExtend() {
+    if (busy) return;
     setBusy(true);
     try {
       await onExtendRound(extendDays);
     } finally {
       setBusy(false);
     }
+  }
+
+  function requestCloseModal() {
+    if (busy) return;
+    setShowCloseModal(true);
+  }
+
+  function dismissCloseModal() {
+    // Block closing the modal while a signing request is in flight.
+    if (busy) return;
+    setShowCloseModal(false);
   }
 
   return (
@@ -190,14 +217,16 @@ export function OrganizerControls({
                         type="button"
                         disabled={busy}
                         onClick={() => handleRoleChange(member.address, nextRole)}
-                        className="rounded bg-[#4B6B76] px-2 py-1 text-xs font-medium text-white hover:bg-[#3D5A64] disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded bg-[#4B6B76] px-2 py-1 text-xs font-medium text-white hover:bg-[#3D5A64] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Confirm
+                        {busy && <Spinner />}
+                        {busy ? "Confirming…" : "Confirm"}
                       </button>
                       <button
                         type="button"
+                        disabled={busy}
                         onClick={roleConfirm.cancel}
-                        className="rounded border border-gray-300 dark:border-[var(--border)] px-2 py-1 text-xs text-gray-600 dark:text-[var(--muted)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)]"
+                        className="rounded border border-gray-300 dark:border-[var(--border)] px-2 py-1 text-xs text-gray-600 dark:text-[var(--muted)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -205,8 +234,9 @@ export function OrganizerControls({
                   ) : (
                     <button
                       type="button"
+                      disabled={busy}
                       onClick={() => roleConfirm.requestConfirm(roleConfirmKey)}
-                      className="rounded border border-[#4B6B76]/50 px-2 py-1 text-xs font-medium text-[#4B6B76] hover:bg-[#4B6B76]/10"
+                      className="rounded border border-[#4B6B76]/50 px-2 py-1 text-xs font-medium text-[#4B6B76] hover:bg-[#4B6B76]/10 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {nextRole === "co-organizer" ? "Promote" : "Demote"}
                     </button>
@@ -214,19 +244,23 @@ export function OrganizerControls({
                 {!isCreator &&
                   (removeConfirm.isArmed(confirmKey) ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-red-600 dark:text-red-400">Remove this member?</span>
+                      <span className="text-xs text-red-600 dark:text-red-400">
+                        Remove?
+                      </span>
                       <button
                         type="button"
                         disabled={busy}
                         onClick={() => handleRemove(member.address)}
-                        className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Confirm
+                        {busy && <Spinner />}
+                        {busy ? "Confirming…" : "Confirm"}
                       </button>
                       <button
                         type="button"
+                        disabled={busy}
                         onClick={removeConfirm.cancel}
-                        className="rounded border border-gray-300 dark:border-[var(--border)] px-2 py-1 text-xs text-gray-600 dark:text-[var(--muted)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)]"
+                        className="rounded border border-gray-300 dark:border-[var(--border)] px-2 py-1 text-xs text-gray-600 dark:text-[var(--muted)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -234,10 +268,11 @@ export function OrganizerControls({
                   ) : (
                     <button
                       type="button"
+                      disabled={busy}
                       onClick={() => removeConfirm.requestConfirm(confirmKey)}
-                      className="rounded border border-red-300 dark:border-red-800/60 px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
+                      className="rounded border border-red-300 dark:border-red-800/60 px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Remove Member
+                      Remove
                     </button>
                   ))}
                 </div>
@@ -247,24 +282,30 @@ export function OrganizerControls({
         </ul>
       </div>
 
-      {/* Extend round duration */}
-      <div className="flex items-center gap-2">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-[var(--text)]">Extend Round</h3>
+      {/* Round management */}
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="text-xs text-gray-600 dark:text-[var(--muted)]" htmlFor="extend-days">
+          Extend round by
+        </label>
         <input
+          id="extend-days"
           type="number"
           min={1}
+          max={90}
           value={extendDays}
-          onChange={(e) => setExtendDays(Number(e.target.value))}
-          className="w-16 rounded border border-gray-300 dark:border-[var(--border)] dark:bg-[var(--content)] dark:text-[var(--text)] px-2 py-1 text-sm"
+          disabled={busy}
+          onChange={(e) => setExtendDays(Number(e.target.value) || 1)}
+          className="w-16 rounded border border-gray-300 dark:border-[var(--border)] bg-white dark:bg-[var(--content)] px-2 py-1 text-xs text-gray-800 dark:text-[var(--text)] disabled:opacity-50"
         />
-        <span className="text-xs text-gray-500 dark:text-[var(--muted)]">days</span>
+        <span className="text-xs text-gray-600 dark:text-[var(--muted)]">days</span>
         <button
           type="button"
           disabled={busy}
           onClick={handleExtend}
-          className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded bg-[#4B6B76] px-3 py-1 text-xs font-medium text-white hover:bg-[#3D5A64] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Extend
+          {busy && <Spinner />}
+          {busy ? "Confirming…" : "Extend Round"}
         </button>
       </div>
 
@@ -272,11 +313,11 @@ export function OrganizerControls({
       <div>
         <button
           type="button"
-          disabled={busy || circle.status === "closed"}
-          onClick={() => setShowCloseModal(true)}
-          className="rounded bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800 disabled:opacity-50"
+          disabled={busy}
+          onClick={requestCloseModal}
+          className="rounded border border-red-300 dark:border-red-800/60 px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {circle.status === "closed" ? "Circle Closed" : "Close Circle Early"}
+          Close Circle
         </button>
       </div>
 
@@ -284,23 +325,26 @@ export function OrganizerControls({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          aria-busy={busy}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={dismissCloseModal}
         >
-          <div className="w-full max-w-sm rounded-lg bg-white dark:bg-[var(--modal)] p-5 shadow-lg">
-            <h4 className="text-base font-semibold text-gray-900 dark:text-[var(--text)]">
-              Close this circle early?
-            </h4>
-            <p className="mt-2 text-sm text-gray-600 dark:text-[var(--muted)]">
-              Closing the circle ends the current round immediately. Remaining
-              contributions will be settled according to the circle&apos;s payout
-              rules, and no further members can join or contribute. This action
-              cannot be undone.
+          <div
+            className="w-full max-w-sm rounded-lg bg-white dark:bg-[var(--content)] p-4 space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-[var(--text)]">
+              Close this circle?
+            </h3>
+            <p className="text-xs text-gray-600 dark:text-[var(--muted)]">
+              This will end the circle and cannot be undone.
             </p>
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setShowCloseModal(false)}
-                className="rounded border border-gray-300 dark:border-[var(--border)] px-3 py-1.5 text-sm text-gray-700 dark:text-[var(--text)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)]"
+                disabled={busy}
+                onClick={dismissCloseModal}
+                className="rounded border border-gray-300 dark:border-[var(--border)] px-3 py-1 text-xs text-gray-600 dark:text-[var(--muted)] hover:bg-gray-50 dark:hover:bg-[var(--ov-0a)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -308,9 +352,10 @@ export function OrganizerControls({
                 type="button"
                 disabled={busy}
                 onClick={handleConfirmedClose}
-                className="rounded bg-red-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Yes, close circle
+                {busy && <Spinner />}
+                {busy ? "Confirming…" : "Confirm"}
               </button>
             </div>
           </div>

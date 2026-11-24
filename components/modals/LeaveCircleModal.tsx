@@ -65,7 +65,7 @@ export default function LeaveCircleModal({
         <button
           onClick={onClose}
           disabled={leaving}
-          className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded disabled:opacity-50"
+          className="absolute top-4 end-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded disabled:opacity-50"
           aria-label="Close"
         >
           <X size={18} />

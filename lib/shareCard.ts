@@ -55,6 +55,11 @@ const TYPE_CONFIG: Record<MilestoneType, TypeConfig> = {
     accentColor: PALETTE.coral,
     emoji: "🔥",
   },
+  annual_summary: {
+    label: "Annual Savings Wrapped",
+    accentColor: PALETTE.accent,
+    emoji: "✨",
+  },
 };
 
 // ---------------------------------------------------------------------------

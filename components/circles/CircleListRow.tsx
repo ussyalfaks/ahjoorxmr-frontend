@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Users, DollarSign, Clock, ArrowRight } from "lucide-react";
+import { Users, DollarSign, Clock, ArrowRight, Copy } from "lucide-react";
 import { truncateAddress, type DiscoverCircle } from "@/data/circles";
 import AutoPayStatusBadge from "@/components/circles/AutoPayStatusBadge";
 import BookmarkButton from "@/components/circles/BookmarkButton";
+import { useCircleComparison } from "@/contexts/CircleComparisonContext";
+import CircleImage from "@/components/circles/CircleImage";
+import CircleTagControls from "@/components/circles/CircleTagControls";
 
 interface CircleListRowProps {
   circle: DiscoverCircle;
   showJoin?: boolean;
   onJoin?: (circle: DiscoverCircle) => void;
+  onDuplicate?: (circle: DiscoverCircle) => void;
   /** Zebra shading — pass true for even rows */
   even?: boolean;
 }
@@ -18,27 +22,51 @@ export default function CircleListRow({
   circle,
   showJoin = false,
   onJoin,
+  onDuplicate,
   even = false,
 }: CircleListRowProps) {
   const fillPct = Math.round((circle.members.length / circle.totalSlots) * 100);
   const slotsLeft = circle.totalSlots - circle.members.length;
 
+  const { isSelected, toggleCircle, isMaxSelected } = useCircleComparison();
+  const selected = isSelected(circle.id);
+
   return (
     <div
-      className={`grid items-center gap-x-4 gap-y-2 px-4 py-3.5 rounded-xl transition-colors
+      className={`grid items-center gap-x-4 gap-y-2 px-4 py-3.5 rounded-xl transition-all duration-150
         hover:bg-[var(--content-hover)]
-        ${even ? "bg-[var(--ov-03)]" : "bg-transparent"}
+        ${selected ? "bg-[var(--ov-08)] ring-1 ring-[#4B6B76]/60" : even ? "bg-[var(--ov-03)]" : "bg-transparent"}
         /* Responsive column layout:
            mobile  : stacked (name + meta)
-           sm+     : name | contribution | members | round | next payout | action
+           sm+     : compare | name | contribution | members | round | next payout | action
         */
-        grid-cols-[1fr_auto]
-        sm:grid-cols-[minmax(180px,2fr)_120px_100px_80px_110px_auto]`}
+        grid-cols-[auto_1fr_auto]
+        sm:grid-cols-[28px_minmax(160px,2fr)_110px_100px_80px_100px_auto]`}
       role="row"
     >
+      {/* ---- Compare checkbox column ---- */}
+      <div className="flex items-center justify-center">
+        <label
+          htmlFor={`compare-list-${circle.id}`}
+          className="cursor-pointer p-1"
+          title="Select to compare"
+        >
+          <input
+            id={`compare-list-${circle.id}`}
+            type="checkbox"
+            checked={selected}
+            disabled={!selected && isMaxSelected}
+            onChange={() => toggleCircle(circle.id)}
+            aria-label={`Compare ${circle.name}`}
+            className="rounded border-[var(--ov-1a)] text-[#4B6B76] focus:ring-[#4B6B76] w-3.5 h-3.5 cursor-pointer disabled:opacity-40"
+          />
+        </label>
+      </div>
+
       {/* ---- Name + creator (always visible) ---- */}
       <div className="flex flex-col gap-0.5 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
+          <CircleImage circleId={circle.id} circleName={circle.name} kind="icon" alt="" className="h-9 w-9 shrink-0 rounded-lg object-cover" />
           <Link
             href={`/dashboard/circles/${circle.id}`}
             className="text-sm font-semibold text-[var(--text)] hover:underline truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
@@ -48,11 +76,10 @@ export default function CircleListRow({
           <AutoPayStatusBadge circleId={circle.id} />
           {(circle.closed || slotsLeft <= 0) && (
             <span
-              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                circle.closed
+              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${circle.closed
                   ? "bg-[var(--ov-0a)] text-[var(--muted)]"
                   : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-              }`}
+                }`}
             >
               {circle.closed ? "Closed" : "Full"}
             </span>
@@ -61,11 +88,23 @@ export default function CircleListRow({
         <span className="text-xs text-[var(--muted)] font-mono truncate">
           {truncateAddress(circle.creator)}
         </span>
+        <CircleTagControls circleId={circle.id} circleName={circle.name} />
       </div>
 
       {/* ---- Action (always visible, right column on mobile) ---- */}
       <div className="flex items-center justify-end gap-1.5 sm:order-last">
         <BookmarkButton circleId={circle.id} circleName={circle.name} />
+        {onDuplicate && (
+          <button
+            type="button"
+            onClick={() => onDuplicate(circle)}
+            aria-label={`Duplicate ${circle.name}`}
+            title="Duplicate circle"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--ov-0a)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+          >
+            <Copy size={14} aria-hidden="true" />
+          </button>
+        )}
         {showJoin ? (
           <button
             type="button"

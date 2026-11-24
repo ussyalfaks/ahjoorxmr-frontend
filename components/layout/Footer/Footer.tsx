@@ -11,6 +11,12 @@ const footerLinks = [
 ];
 
 export default function Footer() {
+  const openCookieSettings = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("ahjoor:open-cookie-settings"));
+    }
+  };
+
   return (
     <footer
       className="border-t border-[var(--border)] px-10 pt-16 pb-10 max-sm:px-6 max-sm:pt-12 max-sm:pb-8"
@@ -49,6 +55,13 @@ export default function Footer() {
           >
             Privacy Policy
           </Link>
+          <button
+            type="button"
+            onClick={openCookieSettings}
+            className="bg-transparent border-0 p-0 text-[var(--muted)] no-underline text-[14px] font-medium cursor-pointer transition-colors duration-200 hover:text-[var(--text)]"
+          >
+            Cookie settings
+          </button>
         </nav>
 
         {/* Email subscribe */}

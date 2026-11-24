@@ -58,7 +58,7 @@ export default function FeedbackWidget() {
         type="button"
         onClick={openWidget}
         aria-label="Send feedback or report a bug"
-        className="fixed bottom-24 right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#4B6B76] text-white shadow-lg shadow-black/20 transition-transform hover:scale-105 hover:bg-[#3D5A64] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] md:bottom-6 md:right-6"
+        className="fixed bottom-24 end-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#4B6B76] text-white shadow-lg shadow-black/20 transition-transform hover:scale-105 hover:bg-[#3D5A64] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] md:bottom-6 md:end-6"
       >
         <MessageSquarePlus size={21} aria-hidden="true" />
       </button>

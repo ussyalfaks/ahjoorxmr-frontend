@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Copy,
   ExternalLink,
+  ChevronDown,
   Filter,
   LogOut,
   Plus,
@@ -16,13 +17,20 @@ import {
   Zap,
 } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
+import GlossaryTerm from "@/components/ui/GlossaryTerm";
 import { useWallet, truncateAddress, AVAILABLE_WALLETS } from "@/contexts/WalletContext";
 import AddressBookSection from "@/components/wallet/AddressBookSection";
 import SendTransferModal from "@/components/wallet/SendTransferModal";
 import TwoFactorChallengeModal from "@/components/settings/TwoFactorChallengeModal";
+import { LowBalanceAlertBanner, LowBalanceAlertSettings } from "@/components/wallet/LowBalanceAlert";
+import { formatCurrency } from "@/lib/currencyFormat";
 import { isTwoFactorEnabled } from "@/lib/twoFactor";
+import BalanceBreakdownWidget from "@/components/wallet/BalanceBreakdownWidget";
+import { FriendbotButton } from "@/components/wallet/FriendbotButton";
+import { useLoadMore } from "@/hooks/useLoadMore";
+import type { MemoType } from "@/lib/sendTransfer";
 
-type TransactionType = "contribution" | "payout" | "join";
+type TransactionType = "contribution" | "payout" | "join" | "send";
 
 interface Transaction {
   id: string;
@@ -31,7 +39,9 @@ interface Transaction {
   token_symbol: string;
   circle_name: string;
   date: string;
-  tx_hash: string;
+  tx_hash?: string;
+  memo?: string;
+  memoType?: MemoType;
 }
 
 // Mock transaction data shaped for future on-chain integration
@@ -114,18 +124,21 @@ const TRANSACTION_ICONS: Record<TransactionType, React.ReactNode> = {
   contribution: <Send size={16} />,
   payout: <Hand size={16} />,
   join: <Users size={16} />,
+  send: <Send size={16} />,
 };
 
 const TRANSACTION_LABELS: Record<TransactionType, string> = {
   contribution: "Contribution",
   payout: "Payout",
   join: "Joined Circle",
+  send: "Sent Transfer",
 };
 
 const TRANSACTION_COLORS: Record<TransactionType, string> = {
   contribution: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   payout: "bg-green-500/10 text-green-600 dark:text-green-400",
   join: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+  send: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
 };
 
 function formatDate(dateString: string): string {
@@ -150,10 +163,13 @@ function getExplorerUrl(txHash: string, network = "starknet"): string {
 
 export default function WalletPage() {
   const { linkedWallets, activeWalletAddress, setActiveWallet, isConnected, disconnect, connect } = useWallet();
+  const activeWallet = linkedWallets.find((w) => w.address === activeWalletAddress) ?? null;
   const [selectedFilter, setSelectedFilter] = useState<TransactionType | "all">("all");
   const [walletToRemove, setWalletToRemove] = useState<string | null>(null);
   const [sendOpen, setSendOpen] = useState(false);
+  const [sentTransfers, setSentTransfers] = useState<Transaction[]>([]);
   const [pendingConnectWallet, setPendingConnectWallet] = useState<Parameters<typeof connect>[0] | null>(null);
+  const transactions = useMemo(() => [...sentTransfers, ...MOCK_TRANSACTIONS], [sentTransfers]);
 
   const requestConnect = useCallback(
     (walletId: Parameters<typeof connect>[0]) => {
@@ -167,24 +183,29 @@ export default function WalletPage() {
   );
 
   const filteredTransactions = useMemo(() => {
-    if (selectedFilter === "all") return MOCK_TRANSACTIONS;
-    return MOCK_TRANSACTIONS.filter((tx) => tx.type === selectedFilter);
-  }, [selectedFilter]);
+    if (selectedFilter === "all") return transactions;
+    return transactions.filter((tx) => tx.type === selectedFilter);
+  }, [selectedFilter, transactions]);
+  const { visibleCount, hasMore, loadMore, sentinelRef, announcement } = useLoadMore(
+    filteredTransactions.length,
+    `dashboard:wallet:${selectedFilter}`
+  );
+  const visibleTransactions = filteredTransactions.slice(0, visibleCount);
 
   const stats = useMemo(() => {
     return {
-      totalContributions: MOCK_TRANSACTIONS.filter((tx) => tx.type === "contribution").reduce(
+      totalContributions: transactions.filter((tx) => tx.type === "contribution").reduce(
         (sum, tx) => sum + tx.amount,
         0
       ),
-      totalPayouts: MOCK_TRANSACTIONS.filter((tx) => tx.type === "payout").reduce(
+      totalPayouts: transactions.filter((tx) => tx.type === "payout").reduce(
         (sum, tx) => sum + tx.amount,
         0
       ),
-      circlesJoined: MOCK_TRANSACTIONS.filter((tx) => tx.type === "join").length,
-      totalTransactions: MOCK_TRANSACTIONS.length,
+      circlesJoined: transactions.filter((tx) => tx.type === "join").length,
+      totalTransactions: transactions.length,
     };
-  }, []);
+  }, [transactions]);
 
   const handleDisconnect = useCallback(() => {
     if (walletToRemove) {
@@ -210,11 +231,11 @@ export default function WalletPage() {
             No wallet connected
           </h2>
           <p className="text-[var(--muted)] mb-8 max-w-md">
-            Connect your wallet to view your on-chain activity across all circles, including
-            contributions, payouts, and memberships.
+            Connect your <GlossaryTerm term="wallet">wallet</GlossaryTerm> to view your on-chain
+            activity across all circles, including contributions, payouts, and memberships.
           </p>
           <button
-            onClick={() => requestConnect("argent")}
+            onClick={() => requestConnect("freighter")}
             className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           >
             <LogIn size={18} aria-hidden="true" />
@@ -244,6 +265,20 @@ export default function WalletPage() {
         </div>
       </div>
 
+      {/* Friendbot Testnet Funding – only visible on testnet when a wallet is connected */}
+      <FriendbotButton className="mb-2" />
+
+      {/* Low Balance Alert Banner */}
+      {activeWallet && (
+        <LowBalanceAlertBanner
+          balance={activeWallet.balance}
+          upcomingContribution={50} // Would come from actual circle data
+          daysUntilContribution={5} // Would come from actual circle data
+          onNavigateToDeposit={() => setSendOpen(true)}
+          testMode={true} // Enable for demo purposes
+        />
+      )}
+         <BalanceBreakdownWidget />
       {/* Linked Wallets Card */}
       <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl">
         <div className="flex items-center justify-between mb-6">
@@ -260,7 +295,7 @@ export default function WalletPage() {
               Send
             </button>
             <button
-              onClick={() => requestConnect("argent")}
+              onClick={() => requestConnect("freighter")}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-black bg-white hover:bg-gray-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             >
               <Plus size={16} aria-hidden="true" />
@@ -289,7 +324,7 @@ export default function WalletPage() {
                   <div className="flex items-center gap-3 mt-1 text-xs text-[var(--muted)]">
                     <span>{AVAILABLE_WALLETS.find(w => w.id === wallet.walletId)?.name || wallet.walletId}</span>
                     <span className="w-1 h-1 rounded-full bg-[var(--ov-1a)]"></span>
-                    <span>${wallet.balance?.toLocaleString()}</span>
+                    <span>{wallet.balance !== undefined ? formatCurrency(wallet.balance, "USD") : "—"}</span>
                   </div>
                 </div>
               </div>
@@ -350,7 +385,7 @@ export default function WalletPage() {
 
         {/* Filter Buttons */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {(["all", "contribution", "payout", "join"] as const).map((type) => (
+          {(["all", "contribution", "payout", "join", "send"] as const).map((type) => (
             <button
               key={type}
               onClick={() => setSelectedFilter(type)}
@@ -381,7 +416,7 @@ export default function WalletPage() {
                       Type
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">
-                      Circle
+                      Circle / Recipient
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">
                       Amount
@@ -390,12 +425,15 @@ export default function WalletPage() {
                       Date
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">
+                      Memo
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">
                       Transaction
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--ov-0f)]">
-                  {filteredTransactions.map((tx) => (
+                  {visibleTransactions.map((tx) => (
                     <tr
                       key={tx.id}
                       className="hover:bg-[var(--modal)] transition-colors"
@@ -420,20 +458,45 @@ export default function WalletPage() {
                         <p className="text-[var(--muted)] text-sm">{formatDate(tx.date)}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <a
-                          href={getExplorerUrl(tx.tx_hash)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-                          aria-label={`View transaction ${tx.tx_hash} on block explorer`}
-                        >
-                          <ExternalLink size={18} aria-hidden="true" />
-                        </a>
+                        <p className="max-w-48 break-all text-[var(--muted)] text-sm">
+                          {tx.memo ? `${tx.memo} (${tx.memoType === "id" ? "ID" : "text"})` : "—"}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        {tx.tx_hash ? (
+                          <a
+                            href={getExplorerUrl(tx.tx_hash)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                            aria-label={`View transaction ${tx.tx_hash} on block explorer`}
+                          >
+                            <ExternalLink size={18} aria-hidden="true" />
+                          </a>
+                        ) : (
+                          <span className="text-sm text-[var(--faint)]">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div ref={sentinelRef} aria-hidden="true" className="h-px" />
+            <div className="flex items-center justify-between gap-4 border-t border-[var(--ov-0f)] px-6 py-4">
+              <p className="text-sm text-[var(--muted)]" role="status" aria-live="polite">
+                {announcement || `Showing ${visibleTransactions.length} of ${filteredTransactions.length} transactions`}
+              </p>
+              {hasMore && (
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--ov-16)] bg-[var(--ov-08)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--ov-10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+                >
+                  Load more
+                  <ChevronDown size={16} aria-hidden="true" />
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -467,11 +530,28 @@ export default function WalletPage() {
         </div>
       )}
 
-      <SendTransferModal
-        open={sendOpen}
-        onClose={() => setSendOpen(false)}
-        fromAddress={activeWalletAddress ?? ""}
-      />
+      {sendOpen && (
+        <SendTransferModal
+          open={sendOpen}
+          onClose={() => setSendOpen(false)}
+          fromAddress={activeWalletAddress ?? ""}
+          onSent={({ recipient, amount, memo, memoType }) => {
+            setSentTransfers((previous) => [
+              {
+                id: `send-${Date.now()}`,
+                type: "send",
+                amount,
+                token_symbol: "USDT",
+                circle_name: recipient,
+                date: new Date().toISOString(),
+                memo,
+                memoType,
+              },
+              ...previous,
+            ]);
+          }}
+        />
+      )}
 
       <TwoFactorChallengeModal
         open={pendingConnectWallet !== null}

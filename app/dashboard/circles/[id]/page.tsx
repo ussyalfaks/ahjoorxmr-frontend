@@ -1,13 +1,15 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, X as XIcon, Link as LinkIcon, Settings, BarChart3, LogOut } from "lucide-react";
+import { ArrowLeft, Check, X as XIcon, Settings, BarChart3, LogOut, ChevronDown, Flag, Lock } from "lucide-react";
 import Link from "next/link";
 import LeaveCircleModal from "@/components/modals/LeaveCircleModal";
 import { addNotification } from "@/lib/notifications";
 import { ANNOUNCEMENTS_EVENT, getAnnouncementsForCircle } from "@/lib/announcements";
 import ActivityFeed from "@/components/circles/ActivityFeed";
+import InviteManager from "@/components/circles/InviteManager";
+import { getInviteUsage, INVITES_UPDATED_EVENT } from "@/lib/inviteLinks";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import DisputeList from "@/components/circles/DisputeList";
 import DiscussionThread from "@/components/circles/DiscussionThread";
@@ -21,14 +23,37 @@ import type { CircleEvent, PenaltyConfig } from "@/types/circle";
 import type { Dispute } from "@/types/dispute";
 import { type Comment, MAX_PINNED_COMMENTS } from "@/types/discussion";
 import type { ExportRow } from "@/lib/export";
+import type { Comment } from "@/types/discussion";
+import type { ExportColumn, ExportRecord, ExportRow } from "@/lib/export";
 import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
 import BookmarkButton from "@/components/circles/BookmarkButton";
 import { getMockCircleHealth } from "@/lib/circleHealth";
 import { getPayoutDraw, type PayoutDraw } from "@/lib/payoutDraw";
-import { Lock } from "lucide-react";
 import AutoPaySection from "@/components/circles/AutoPaySection";
 import { enableAutoPay, getAutoPayConfig, recordAutoPayAttempt } from "@/lib/autoPay";
 import { useCircleModeration } from "@/hooks/useCircleModeration";
+import CircleRulesView from "@/components/circles/CircleRulesView";
+import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, rulesMarkdownToList, type CircleRulesRecord } from "@/lib/circleRules";
+import { getCircleFaq, CIRCLE_FAQ_UPDATED_EVENT, type FaqItem } from "@/lib/circleFaq";
+import CircleImage from "@/components/circles/CircleImage";
+import { DownloadAgreementButton } from "@/components/circles/DownloadAgreementButton";
+import type { ModerationEvent } from "@/types/discussion";
+import WaitlistPositionCard from "@/components/circles/WaitlistPositionCard";
+import PayoutScheduleTimeline, { type PayoutRound } from "@/components/circles/PayoutScheduleTimeline";
+import PayoutMethodSelector from "@/components/circles/PayoutMethodSelector";
+import PayoutMethodBadge from "@/components/circles/PayoutMethodBadge";
+import { getCircleCurrency, isPayoutInProgress } from "@/lib/payoutMethods";
+import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
+import type { MilestoneData } from "@/types/milestone";
+import { useCirclePause } from "@/hooks/useCirclePause";
+import { useTimezone } from "@/hooks/useTimezone";
+import { generateCalendarIcs, downloadIcsFile } from "@/lib/calendarExport";
+import { detectCircleMilestones, celebrateMilestone } from "@/lib/milestoneCelebrations";
+import { recordLeftCircle } from "@/lib/circleRecommendations";
+import CirclePausedBanner from "@/components/circles/CirclePausedBanner";
+import ContactDirectory from "@/components/circles/ContactDirectory";
+import CircleAutoRenewCard from "@/components/circles/CircleAutoRenewCard";
+import { getStoredCircle } from "@/lib/circleRenewal";
 
 const CURRENT_WALLET = "0x23g43gdaa8f2c5b1e9d0f7a34bc6e12d8a9f5c3b";
 
@@ -39,7 +64,25 @@ interface Participant {
   slot: number;
   paid: boolean;
   role: "organizer" | "co-organizer" | "participant";
+  totalContributed?: number;
+  penaltiesPaid?: number;
 }
+
+interface SettlementExportRow extends ExportRecord {
+  member: string;
+  totalContributed: string;
+  payoutReceived: string;
+  penalties: string;
+  creditOrRefund: string;
+}
+
+const SETTLEMENT_COLUMNS: ExportColumn[] = [
+  { key: "member", label: "Member" },
+  { key: "totalContributed", label: "Total Contributed" },
+  { key: "payoutReceived", label: "Payout Received" },
+  { key: "penalties", label: "Penalties Paid" },
+  { key: "creditOrRefund", label: "Credit / (Refund)" },
+];
 
 interface RoundHistoryRow {
   round: number;
@@ -67,6 +110,41 @@ interface CircleDetail {
   isCoOrganizer: boolean;
   isMember: boolean;
   penalty?: PenaltyConfig;
+}
+
+function getSettlementReport(circle: CircleDetail): SettlementReport {
+  const { amount: contributionAmount, currency } = parseContribution(circle.contribution);
+  const payoutsByAddress = new Map<string, number>();
+
+  for (const round of circle.roundHistory) {
+    const payout = parseContribution(round.amount);
+    if (payout.currency !== currency) {
+      throw new Error(`Payout currency ${payout.currency} does not match ${currency}.`);
+    }
+    const address = round.recipient.toLowerCase();
+    payoutsByAddress.set(address, (payoutsByAddress.get(address) ?? 0) + payout.amount);
+  }
+
+  return buildSettlementReport(
+    circle.participants.map((participant) => ({
+      address: participant.address,
+      totalContributed: participant.totalContributed ?? contributionAmount * circle.roundHistory.length,
+      payoutReceived: payoutsByAddress.get(participant.address.toLowerCase()) ?? 0,
+      penalties: participant.penaltiesPaid ?? 0,
+    })),
+    currency
+  );
+}
+
+function formatSettlementAmount(amount: number, currency: string): string {
+  return `${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+}
+
+function formatCreditOrRefund(amount: number, currency: string): string {
+  const formatted = formatSettlementAmount(Math.abs(amount), currency);
+  if (amount > 0) return `${formatted} credit`;
+  if (amount < 0) return `${formatted} refund`;
+  return formatted;
 }
 
 const MOCK_EVENTS: CircleEvent[] = [
@@ -233,9 +311,9 @@ const CIRCLES: Record<string, CircleDetail> = {
     status: "completed",
     createdAt: "May 20, 2025",
     participants: [
-      { address: CURRENT_WALLET, slot: 1, paid: true, role: "participant" },
-      { address: "0x888archive2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8", slot: 2, paid: true, role: "organizer" },
-      { address: "0x999archive3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9", slot: 3, paid: true, role: "participant" },
+      { address: CURRENT_WALLET, slot: 1, paid: true, role: "participant", totalContributed: 300, penaltiesPaid: 0 },
+      { address: "0x888archive2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8", slot: 2, paid: true, role: "organizer", totalContributed: 300, penaltiesPaid: 0 },
+      { address: "0x999archive3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9", slot: 3, paid: true, role: "participant", totalContributed: 300, penaltiesPaid: 0 },
     ],
     totalSlots: 3,
     contribution: "100 USDT",
@@ -279,8 +357,8 @@ const CIRCLES: Record<string, CircleDetail> = {
 };
 
 const STATUS_STYLES: Record<CircleDetail["status"], string> = {
-  active: "bg-green-500/10 text-green-600 dark:text-green-400",
-  pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  active: "bg-[var(--status-paid-bg)] text-[var(--status-paid)]",
+  pending: "bg-[var(--status-pending-bg)] text-[var(--status-pending)]",
   completed: "bg-[var(--ov-0a)] text-[var(--muted)]",
 };
 
@@ -293,46 +371,6 @@ const TAB_LIST: { id: TabId; label: string }[] = [
 
 function fmt(address: string) {
   return `${address.slice(0, 8)}…${address.slice(-6)}`;
-}
-
-function InviteLinkButton({ circleId }: { circleId: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    const url = `${window.location.origin}/dashboard/circles?invite=${circleId}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      const el = document.createElement("textarea");
-      el.value = url;
-      el.style.cssText = "position:fixed;opacity:0";
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
-  return (
-    <button
-      onClick={copy}
-      className="flex items-center gap-2 px-4 py-2 bg-[var(--ov-0a)] hover:bg-[var(--ov-14)] text-sm text-[var(--text)] font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
-    >
-      {copied ? (
-        <>
-          <Check size={14} className="text-green-600 dark:text-green-400" aria-hidden="true" />
-          <span className="text-green-600 dark:text-green-400">Copied!</span>
-        </>
-      ) : (
-        <>
-          <LinkIcon size={14} aria-hidden="true" />
-          Copy Invite Link
-        </>
-      )}
-    </button>
-  );
 }
 
 function ParticipantRow({ participant }: { participant: Participant }) {
@@ -349,19 +387,18 @@ function ParticipantRow({ participant }: { participant: Participant }) {
         </Link>
       </div>
       <div className="flex items-center gap-1.5">
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-          participant.role === "organizer"
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${participant.role === "organizer"
             ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
             : participant.role === "co-organizer"
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
               : "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-[var(--muted)]"
-        }`}>
+          }`}>
           {participant.role === "organizer" ? "Organizer" : participant.role === "co-organizer" ? "Co-Organizer" : "Participant"}
         </span>
         {participant.paid ? (
           <>
-            <Check size={14} className="text-green-600 dark:text-green-400" aria-hidden="true" />
-            <span className="text-xs text-green-600 dark:text-green-400">Paid</span>
+            <Check size={14} className="text-[var(--status-paid)]" aria-hidden="true" />
+            <span className="text-xs text-[var(--status-paid)]">Paid</span>
           </>
         ) : (
           <>
@@ -383,10 +420,10 @@ function RoundHistoryTable({ rows }: { rows: RoundHistoryRow[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--ov-0a)]">
-            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Round</th>
-            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Recipient</th>
-            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Payout</th>
-            <th className="text-left text-xs text-[var(--muted)] font-medium px-4 py-3">Completed</th>
+            <th className="text-start text-xs text-[var(--muted)] font-medium px-4 py-3">Round</th>
+            <th className="text-start text-xs text-[var(--muted)] font-medium px-4 py-3">Recipient</th>
+            <th className="text-start text-xs text-[var(--muted)] font-medium px-4 py-3">Payout</th>
+            <th className="text-start text-xs text-[var(--muted)] font-medium px-4 py-3">Completed</th>
           </tr>
         </thead>
         <tbody>
@@ -404,20 +441,26 @@ function RoundHistoryTable({ rows }: { rows: RoundHistoryRow[] }) {
   );
 }
 
-import { useCallback } from "react";
-import { Flag } from "lucide-react";
-import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
-import type { MilestoneData } from "@/types/milestone";
-
 export default function CircleDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const circle = CIRCLES[id];
+  const rawCircle = CIRCLES[id] ?? getStoredCircle(id);
+  const circle = useMemo(() => {
+    if (!rawCircle) return null;
+    return {
+      ...rawCircle,
+      isOrganizer: rawCircle.creator.toLowerCase() === CURRENT_WALLET.toLowerCase(),
+      isMember: rawCircle.participants.some(
+        (p) => p.address.toLowerCase() === CURRENT_WALLET.toLowerCase()
+      ),
+    };
+  }, [rawCircle]);
   const { showToast } = useToast();
   const router = useRouter();
+  const { timezone, formatDateTime } = useTimezone();
 
   const [disputes, setDisputes] = useState<Dispute[]>(() =>
     MOCK_DISPUTES.filter((d) => d.circleId === id)
@@ -431,8 +474,98 @@ export default function CircleDetailPage({
   const [circleEvents, setCircleEvents] = useState<CircleEvent[]>(() => MOCK_EVENTS);
   const [payoutDraw] = useState<PayoutDraw | null>(() => getPayoutDraw(id));
   const [announcementEvents, setAnnouncementEvents] = useState<CircleEvent[]>([]);
+  const [inviteEvents, setInviteEvents] = useState<CircleEvent[]>([]);
+  const [creditLedger, setCreditLedger] = useState<ContributionCreditEntry[]>([]);
+  const [showContributionForm, setShowContributionForm] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const pauseState = useCirclePause(id);
+  const pauseEvents: CircleEvent[] = pauseState.log.map((entry) => ({
+    id: entry.id,
+    type: entry.type === "paused" ? "circle_paused" : "circle_resumed",
+    actor: entry.actor,
+    timestamp: new Date(entry.at),
+    meta: entry.reason ? { message: entry.reason } : undefined,
+  }));
+
+  useEffect(() => {
+    const sync = () => setCreditLedger(getContributionCreditLedger());
+    sync();
+    window.addEventListener(CONTRIBUTION_CREDITS_UPDATED_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(CONTRIBUTION_CREDITS_UPDATED_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!circle || circle.status !== "completed") return;
+    try {
+      const refunds = refundCompletedCircleCredits(circle.id);
+      if (refunds.length > 0) {
+        setCreditLedger(getContributionCreditLedger());
+        showToast({
+          title: "Credit refund recorded",
+          message: `${refunds.length} member balance${refunds.length === 1 ? "" : "s"} refunded in the demo ledger.`,
+          variant: "success",
+        });
+      }
+    } catch (error) {
+      showToast({
+        title: "Could not refund contribution credits",
+        message: error instanceof Error ? error.message : "The credit ledger could not be updated.",
+        variant: "error",
+      });
+    }
+  }, [circle, showToast]);
+
+  useEffect(() => {
+    const sync = () =>
+      setInviteEvents(
+        getInviteUsage(id).map((u) => ({
+          id: u.id,
+          type: "invite_used",
+          actor: "Invite link",
+          timestamp: new Date(u.usedAt),
+        }))
+      );
+    sync();
+    window.addEventListener(INVITES_UPDATED_EVENT, sync);
+    return () => window.removeEventListener(INVITES_UPDATED_EVENT, sync);
+  }, [id]);
+  const [circleRules, setCircleRules] = useState<CircleRulesRecord | null>(null);
+  const [circleFaq, setCircleFaq] = useState<FaqItem[]>(() => getCircleFaq(id));
+  const [openFaqId, setOpenFaqId] = useState<string | null>(null);
 
   const moderation = useCircleModeration(circle, CURRENT_WALLET);
+
+  // Celebrate milestones this circle has reached (each plays once per user).
+  useEffect(() => {
+    if (!circle || !circle.isMember) return;
+    detectCircleMilestones({
+      id: circle.id,
+      name: circle.name,
+      status: circle.status,
+      memberCount: circle.participants.length,
+      totalSlots: circle.totalSlots,
+      lastCompletedRound: circle.roundHistory.reduce((max, row) => Math.max(max, row.round), 0),
+      totalRounds: circle.totalRounds,
+    }).forEach(celebrateMilestone);
+  }, [circle]);
+
+  useEffect(() => {
+    const syncRules = () => setCircleRules(getCircleRules(id));
+    syncRules();
+    window.addEventListener(CIRCLE_RULES_UPDATED_EVENT, syncRules);
+    return () => window.removeEventListener(CIRCLE_RULES_UPDATED_EVENT, syncRules);
+  }, [id]);
+
+  useEffect(() => {
+    const syncFaq = () => setCircleFaq(getCircleFaq(id));
+    syncFaq();
+    window.addEventListener(CIRCLE_FAQ_UPDATED_EVENT, syncFaq);
+    return () => window.removeEventListener(CIRCLE_FAQ_UPDATED_EVENT, syncFaq);
+  }, [id]);
 
   useEffect(() => {
     const sync = () => {
@@ -497,11 +630,11 @@ export default function CircleDetailPage({
         current.map((d) =>
           d.id === disputeId
             ? {
-                ...d,
-                status: "resolved",
-                resolutionNote,
-                resolvedAt: new Date(),
-              }
+              ...d,
+              status: "resolved",
+              resolutionNote,
+              resolvedAt: new Date(),
+            }
             : d
         )
       );
@@ -628,6 +761,16 @@ export default function CircleDetailPage({
     },
     [showToast]
   );
+  const handleModerationAction = useCallback((action: ModerationEvent) => {
+    const event: CircleEvent = {
+      id: `mod-${Date.now()}`,
+      type: "announcement_sent",
+      actor: action.actorAddress,
+      timestamp: new Date(),
+      meta: { moderation: action },
+    };
+    setAnnouncementEvents((prev) => [event, ...prev]);
+  }, []);
 
   const handleLeaveCircle = useCallback(async () => {
     if (!circle) return;
@@ -638,7 +781,9 @@ export default function CircleDetailPage({
       title: "A member left your circle",
       description: `${fmt(CURRENT_WALLET)} left ${circle.name}.`,
       href: `/dashboard/circles/${circle.id}`,
+      circleId: circle.id,
     });
+    recordLeftCircle(circle.id);
     setLeaveOpen(false);
     showToast({ title: `You left ${circle.name}`, variant: "success" });
     router.push("/dashboard/circles");
@@ -681,10 +826,109 @@ export default function CircleDetailPage({
   }
 
   const currentUserParticipant = circle.participants.find((p) => p.address === CURRENT_WALLET);
-  const currentUserPaid = currentUserParticipant?.paid ?? false;
+  const contributionAmount = parseContribution(circle.contribution);
+  const currentCreditBalance = getContributionCreditBalance(creditLedger, circle.id, CURRENT_WALLET);
+  const currentAmountDue = getContributionAmountDue(
+    creditLedger,
+    circle.id,
+    CURRENT_WALLET,
+    contributionAmount.amount
+  );
+  const currentRoundPaymentRecorded = creditLedger.some(
+    (entry) =>
+      entry.type === "payment" &&
+      entry.circleId === circle.id &&
+      entry.memberAddress.toLowerCase() === CURRENT_WALLET.toLowerCase() &&
+      entry.round === circle.currentRound
+  );
+  const settlementReport =
+    circle.status === "completed" ? getSettlementReport(circle) : null;
+  const settlementExportRows: SettlementExportRow[] = settlementReport
+    ? [
+        ...settlementReport.members.map((member) => ({
+          member: member.address,
+          totalContributed: formatSettlementAmount(member.totalContributed, settlementReport.currency),
+          payoutReceived: formatSettlementAmount(member.payoutReceived, settlementReport.currency),
+          penalties: formatSettlementAmount(member.penalties, settlementReport.currency),
+          creditOrRefund: formatCreditOrRefund(member.creditOrRefund, settlementReport.currency),
+        })),
+        {
+          member: "TOTAL",
+          totalContributed: formatSettlementAmount(settlementReport.totals.totalContributed, settlementReport.currency),
+          payoutReceived: formatSettlementAmount(settlementReport.totals.payoutReceived, settlementReport.currency),
+          penalties: formatSettlementAmount(settlementReport.totals.penalties, settlementReport.currency),
+          creditOrRefund: formatCreditOrRefund(settlementReport.totals.creditOrRefund, settlementReport.currency),
+        },
+      ]
+    : [];
+  const currentUserPaid = (currentUserParticipant?.paid ?? false) || currentRoundPaymentRecorded;
   const isNextRecipient = circle.nextPayoutRecipient === CURRENT_WALLET;
   const canManageCircle = circle.isOrganizer || circle.isCoOrganizer;
   const health = getMockCircleHealth(circle.id);
+  const circleCurrency = getCircleCurrency(circle.contribution);
+  const payoutInProgress = isPayoutInProgress(isNextRecipient, circle.nextPayoutDeadline);
+  const visibleCreditParticipants = circle.participants.filter(
+    (participant) =>
+      canManageCircle || participant.address.toLowerCase() === CURRENT_WALLET.toLowerCase()
+  );
+  const visibleCreditRows = visibleCreditParticipants.map((participant) => ({
+    address: participant.address,
+    balance: getContributionCreditBalance(creditLedger, circle.id, participant.address),
+    refunded: creditLedger
+      .filter(
+        (entry) =>
+          entry.circleId === circle.id &&
+          entry.memberAddress.toLowerCase() === participant.address.toLowerCase() &&
+          entry.type === "refund"
+      )
+      .reduce((sum, entry) => sum + entry.amount, 0),
+  }));
+  const appliedThisRound = creditLedger
+    .filter(
+      (entry) =>
+        entry.circleId === circle.id &&
+        entry.memberAddress.toLowerCase() === CURRENT_WALLET.toLowerCase() &&
+        entry.type === "applied" &&
+        entry.round === circle.currentRound
+    )
+    .reduce((sum, entry) => sum + entry.amount, 0);
+
+  function handleRecordContribution(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const paidAmount = Number(paymentAmount);
+    if (!Number.isFinite(paidAmount) || paidAmount < 0) return;
+    try {
+      const result = recordContributionPayment({
+        circleId: circle.id,
+        memberAddress: CURRENT_WALLET,
+        round: circle.currentRound,
+        requiredAmount: contributionAmount.amount,
+        paidAmount,
+      });
+      setCreditLedger(result.entries);
+      setShowContributionForm(false);
+      setPaymentAmount("");
+      const messages = [
+        result.creditApplied > 0
+          ? `${formatSettlementAmount(result.creditApplied, contributionAmount.currency)} credit applied.`
+          : "",
+        result.overpayment > 0
+          ? `${formatSettlementAmount(result.overpayment, contributionAmount.currency)} added as credit.`
+          : "",
+      ].filter(Boolean);
+      showToast({
+        title: "Demo contribution recorded",
+        message: messages.join(" ") || "No overpayment credit was added.",
+        variant: "success",
+      });
+    } catch (error) {
+      showToast({
+        title: "Could not record contribution",
+        message: error instanceof Error ? error.message : "The contribution credit ledger could not be updated.",
+        variant: "error",
+      });
+    }
+  }
 
   // Leave-circle eligibility — non-organizer participants only, and never on
   // a circle that's already finished.
@@ -702,27 +946,29 @@ export default function CircleDetailPage({
   const completedMilestone: MilestoneData | null =
     circle.status === "completed"
       ? {
-          type: "circle_completed",
-          circleName: circle.name,
-          amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
-          subtitle: `${circle.totalRounds} rounds completed · ${circle.participants.length} members`,
-          date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-        }
+        type: "circle_completed",
+        circleName: circle.name,
+        amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
+        subtitle: `${circle.totalRounds} rounds completed · ${circle.participants.length} members`,
+        date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+      }
       : null;
 
   const payoutMilestone: MilestoneData | null =
     isNextRecipient
       ? {
-          type: "payout_received",
-          circleName: circle.name,
-          amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
-          subtitle: `Round ${circle.currentRound} of ${circle.totalRounds}`,
-          date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-        }
+        type: "payout_received",
+        circleName: circle.name,
+        amount: `${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`,
+        subtitle: `Round ${circle.currentRound} of ${circle.totalRounds}`,
+        date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+      }
       : null;
 
   return (
     <div className="space-y-10 pb-20 md:pb-0">
+      <CircleImage circleId={circle.id} circleName={circle.name} kind="cover" alt={`${circle.name} cover`} className="aspect-[16/5] w-full rounded-2xl object-cover" />
+      <CirclePausedBanner circleId={circle.id} />
       {/* Back + Title */}
       <div className="flex flex-wrap items-center gap-3">
         <Link
@@ -734,14 +980,20 @@ export default function CircleDetailPage({
         </Link>
         <h1 className="text-2xl font-bold font-sora text-[var(--text)]">{circle.name}</h1>
         <BookmarkButton circleId={circle.id} circleName={circle.name} size={18} />
-        <CircleHealthIndicator health={health} />
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[circle.status]}`}>
-          {circle.status}
-        </span>
+        <CircleHealthIndicator health={getMockCircleHealth(circle.id)} />
+        {pauseState.paused ? (
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            Paused
+          </span>
+        ) : (
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[circle.status]}`}>
+            {circle.status}
+          </span>
+        )}
         <div className="h-px bg-[var(--ov-1a)] flex-1 hidden sm:block" aria-hidden="true" />
         {canManageCircle && (
           <>
-            <InviteLinkButton circleId={circle.id} />
+            <InviteManager circleId={circle.id} />
             {circle.isOrganizer && (
               <Link
                 href={`/dashboard/circles/${circle.id}/analytics`}
@@ -785,11 +1037,10 @@ export default function CircleDetailPage({
               aria-selected={isActive}
               aria-controls={`tabpanel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-                isActive
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${isActive
                   ? "text-[var(--text)] border-b-2 border-[#4B6B76] -mb-px"
                   : "text-[var(--muted)] hover:text-[var(--text)]"
-              }`}
+                }`}
             >
               {tab.label}
               {tab.id === "discussion" && comments.length > 0 && (
@@ -810,6 +1061,13 @@ export default function CircleDetailPage({
         hidden={activeTab !== "overview"}
         className={activeTab === "overview" ? "space-y-10" : ""}
       >
+        {/* Auto-Renew & Next Cycle */}
+        <CircleAutoRenewCard
+          circle={circle}
+          currentWallet={CURRENT_WALLET}
+          onCycleCreated={(newCircleId) => router.push(`/dashboard/circles/${newCircleId}`)}
+        />
+
         {/* Circle Info */}
         <div className="bg-[var(--content)] p-6 md:p-8 rounded-3xl space-y-6">
           <div>
@@ -836,13 +1094,119 @@ export default function CircleDetailPage({
           </div>
           <p className="text-xs text-[var(--muted)]">Created {circle.createdAt}</p>
         </div>
+{/* Waitlist position — only meaningful for a non-member with a pending join request. */}
+{!circle.isMember && <WaitlistPositionCard circleId={circle.id} currentWallet={CURRENT_WALLET} />}
+        <section className="rounded-2xl bg-[var(--content)] p-6" aria-labelledby="circle-rules-heading">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 id="circle-rules-heading" className="text-lg font-bold font-sora text-[var(--text)]">Circle Rules / Constitution</h2>
+              {circleRules && <p className="mt-1 text-xs text-[var(--muted)]">Last updated {new Date(circleRules.updatedAt).toLocaleString()}</p>}
+            </div>
+            {canManageCircle && <Link href={`/dashboard/circles/${circle.id}/settings`} className="text-sm font-medium text-[#4B6B76] hover:underline">Edit rules</Link>}
+          </div>
+          <div className="mt-4">
+            {circleRules ? <CircleRulesView rules={circleRules} /> : (
+              <div className="rounded-xl border border-dashed border-[var(--ov-14)] bg-[var(--ov-05)] px-4 py-5 text-sm text-[var(--muted)]">
+                {canManageCircle ? <><p>No rules have been published yet.</p><Link href={`/dashboard/circles/${circle.id}/settings`} className="mt-2 inline-block font-medium text-[#4B6B76] hover:underline">Add circle rules</Link></> : <p>The organizer has not published circle rules yet.</p>}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Circle FAQ — Issue #246 */}
+        <section className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold font-sora text-[var(--text)]">FAQ</h2>
+              <p className="text-xs text-[var(--muted)] mt-0.5">Answers to common questions from the organizer</p>
+            </div>
+            {canManageCircle && (
+              <Link href={`/dashboard/circles/${circle.id}/settings`} className="text-sm font-medium text-[#4B6B76] hover:underline">
+                Edit FAQ
+              </Link>
+            )}
+          </div>
+          {circleFaq.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[var(--ov-14)] bg-[var(--ov-05)] px-4 py-5 text-sm text-[var(--muted)]">
+              {canManageCircle ? (
+                <>
+                  <p>No FAQ items yet.</p>
+                  <Link href={`/dashboard/circles/${circle.id}/settings`} className="mt-2 inline-block font-medium text-[#4B6B76] hover:underline">
+                    Add FAQ
+                  </Link>
+                </>
+              ) : (
+                <p>The organizer has not published an FAQ yet.</p>
+              )}
+            </div>
+          ) : (
+            <ul className="divide-y divide-[var(--ov-14)] rounded-xl border border-[var(--ov-14)]">
+              {circleFaq.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqId(openFaqId === item.id ? null : item.id)}
+                    aria-expanded={openFaqId === item.id}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-[var(--text)] hover:bg-[var(--ov-05)] transition-colors"
+                  >
+                    <span>{item.question}</span>
+                    <ChevronDown
+                      size={14}
+                      className={`shrink-0 transition-transform text-[var(--muted)] ${openFaqId === item.id ? "rotate-180" : ""}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                  {openFaqId === item.id && (
+                    <div className="px-4 pb-4 text-sm text-[var(--muted)]">{item.answer}</div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         {/* Upcoming payout */}
         {circle.status !== "completed" && <div className="bg-[var(--content)] p-6 rounded-2xl space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold font-sora text-[var(--text)]">Upcoming Payout</h2>
-            <CountdownTimer deadline={circle.nextPayoutDeadline} />
+            <CountdownTimer
+              paused={pauseState.paused}
+              deadline={
+                circle.nextPayoutDeadline
+                  ? new Date(circle.nextPayoutDeadline.getTime() + pauseState.totalPausedMs)
+                  : null
+              }
+            />
           </div>
+          {circle.nextPayoutDeadline && (
+            <div className="flex flex-wrap items-center justify-between text-xs text-[var(--muted)] gap-2 bg-[var(--ov-05)] p-2.5 rounded-xl border border-[var(--ov-0a)]">
+              <span>
+                Payout Time: <strong className="text-[var(--text)]">{formatDateTime(new Date(circle.nextPayoutDeadline.getTime() + pauseState.totalPausedMs))}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const deadlineDate = new Date(circle.nextPayoutDeadline!.getTime() + pauseState.totalPausedMs);
+                  const ics = generateCalendarIcs(
+                    [
+                      {
+                        id: `payout-${circle.id}-${circle.currentRound}`,
+                        title: `${circle.name} Payout Deadline`,
+                        description: `Payout deadline for ${circle.name}. Round ${circle.currentRound} of ${circle.totalRounds}.`,
+                        startDate: deadlineDate,
+                      },
+                    ],
+                    timezone
+                  );
+                  downloadIcsFile(`${circle.name.toLowerCase().replace(/\s+/g, "-")}-payout.ics`, ics);
+                  showToast({ title: "Calendar event downloaded", variant: "success" });
+                }}
+                className="hover:text-[var(--text)] transition-colors underline font-medium"
+              >
+                Add to calendar (.ics)
+              </button>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-[var(--muted)] mb-1">Next Recipient</p>
@@ -858,7 +1222,32 @@ export default function CircleDetailPage({
               </p>
             </div>
           </div>
+          {circle.isMember && (
+            <div className="flex items-center justify-between border-t border-[var(--ov-0f)] pt-4">
+              <PayoutMethodBadge
+                circleId={circle.id}
+                currency={circleCurrency}
+                label={isNextRecipient ? "Paid to" : "Your payout method"}
+              />
+              {payoutInProgress && (
+                <span className="flex items-center gap-1 text-xs text-amber-400">
+                  <Lock size={12} aria-hidden="true" />
+                  Payout in progress
+                </span>
+              )}
+            </div>
+          )}
         </div>}
+
+        {/* Payout method preference */}
+        {circle.isMember && circle.status !== "completed" && (
+          <PayoutMethodSelector
+            circleId={circle.id}
+            circleName={circle.name}
+            currency={circleCurrency}
+            payoutInProgress={payoutInProgress}
+          />
+        )}
 
         {/* Auto-Pay */}
         {circle.isMember && circle.status !== "completed" && (
@@ -870,17 +1259,20 @@ export default function CircleDetailPage({
           <div className="flex gap-3 flex-wrap">
             <button
               disabled={currentUserPaid}
+              onClick={() => {
+                setPaymentAmount(currentAmountDue.toFixed(2));
+                setShowContributionForm(true);
+              }}
               className="px-5 py-2.5 bg-[#4B6B76] hover:bg-[#3D5A64] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
             >
               {currentUserPaid ? "Contribution Made" : `Make Contribution (${circle.contribution})`}
             </button>
             <button
               disabled={!isNextRecipient}
-              className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-                isNextRecipient
+              className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${isNextRecipient
                   ? "bg-green-500/20 hover:bg-green-500/30 text-green-600 dark:text-green-400"
                   : "bg-[var(--ov-0a)] text-[var(--muted)] cursor-not-allowed opacity-50"
-              }`}
+                }`}
             >
               Claim Reward
             </button>
@@ -901,6 +1293,54 @@ export default function CircleDetailPage({
               </button>
             )}
           </div>
+        )}
+
+        {showContributionForm && circle.isMember && circle.status !== "completed" && (
+          <form
+            onSubmit={handleRecordContribution}
+            className="max-w-xl space-y-4 rounded-2xl border border-[var(--ov-14)] bg-[var(--content)] p-5"
+            aria-labelledby="record-contribution-heading"
+          >
+            <div>
+              <h2 id="record-contribution-heading" className="font-semibold text-[var(--text)]">
+                Record round {circle.currentRound} contribution
+              </h2>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                {currentCreditBalance > 0
+                  ? `${formatSettlementAmount(Math.min(currentCreditBalance, contributionAmount.amount), contributionAmount.currency)} credit is applied automatically.`
+                  : "Any amount paid above the contribution due is carried forward as credit."}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-xs text-[var(--muted)]">
+                Amount paid ({contributionAmount.currency})
+                <input
+                  required
+                  type="number"
+                  min={currentAmountDue}
+                  step="any"
+                  value={paymentAmount}
+                  onChange={(event) => setPaymentAmount(event.target.value)}
+                  className="mt-1.5 w-full rounded-lg border border-[var(--ov-14)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)]"
+                />
+              </label>
+              <div className="space-y-1 self-center text-xs text-[var(--muted)]">
+                <p>Due after credit: <span className="font-medium text-[var(--text)]">{formatSettlementAmount(currentAmountDue, contributionAmount.currency)}</span></p>
+                <p>New credit: <span className="font-medium text-[var(--text)]">{formatSettlementAmount(Math.max(0, (Number(paymentAmount) || 0) - currentAmountDue), contributionAmount.currency)}</span></p>
+              </div>
+            </div>
+            <p className="text-[11px] text-amber-500">
+              Demo ledger only: this records contribution and credit locally; it does not send a wallet transaction.
+            </p>
+            <div className="flex gap-2">
+              <button type="submit" className="rounded-lg bg-[#4B6B76] px-4 py-2 text-sm font-medium text-white">
+                {currentAmountDue === 0 && Number(paymentAmount) === 0 ? "Apply credit" : "Record payment"}
+              </button>
+              <button type="button" onClick={() => setShowContributionForm(false)} className="rounded-lg px-4 py-2 text-sm text-[var(--muted)] hover:bg-[var(--ov-0a)]">
+                Cancel
+              </button>
+            </div>
+          </form>
         )}
 
         {/* Participants */}
@@ -925,6 +1365,53 @@ export default function CircleDetailPage({
             )}
           </div>
         </div>
+
+        {circle.isMember && (
+          <section className="space-y-3 rounded-2xl border border-[var(--ov-0f)] bg-[var(--content)] p-5" aria-labelledby="contribution-credit-heading">
+            <div>
+              <h2 id="contribution-credit-heading" className="font-semibold text-[var(--text)]">Contribution credits</h2>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Available credit is applied to your next round automatically. Any balance left at circle completion is recorded as a refund.
+              </p>
+            </div>
+            {visibleCreditRows.length > 0 ? (
+              <div className="overflow-x-auto rounded-xl border border-[var(--ov-0a)]">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--ov-0a)] text-left">
+                      {canManageCircle && <th scope="col" className="px-4 py-3 text-xs font-medium text-[var(--muted)]">Member</th>}
+                      <th scope="col" className="px-4 py-3 text-xs font-medium text-[var(--muted)]">Available credit</th>
+                      <th scope="col" className="px-4 py-3 text-xs font-medium text-[var(--muted)]">Refunded at completion</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleCreditRows.map((row) => (
+                      <tr key={row.address} className="border-b border-[var(--ov-05)] last:border-0">
+                        {canManageCircle && <th scope="row" className="px-4 py-3 text-left font-mono font-normal text-[var(--text)]">{fmt(row.address)}</th>}
+                        <td className="px-4 py-3 text-[var(--text)]">{formatSettlementAmount(row.balance, contributionAmount.currency)}</td>
+                        <td className="px-4 py-3 text-[var(--text)]">{formatSettlementAmount(row.refunded, contributionAmount.currency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--muted)]">No member credit balances to show.</p>
+            )}
+            {appliedThisRound > 0 && (
+              <p className="text-xs text-[var(--status-paid)]">
+                {formatSettlementAmount(appliedThisRound, contributionAmount.currency)} of your credit was applied to round {circle.currentRound}.
+              </p>
+            )}
+            <p className="text-[11px] text-[var(--faint)]">Demo ledger is stored in this browser; refunds are ledger entries, not wallet transfers.</p>
+          </section>
+        )}
+
+        <ContactDirectory
+          participants={circle.participants}
+          viewerAddress={CURRENT_WALLET}
+          viewerIsMember={circle.isMember}
+        />
 
         {/* Payout Order (fair draw result) */}
         {payoutDraw && (
@@ -957,6 +1444,23 @@ export default function CircleDetailPage({
           </div>
         )}
 
+        {/* Payout Schedule */}
+        <div>
+          <div className="flex items-center mb-4">
+            <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Payout Schedule</h2>
+            <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
+          </div>
+          <PayoutScheduleTimeline
+            participants={circle.participants}
+            totalRounds={circle.totalRounds}
+            currentRound={circle.currentRound}
+            contribution={`${Number(circle.contribution.replace(/[^\d.]/g, "")) * circle.participants.length} USDT`}
+            roundHistory={circle.roundHistory}
+            nextPayoutDeadline={circle.nextPayoutDeadline}
+            currentUserAddress={CURRENT_WALLET}
+          />
+        </div>
+
         {/* Round History */}
         <div>
           <div className="flex items-center mb-4">
@@ -965,6 +1469,136 @@ export default function CircleDetailPage({
           </div>
           <RoundHistoryTable rows={circle.roundHistory} />
         </div>
+
+        {settlementReport && (
+          <section className="space-y-4 rounded-2xl border border-[var(--ov-0f)] bg-[var(--content)] p-5" aria-labelledby="settlement-heading">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 id="settlement-heading" className="text-lg font-bold font-sora text-[var(--text)]">End-of-cycle settlement</h2>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Positive amounts are credits to members; negative amounts are refunds due to the circle.
+                </p>
+              </div>
+              <ExportButton
+                getRows={() => settlementExportRows}
+                columns={SETTLEMENT_COLUMNS}
+                scope={circle.name}
+                prefix="settlement"
+                title={`${circle.name} — Settlement Report`}
+                disabled={settlementReport.members.length === 0}
+              />
+            </div>
+            <p className={`text-sm font-medium ${settlementReport.reconciled ? "text-[var(--status-paid)]" : "text-amber-500"}`} role="status">
+              {settlementReport.reconciled
+                ? `Reconciled · net balance ${formatSettlementAmount(settlementReport.totals.creditOrRefund, settlementReport.currency)}`
+                : `Unreconciled · net balance ${formatCreditOrRefund(settlementReport.totals.creditOrRefund, settlementReport.currency)}`}
+            </p>
+            <div className="overflow-x-auto rounded-xl border border-[var(--ov-0a)]">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--ov-0a)] text-left">
+                    <th scope="col" className="px-4 py-3 text-xs font-medium text-[var(--muted)]">Member</th>
+                    <th scope="col" className="px-4 py-3 text-xs font-medium text-[var(--muted)]">Total contributed</th>
+                    <th scope="col" className="px-4 py-3 text-xs font-medium text-[var(--muted)]">Payout received</th>
+                    <th scope="col" className="px-4 py-3 text-xs font-medium text-[var(--muted)]">Penalties</th>
+                    <th scope="col" className="px-4 py-3 text-xs font-medium text-[var(--muted)]">Credit / (refund)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {settlementReport.members.map((member) => (
+                    <tr key={member.address} className="border-b border-[var(--ov-05)] last:border-0">
+                      <th scope="row" className="px-4 py-3 text-left font-mono font-normal text-[var(--text)]">{fmt(member.address)}</th>
+                      <td className="px-4 py-3 text-[var(--text)]">{formatSettlementAmount(member.totalContributed, settlementReport.currency)}</td>
+                      <td className="px-4 py-3 text-[var(--text)]">{formatSettlementAmount(member.payoutReceived, settlementReport.currency)}</td>
+                      <td className="px-4 py-3 text-[var(--text)]">{formatSettlementAmount(member.penalties, settlementReport.currency)}</td>
+                      <td className="px-4 py-3 text-[var(--text)]">{formatCreditOrRefund(member.creditOrRefund, settlementReport.currency)}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-[var(--ov-05)] font-semibold">
+                    <th scope="row" className="px-4 py-3 text-left text-[var(--text)]">Total</th>
+                    <td className="px-4 py-3 text-[var(--text)]">{formatSettlementAmount(settlementReport.totals.totalContributed, settlementReport.currency)}</td>
+                    <td className="px-4 py-3 text-[var(--text)]">{formatSettlementAmount(settlementReport.totals.payoutReceived, settlementReport.currency)}</td>
+                    <td className="px-4 py-3 text-[var(--text)]">{formatSettlementAmount(settlementReport.totals.penalties, settlementReport.currency)}</td>
+                    <td className="px-4 py-3 text-[var(--text)]">{formatCreditOrRefund(settlementReport.totals.creditOrRefund, settlementReport.currency)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* Issue #245 – Payout Schedule Timeline */}
+        {(() => {
+          // Build a full timeline by merging completed rounds (from roundHistory)
+          // with upcoming slots derived from participants ordered by slot number.
+          const completedRounds = new Set(circle.roundHistory.map((r) => r.round));
+          const sortedParticipants = [...circle.participants].sort(
+            (a, b) => a.slot - b.slot
+          );
+
+          // Estimate a round duration in ms from the circle duration string.
+          const durationDays = parseInt(circle.duration) || 7;
+          const msPerRound = durationDays * 24 * 60 * 60 * 1000;
+
+          const rounds: PayoutRound[] = Array.from(
+            { length: circle.totalRounds },
+            (_, i) => {
+              const roundNum = i + 1;
+              const participant = sortedParticipants[i] ?? null;
+              const historyRow = circle.roundHistory.find(
+                (r) => r.round === roundNum
+              );
+
+              let status: "paid" | "current" | "upcoming" = "upcoming";
+              if (historyRow) {
+                status = "paid";
+              } else if (roundNum === circle.currentRound) {
+                status = "current";
+              }
+
+              // Estimate date: past rounds use completedAt from history,
+              // future/current rounds project forward from now.
+              let dateStr: string;
+              if (historyRow?.completedAt) {
+                dateStr = new Date(historyRow.completedAt).toISOString();
+              } else {
+                const offsetRounds = roundNum - circle.currentRound;
+                dateStr = new Date(
+                  Date.now() + offsetRounds * msPerRound
+                ).toISOString();
+              }
+
+              const recipientAddr =
+                historyRow?.recipient ??
+                participant?.address ??
+                `Slot ${roundNum}`;
+
+              return {
+                round: roundNum,
+                recipient: recipientAddr.length > 14
+                  ? `${recipientAddr.slice(0, 6)}…${recipientAddr.slice(-4)}`
+                  : recipientAddr,
+                date: dateStr,
+                status,
+                isCurrentUser:
+                  (participant?.address === CURRENT_WALLET) ||
+                  (historyRow?.recipient === CURRENT_WALLET),
+              } satisfies PayoutRound;
+            }
+          );
+
+          return (
+            <div>
+              <div className="flex items-center mb-4">
+                <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">
+                  Payout Schedule
+                </h2>
+                <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
+              </div>
+              <PayoutScheduleTimeline rounds={rounds} />
+            </div>
+          );
+        })()}
 
         {/* Disputes */}
         <div>
@@ -994,6 +1628,7 @@ export default function CircleDetailPage({
             <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
           </div>
           <ActivityFeed events={[...circleEvents, ...announcementEvents]} pageSize={5} />
+          <ActivityFeed events={[...MOCK_EVENTS, ...announcementEvents, ...inviteEvents, ...pauseEvents]} pageSize={5} />
         </div>
 
         <ExportButton
@@ -1002,6 +1637,35 @@ export default function CircleDetailPage({
           prefix="circle"
           title={`${circle.name} — Transaction History`}
         />
+
+        {/* Download Agreement Button - available to all members */}
+        {circle.isMember && (
+          <div className="pt-4 border-t border-[var(--ov-0f)]">
+            <DownloadAgreementButton
+              data={{
+                circle: {
+                  id: circle.id,
+                  name: circle.name,
+                  contribution: circle.contribution,
+                  duration: circle.duration,
+                  totalRounds: circle.totalRounds,
+                  currentRound: circle.currentRound,
+                  status: circle.status,
+                },
+                rules: circleRules ? rulesMarkdownToList(circleRules.markdown) : [],
+                participants: circle.participants.map((p) => ({
+                  address: p.address,
+                  displayName: p.role,
+                })),
+                schedule: circle.roundHistory.map((r) => ({
+                  round: r.round,
+                  date: r.completedAt,
+                  payout: r.amount,
+                })),
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Discussion tab ── */}
@@ -1027,6 +1691,26 @@ export default function CircleDetailPage({
           onSubmit={handlePostComment}
           disabled={!circle.isMember}
         />
+        {circle.isMember && (
+          <>
+            <DiscussionThread
+              comments={comments}
+              currentAddress={CURRENT_WALLET}
+              circleId={id}
+              organizerAddress={circle.creator}
+              onModerationAction={handleModerationAction}
+            />
+            <CommentComposer
+              onSubmit={handlePostComment}
+              disabled={!circle.isMember}
+            />
+          </>
+        )}
+        {!circle.isMember && (
+          <div className="text-center py-8 text-[var(--muted)]">
+            Only circle members can participate in discussions.
+          </div>
+        )}
       </div>
 
       <ReportIssueModal

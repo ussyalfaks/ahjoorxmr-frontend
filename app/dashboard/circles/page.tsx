@@ -2,19 +2,28 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Plus, LayoutGrid, List, Search, Star, X } from "lucide-react";
-import CreateCircleModal from "@/components/modals/CreateCircleModal";
+import { useQueryClient } from "@tanstack/react-query";
+import { Plus, LayoutGrid, List, Search, Star } from "lucide-react";
+import SuggestedCirclesWidget from "@/components/circles/SuggestedCirclesWidget";
+import CreateCircleModal, { type CreateCircleData } from "@/components/modals/CreateCircleModal";
 import JoinCircleModal, { type JoinCircleData } from "@/components/modals/JoinCircleModal";
 import CircleGridCard from "@/components/circles/CircleGridCard";
+import CircleSearchAutocomplete from "@/components/circles/CircleSearchAutocomplete";
 import CircleListRow from "@/components/circles/CircleListRow";
+import ComparisonFloatingBar from "@/components/circles/ComparisonFloatingBar";
+import CircleComparison from "@/components/circles/CircleComparison";
+import { CircleComparisonProvider } from "@/contexts/CircleComparisonContext";
 import { useCircleViewPreference } from "@/hooks/useCircleViewPreference";
 import { useBookmarks } from "@/hooks/useBookmarks";
-import {
-  MOCK_CIRCLES,
-  CURRENT_WALLET,
-  filterCirclesByQuery,
-  type DiscoverCircle,
-} from "@/data/circles";
+import { useCircleTags } from "@/hooks/useCircleTags";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
+import { useToast } from "@/components/ui/Toast";
+import { INVITE_REF_PARAM, markInviteStatus } from "@/lib/circleInvites";
+import { CURRENT_WALLET, filterCirclesByQuery, type DiscoverCircle } from "@/data/circles";
+import { getStoredCircles, saveStoredCircle, CIRCLE_RENEWAL_UPDATED_EVENT } from "@/lib/circleRenewal";
+import { useCircles } from "@/lib/hooks/useCircles";
+import { queryKeys } from "@/lib/queryKeys";
+import { SavingsCardSkeletonGrid } from "@/components/skeleton/SavingsCardSkeleton";
 
 // ---------------------------------------------------------------------------
 // View toggle button
@@ -69,10 +78,11 @@ function ListHeader() {
   return (
     <div
       className="hidden sm:grid items-center gap-x-4 px-4 py-2 rounded-lg bg-[var(--ov-05)] mb-1
-        grid-cols-[minmax(180px,2fr)_120px_100px_80px_110px_auto]"
+        grid-cols-[28px_minmax(160px,2fr)_110px_100px_80px_100px_auto]"
       role="rowgroup"
       aria-label="Circle list column headers"
     >
+      <span className="sr-only">Compare</span>
       <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
         Circle
       </span>
@@ -139,28 +149,124 @@ function CirclesContent() {
 
   const tab: Tab = (searchParams.get("tab") as Tab) ?? "my";
   const inviteId = searchParams.get("invite");
+  const inviteRef = searchParams.get(INVITE_REF_PARAM);
   const action = searchParams.get("action");
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [duplicateValues, setDuplicateValues] = useState<Partial<CreateCircleData> | undefined>();
+  const queryClient = useQueryClient();
+  // Circle list now comes from the typed API client (lib/api) via TanStack
+  // Query instead of a direct `data/circles.ts` import.
+  const { data: fetchedCircles, isLoading, isError } = useCircles();
+  // Circles created locally or renewed from previous cycles
+  const [localCircles, setLocalCircles] = useState<DiscoverCircle[]>(() => getStoredCircles());
+
+  useEffect(() => {
+    const sync = () => {
+      setLocalCircles(getStoredCircles());
+    };
+    sync();
+    window.addEventListener(CIRCLE_RENEWAL_UPDATED_EVENT, sync);
+    return () => window.removeEventListener(CIRCLE_RENEWAL_UPDATED_EVENT, sync);
+  }, []);
+
+  const circles = useMemo(
+    () => [...localCircles, ...(fetchedCircles ?? [])],
+    [localCircles, fetchedCircles]
+  );
   const [joinCircle, setJoinCircle] = useState<JoinCircleData | null>(null);
   const [query, setQuery] = useState("");
 
-  const { view, setView } = useCircleViewPreference();
-  const { bookmarkedIds } = useBookmarks();
+   const { view, setView } = useCircleViewPreference();
+   const { bookmarkedIds } = useBookmarks();
+   const { tags, assignedIds } = useCircleTags();
+   const [tagFilter, setTagFilter] = useState("");
+  const { isVerified } = useEmailVerification();
+  const { showToast } = useToast();
 
-  // Handle invite / create deep-link params
-  useEffect(() => {
-    if (!inviteId) return;
-    const circle = MOCK_CIRCLES.find((c) => c.id === inviteId);
+  function requireVerified(): boolean {
+    if (isVerified) return true;
+    showToast({
+      title: "Verify your email to continue",
+      message: "Creating and joining circles requires a verified email address.",
+      variant: "warning",
+    });
+    return false;
+  }
+
+  function requestJoinCircle(circle: JoinCircleData) {
+    if (!requireVerified()) return;
+    setJoinCircle(circle);
+  }
+
+   // Arriving from an email/SMS invite counts as the invite being opened.
+   useEffect(() => {
+     if (inviteRef) markInviteStatus(inviteRef, "opened");
+   }, [inviteRef]);
+
+   // Handle invite / create deep-link params
+   useEffect(() => {
+     if (!inviteId) return;
+     const circle = circles.find((c) => c.id === inviteId);
     if (circle) setJoinCircle(circle);
-  }, [inviteId, allCircles]);
+    if (circle) requestJoinCircle(circle);
+   }, [circles, inviteId]);
 
-  useEffect(() => {
+   useEffect(() => {
     if (action === "create") {
-      setCreateOpen(true);
+      if (requireVerified()) setCreateOpen(true);
       router.replace("/dashboard/circles");
     }
-  }, [action, router]);
+   }, [action, router]);
+
+   function openCreateCircle() {
+    if (!requireVerified()) return;
+     setDuplicateValues(undefined);
+     setCreateOpen(true);
+   }
+
+   function duplicateCircle(circle: DiscoverCircle) {
+    if (!requireVerified()) return;
+     const contribution = circle.contribution.replace(/[^\d.]/g, "");
+    const roundDuration = circle.duration.replace(/[^\d.]/g, "");
+    setDuplicateValues({
+      name: `${circle.name} (Copy)`,
+      description: circle.description ?? "",
+      contribution,
+      maxMembers: String(circle.totalSlots),
+      roundDuration,
+      category: circle.category ?? "family",
+      isPrivate: circle.isPrivate ?? false,
+      penaltyEnabled: circle.penaltyEnabled ?? false,
+      penaltyType: circle.penaltyType ?? "percentage",
+      penaltyValue: circle.penaltyValue ?? "",
+    });
+    setCreateOpen(true);
+  }
+
+  function handleCreateCircle(data: CreateCircleData) {
+    const newCircle = {
+      id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `circle-${Date.now()}`,
+      name: data.name,
+      creator: CURRENT_WALLET,
+      members: [CURRENT_WALLET],
+      totalSlots: Number(data.maxMembers),
+      contribution: `${data.contribution} USDT`,
+      duration: `${data.roundDuration} Days`,
+      description: data.description,
+      category: data.category,
+      isPrivate: data.isPrivate,
+      penaltyEnabled: data.penaltyEnabled,
+      penaltyType: data.penaltyType,
+      penaltyValue: data.penaltyValue,
+    };
+    saveStoredCircle(newCircle as any);
+    setLocalCircles((current) => [newCircle, ...current.filter((c) => c.id !== newCircle.id)]);
+    setDuplicateValues(undefined);
+    // No real "create circle" endpoint yet; invalidating keeps the list in
+    // sync with the server once one exists, same as the join-circle flow.
+    queryClient.invalidateQueries({ queryKey: queryKeys.circles.all() });
+  }
 
   const setTab = (t: Tab) => {
     setQuery(""); // clear search when switching tabs
@@ -169,14 +275,14 @@ function CirclesContent() {
 
   // Derive filtered list — memo keeps it cheap on re-render
   const baseCircles = useMemo<DiscoverCircle[]>(() => {
-    if (tab === "my") return MOCK_CIRCLES.filter((c) => c.members.includes(CURRENT_WALLET));
-    if (tab === "bookmarked") return MOCK_CIRCLES.filter((c) => bookmarkedIds.includes(c.id));
-    return MOCK_CIRCLES.filter((c) => !c.members.includes(CURRENT_WALLET));
-  }, [tab, bookmarkedIds]);
+    if (tab === "my") return circles.filter((c) => c.members.includes(CURRENT_WALLET));
+    if (tab === "bookmarked") return circles.filter((c) => bookmarkedIds.includes(c.id));
+    return circles.filter((c) => !c.members.includes(CURRENT_WALLET));
+  }, [circles, tab, bookmarkedIds]);
 
   const displayCircles = useMemo(
-    () => filterCirclesByQuery(baseCircles, query),
-    [baseCircles, query]
+    () => filterCirclesByQuery(baseCircles, query).filter((circle) => !tagFilter || assignedIds(circle.id).includes(tagFilter)),
+    [assignedIds, baseCircles, query, tagFilter]
   );
 
   const isDiscover = tab === "discover";
@@ -192,7 +298,7 @@ function CirclesContent() {
           </h1>
           <div className="h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
           <button
-            onClick={() => setCreateOpen(true)}
+            onClick={openCreateCircle}
             className="flex items-center gap-2 shrink-0 px-4 py-2 bg-[#4B6B76] hover:bg-[#3D5A64] text-white text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           >
             <Plus size={16} aria-hidden="true" />
@@ -222,9 +328,9 @@ function CirclesContent() {
               My Circles
               <span
                 className="ml-2 text-xs text-[var(--muted)] tabular-nums"
-                aria-label={`${MOCK_CIRCLES.filter((c) => c.members.includes(CURRENT_WALLET)).length} circles`}
+                aria-label={`${circles.filter((c) => c.members.includes(CURRENT_WALLET)).length} circles`}
               >
-                {MOCK_CIRCLES.filter((c) => c.members.includes(CURRENT_WALLET)).length}
+                {circles.filter((c) => c.members.includes(CURRENT_WALLET)).length}
               </span>
             </button>
             <button
@@ -241,9 +347,9 @@ function CirclesContent() {
               Discover
               <span
                 className="ml-2 text-xs text-[var(--muted)] tabular-nums"
-                aria-label={`${MOCK_CIRCLES.filter((c) => !c.members.includes(CURRENT_WALLET)).length} circles`}
+                aria-label={`${circles.filter((c) => !c.members.includes(CURRENT_WALLET)).length} circles`}
               >
-                {MOCK_CIRCLES.filter((c) => !c.members.includes(CURRENT_WALLET)).length}
+                {circles.filter((c) => !c.members.includes(CURRENT_WALLET)).length}
               </span>
             </button>
             <button
@@ -261,9 +367,9 @@ function CirclesContent() {
               Bookmarked
               <span
                 className="ml-2 text-xs text-[var(--muted)] tabular-nums"
-                aria-label={`${MOCK_CIRCLES.filter((c) => bookmarkedIds.includes(c.id)).length} circles`}
+                aria-label={`${circles.filter((c) => bookmarkedIds.includes(c.id)).length} circles`}
               >
-                {MOCK_CIRCLES.filter((c) => bookmarkedIds.includes(c.id)).length}
+                {circles.filter((c) => bookmarkedIds.includes(c.id)).length}
               </span>
             </button>
           </div>
@@ -271,31 +377,19 @@ function CirclesContent() {
           {/* Search + view toggle */}
           <div className="flex items-center gap-2">
             {/* Search input */}
-            <div className="relative flex-1 sm:flex-none sm:w-52">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search circles…"
-                aria-label="Search circles"
-                className="w-full h-9 pl-8 pr-8 rounded-lg border border-[var(--ov-14)] bg-[var(--ov-05)] text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76] transition-colors"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)] focus-visible:outline-none"
-                  aria-label="Clear search"
-                >
-                  <X size={13} aria-hidden="true" />
-                </button>
-              )}
-            </div>
+            <CircleSearchAutocomplete
+              key={tab}
+              circles={baseCircles}
+              onQueryChange={setQuery}
+              className="flex-1 sm:flex-none sm:w-52"
+            />
+
+            {tags.length > 0 && (
+              <select aria-label="Filter by tag" value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} className="h-9 rounded-lg border border-[var(--ov-14)] bg-[var(--content)] px-2 text-xs text-[var(--text)]">
+                <option value="">All tags</option>
+                {tags.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}
+              </select>
+            )}
 
             {/* View toggle */}
             <ViewToggle view={view} onChange={setView} />
@@ -311,9 +405,29 @@ function CirclesContent() {
           </p>
         )}
 
+        {/* ---- Personalized picks (Discover tab only) ---- */}
+        {isDiscover && !query && (
+          <SuggestedCirclesWidget circles={circles} wallet={CURRENT_WALLET} onJoin={requestJoinCircle} />
+        )}
+
         {/* ---- Panel ---- */}
         <div id="circles-panel" role="tabpanel">
-          {displayCircles.length === 0 ? (
+          {isLoading ? (
+            <SavingsCardSkeletonGrid count={6} />
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center gap-2" role="alert">
+              <p className="text-[var(--muted)] text-base">
+                Couldn&apos;t load circles right now. Please try again.
+              </p>
+              <button
+                type="button"
+                onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.circles.all() })}
+                className="text-sm font-medium text-[#4B6B76] underline"
+              >
+                Retry
+              </button>
+            </div>
+          ) : displayCircles.length === 0 ? (
             <EmptyState tab={tab} hasQuery={query.length > 0} />
           ) : view === "grid" ? (
             /* Grid view */
@@ -323,7 +437,8 @@ function CirclesContent() {
                   key={circle.id}
                   circle={circle}
                   showJoin={isDiscover || (isBookmarked && !circle.members.includes(CURRENT_WALLET))}
-                  onJoin={setJoinCircle}
+                 onJoin={requestJoinCircle}
+                  onDuplicate={tab === "my" && circle.creator.toLowerCase() === CURRENT_WALLET.toLowerCase() ? duplicateCircle : undefined}
                 />
               ))}
             </div>
@@ -341,6 +456,7 @@ function CirclesContent() {
                   circle={circle}
                   showJoin={isDiscover || (isBookmarked && !circle.members.includes(CURRENT_WALLET))}
                   onJoin={setJoinCircle}
+                  onDuplicate={tab === "my" && circle.creator.toLowerCase() === CURRENT_WALLET.toLowerCase() ? duplicateCircle : undefined}
                   even={i % 2 === 1}
                 />
               ))}
@@ -349,7 +465,15 @@ function CirclesContent() {
         </div>
       </div>
 
-      <CreateCircleModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
+      <CreateCircleModal
+        open={createOpen}
+        onClose={() => {
+          setCreateOpen(false);
+          setDuplicateValues(undefined);
+        }}
+        initialValues={duplicateValues}
+        onCreate={handleCreateCircle}
+      />
       <JoinCircleModal
         open={joinCircle !== null}
         onClose={() => {
@@ -358,6 +482,16 @@ function CirclesContent() {
         }}
         circle={joinCircle}
         currentWallet={CURRENT_WALLET}
+        onJoined={() => {
+          if (inviteRef) markInviteStatus(inviteRef, "joined");
+          // Membership changed server-side (in a real backend) — refetch.
+          queryClient.invalidateQueries({ queryKey: queryKeys.circles.all() });
+        }}
+      />
+      <ComparisonFloatingBar allCircles={circles} />
+      <CircleComparison
+        allCircles={circles}
+        onJoinCircle={(circle) => requestJoinCircle(circle)}
       />
     </>
   );
@@ -366,7 +500,9 @@ function CirclesContent() {
 export default function CirclesPage() {
   return (
     <Suspense>
-      <CirclesContent />
+      <CircleComparisonProvider>
+        <CirclesContent />
+      </CircleComparisonProvider>
     </Suspense>
   );
 }

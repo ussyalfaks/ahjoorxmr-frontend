@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Search, MessageCircle, ChevronDown } from "lucide-react";
 import { SearchInput } from "@/components/ui/SearchInput";
+import SupportTicketCenter from "@/components/support/SupportTicketCenter";
 
 type Category = "getting-started" | "contributions" | "payouts" | "wallet" | "troubleshooting";
 
@@ -370,6 +371,8 @@ export default function HelpPage() {
             })}
           </div>
         )}
+
+        <SupportTicketCenter />
 
         {/* Still Need Help Section */}
         <div className="mt-16 pt-12 border-t border-[var(--ov-0f)]">

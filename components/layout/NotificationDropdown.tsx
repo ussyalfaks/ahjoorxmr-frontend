@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bell, CheckCircle2, DollarSign, AlertCircle, Clock, UserPlus, UserMinus, Megaphone, X } from "lucide-react";
+import { Bell, CheckCircle2, DollarSign, AlertCircle, Clock, UserPlus, UserMinus, Megaphone, Repeat, X, Send, PauseCircle, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import type { Notification, NotificationType } from "@/types/notification";
-import { NOTIFICATIONS_EVENT } from "@/lib/notifications";
+import {
+  getActiveNotificationSnoozes,
+  getExpiredNotificationIds,
+  NOTIFICATIONS_EVENT,
+} from "@/lib/notifications";
 
 const NOTIFICATIONS_KEY = "ahjoorxmr:notifications";
 
@@ -74,32 +78,52 @@ const TYPE_CONFIG: Record<NotificationType, { icon: React.ComponentType<{ size?:
   join_request:   { icon: UserPlus,      color: "text-[#4B6B76]" },
   member_left:    { icon: UserMinus,     color: "text-[#FF5B5B]" },
   announcement:   { icon: Megaphone,     color: "text-[#4B6B76]" },
+  seat_transfer:  { icon: Repeat,        color: "text-[#4B6B76]" },
+  circle_invite:  { icon: Send,          color: "text-[#4B6B76]" },
+  circle_paused:  { icon: PauseCircle,   color: "text-[#FBBF24]" },
+  circle_resumed: { icon: PlayCircle,    color: "text-[var(--success)]" },
 };
 
 export default function NotificationDropdown() {
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const sync = () => {
+    const sync = (event?: Event) => {
       const stored = readStoredNotifications();
-      if (stored.length === 0) return;
-      setNotifications((current) => [
-        ...stored.filter((s) => !current.some((c) => c.id === s.id)),
-        ...current,
-      ]);
+      if (stored.length > 0) {
+        setNotifications((current) => [
+          ...stored.filter((s) => !current.some((c) => c.id === s.id)),
+          ...current,
+        ]);
+      }
+      const { snoozedUntil: activeSnoozes, expiredIds } = getActiveNotificationSnoozes();
+      setSnoozedUntil(activeSnoozes);
+      const unreadIds = new Set([...expiredIds, ...(event ? getExpiredNotificationIds(event) : [])]);
+      if (unreadIds.size > 0) {
+        setNotifications((current) =>
+          current.map((notification) =>
+            unreadIds.has(notification.id) ? { ...notification, read: false } : notification
+          )
+        );
+      }
     };
     sync();
-    window.addEventListener(NOTIFICATIONS_EVENT, sync);
-    window.addEventListener("storage", sync);
+    const handleChange = (event: Event) => sync(event);
+    const interval = setInterval(() => sync(), 30 * 1000);
+    window.addEventListener(NOTIFICATIONS_EVENT, handleChange);
+    window.addEventListener("storage", handleChange);
     return () => {
-      window.removeEventListener(NOTIFICATIONS_EVENT, sync);
-      window.removeEventListener("storage", sync);
+      clearInterval(interval);
+      window.removeEventListener(NOTIFICATIONS_EVENT, handleChange);
+      window.removeEventListener("storage", handleChange);
     };
   }, []);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const visibleNotifications = notifications.filter((notification) => !snoozedUntil[notification.id]);
+  const unreadCount = visibleNotifications.filter((n) => !n.read).length;
 
   const markAllRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -181,13 +205,15 @@ export default function NotificationDropdown() {
 
           {/* List */}
           <div className="overflow-y-auto flex-1">
-            {notifications.length === 0 ? (
+            {visibleNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
                 <Bell size={28} className="text-[var(--ov-1a)]" aria-hidden="true" />
-                <p className="text-sm text-[var(--muted)]">No notifications yet</p>
+                <p className="text-sm text-[var(--muted)]">
+                  {notifications.length > 0 ? "No active notifications" : "No notifications yet"}
+                </p>
               </div>
             ) : (
-              notifications.map((n) => {
+              visibleNotifications.map((n) => {
                 const { icon: Icon, color } = TYPE_CONFIG[n.type];
                 return (
                   <Link

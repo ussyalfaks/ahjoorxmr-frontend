@@ -18,26 +18,18 @@ import {
   COMMENT_MAX_LENGTH,
   MAX_PINNED_COMMENTS,
 } from "@/types/discussion";
+import { useMemo, useState } from "react";
+import { MessageSquare } from "lucide-react";
+import type { Comment, ModerationEvent } from "@/types/discussion";
+import { ModerationMenu, RemovedMessagePlaceholder } from "./ModerationMenu";
+import { useCircleModeration } from "@/hooks/useCircleModeration";
+import RelativeTime from "@/components/ui/RelativeTime";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function truncateAddress(address: string): string {
   if (address.length <= 12) return address;
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
-
-function getRelativeTime(date: Date): string {
-  const diffMs = Date.now() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHr / 24);
-
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  if (diffSec < 60) return rtf.format(-diffSec, "second");
-  if (diffMin < 60) return rtf.format(-diffMin, "minute");
-  if (diffHr < 24) return rtf.format(-diffHr, "hour");
-  return rtf.format(-diffDay, "day");
 }
 
 // ─── Avatar ──────────────────────────────────────────────────────────────────
@@ -230,6 +222,45 @@ function CommentRow({
     comment.author.toLowerCase() === currentAddress.toLowerCase();
   const label = comment.displayName ?? truncateAddress(comment.author);
   const canDeleteThis = canModerate || isOwn;
+  isOrganizer: boolean;
+  isMuted: boolean;
+  onRemoveMessage: (id: string, author: string, reason?: string) => void;
+  onMuteParticipant: (address: string, reason?: string) => void;
+}
+
+function CommentItem({ 
+  comment, 
+  currentAddress,
+  isOrganizer,
+  isMuted,
+  onRemoveMessage,
+  onMuteParticipant,
+}: CommentItemProps) {
+  const isOwn =
+    comment.author.toLowerCase() === currentAddress.toLowerCase();
+  const label = comment.displayName ?? truncateAddress(comment.author);
+  const isRemoved = comment.isRemoved;
+
+  if (isRemoved) {
+    return (
+      <li className="flex gap-3">
+        <Avatar address="0x0000000000000000000000000000000000000000" />
+        <div className="min-w-0 flex-1">
+          <RemovedMessagePlaceholder removedBy={comment.removedBy} />
+        </div>
+        {isOrganizer && !isOwn && (
+          <ModerationMenu
+            isOrganizer={isOrganizer}
+            isMuted={isMuted}
+            messageId={comment.id}
+            authorAddress={comment.author}
+            onRemoveMessage={onRemoveMessage}
+            onMuteParticipant={onMuteParticipant}
+          />
+        )}
+      </li>
+    );
+  }
 
   return (
     <div
@@ -259,10 +290,10 @@ function CommentRow({
           )}
           <time
             dateTime={comment.createdAt.toISOString()}
+          <RelativeTime
+            date={comment.createdAt}
             className="text-xs text-[var(--faint)] ml-auto shrink-0"
-          >
-            {getRelativeTime(comment.createdAt)}
-          </time>
+          />
         </div>
 
         {/* Body */}
@@ -439,6 +470,18 @@ function PinnedMessagesSection({
         })}
       </div>
     </section>
+
+      {isOrganizer && !isOwn && (
+        <ModerationMenu
+          isOrganizer={isOrganizer}
+          isMuted={isMuted}
+          messageId={comment.id}
+          authorAddress={comment.author}
+          onRemoveMessage={onRemoveMessage}
+          onMuteParticipant={onMuteParticipant}
+        />
+      )}
+    </li>
   );
 }
 
@@ -479,6 +522,10 @@ export interface DiscussionThreadProps {
   onUnpin?: (commentId: string) => Promise<void> | void;
   onDeleteComment?: (commentId: string) => Promise<void> | void;
   disabled?: boolean;
+  circleId: string;
+  organizerAddress: string;
+  /** Callback when a moderation action occurs (for activity feed logging) */
+  onModerationAction?: (action: ModerationEvent) => void;
 }
 
 export default function DiscussionThread({
@@ -610,6 +657,38 @@ export default function DiscussionThread({
   }
 
   if (comments.length === 0) {
+  circleId,
+  organizerAddress,
+  onModerationAction,
+}: DiscussionThreadProps) {
+  const {
+    isOrganizer,
+    isMuted,
+    removeMessage,
+    muteParticipant,
+  } = useCircleModeration({
+    circleId,
+    organizerAddress,
+    onModerationAction,
+  });
+
+  const sorted = useMemo(
+    () =>
+      [...comments].sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      ),
+    [comments]
+  );
+
+  const handleRemoveMessage = (messageId: string, authorAddress: string, reason?: string) => {
+    removeMessage(messageId, authorAddress, reason);
+  };
+
+  const handleMuteParticipant = (address: string, reason?: string) => {
+    muteParticipant(address, reason);
+  };
+
+  if (sorted.length === 0) {
     return <EmptyState />;
   }
 
@@ -725,5 +804,18 @@ export default function DiscussionThread({
         })}
       </ul>
     </div>
+    <ul className="space-y-5 list-none p-0" aria-label="Discussion thread">
+      {sorted.map((comment) => (
+        <CommentItem
+          key={comment.id}
+          comment={comment}
+          currentAddress={currentAddress}
+          isOrganizer={isOrganizer(currentAddress)}
+          isMuted={isMuted(comment.author)}
+          onRemoveMessage={handleRemoveMessage}
+          onMuteParticipant={handleMuteParticipant}
+        />
+      ))}
+    </ul>
   );
 }

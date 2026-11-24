@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
+import ChartDataTable, { ChartViewToggle } from "@/components/charts/ChartDataTable";
 
 type Timeframe = "7D" | "30D" | "All Time";
 
@@ -60,6 +61,11 @@ function buildAreaPath(points: Array<{ x: number; y: number }>, baselineY: numbe
 export default function SavingsGrowthChart() {
   const [timeframe, setTimeframe] = useState<Timeframe>("30D");
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
+  const [showTable, setShowTable] = useState(false);
+  const chartId = useId();
+  const titleId = `${chartId}-title`;
+  const descId = `${chartId}-desc`;
+  const tableId = `${chartId}-table`;
 
   const data = DATA[timeframe];
 
@@ -94,6 +100,10 @@ export default function SavingsGrowthChart() {
     };
   }, [data]);
 
+  const firstPoint = data[0];
+  const lastPoint = data[data.length - 1];
+  const chartDescription = `Line chart of ${data.length} points. Savings grew from ${firstPoint.value.toLocaleString()} USDT (${firstPoint.tooltipDate}) to ${lastPoint.value.toLocaleString()} USDT (${lastPoint.tooltipDate}).`;
+
   const activePoint = hoveredPoint !== null ? data[hoveredPoint] : null;
   const activeCoords = hoveredPoint !== null ? plottedPoints[hoveredPoint] : null;
 
@@ -112,137 +122,168 @@ export default function SavingsGrowthChart() {
           </p>
         </div>
 
-        <div className="inline-flex rounded-full border border-[var(--ov-14)] bg-[var(--ov-07)] p-1 self-start">
-          {TIMEFRAMES.map((option) => {
-            const isActive = option === timeframe;
-
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => {
-                  setTimeframe(option);
-                  setHoveredPoint(null);
-                }}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
-                  isActive
-                    ? "bg-[var(--text)] text-[var(--bg)]"
-                    : "text-[var(--muted)] hover:text-[var(--text)]"
-                }`}
-              >
-                {option}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mt-6 relative">
-        {activePoint && (
-          <div className="absolute right-0 top-0 z-10 rounded-2xl border border-[var(--ov-12)] bg-[var(--bg)] px-4 py-3 text-right shadow-lg">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)]">{activePoint.label}</p>
-            <p className="mt-1 text-lg font-semibold text-[var(--text)]">{activePoint.value.toLocaleString()} USDT</p>
-            <p className="text-xs text-[var(--muted)]">{activePoint.tooltipDate}</p>
-          </div>
-        )}
-
-        <div className="h-[320px] w-full overflow-hidden rounded-[1.5rem] border border-[var(--ov-10)] bg-[var(--surface)] p-4 sm:p-6">
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="h-full w-full overflow-visible"
-            role="img"
-            aria-label={`Cumulative savings chart for ${timeframe}`}
-            onMouseLeave={() => setHoveredPoint(null)}
-          >
-            <defs>
-              <linearGradient id="savings-area-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#5EEAD4" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="#5EEAD4" stopOpacity="0.02" />
-              </linearGradient>
-              <linearGradient id="savings-line-stroke" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#5EEAD4" />
-                <stop offset="100%" stopColor="#8B5CF6" />
-              </linearGradient>
-            </defs>
-
-            {[0, 25, 50, 75, 100].map((tick) => (
-              <line
-                key={tick}
-                x1="0"
-                x2="100"
-                y1={tick}
-                y2={tick}
-                stroke="rgba(255,255,255,0.06)"
-                strokeDasharray="2 4"
-              />
-            ))}
-
-            <line x1="0" x2="100" y1="88" y2="88" stroke="rgba(255,255,255,0.14)" />
-            <line x1="8" x2="8" y1="0" y2="88" stroke="rgba(255,255,255,0.08)" />
-
-            <path d={areaPath} fill="url(#savings-area-fill)" />
-            <path
-              d={linePath}
-              fill="none"
-              stroke="url(#savings-line-stroke)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-
-            {plottedPoints.map((point, index) => {
-              const isActive = hoveredPoint === index;
+        <div className="flex flex-wrap items-center gap-2 self-start">
+          <div className="inline-flex rounded-full border border-[var(--ov-14)] bg-[var(--ov-07)] p-1" role="group" aria-label="Savings growth timeframe">
+            {TIMEFRAMES.map((option) => {
+              const isActive = option === timeframe;
 
               return (
-                <g key={data[index].label}>
-                  <circle
-                    cx={point.x}
-                    cy={point.y}
-                    r={isActive ? 2.8 : 1.8}
-                    fill="var(--muted2)"
-                  />
-                  <circle
-                    cx={point.x}
-                    cy={point.y}
-                    r={6}
-                    fill="transparent"
-                    onMouseEnter={() => setHoveredPoint(index)}
-                    onFocus={() => setHoveredPoint(index)}
-                    tabIndex={0}
-                  />
-                </g>
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => {
+                    setTimeframe(option);
+                    setHoveredPoint(null);
+                  }}
+                  aria-pressed={isActive}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] ${
+                    isActive
+                      ? "bg-[var(--text)] text-[var(--bg)]"
+                      : "text-[var(--muted)] hover:text-[var(--text)]"
+                  }`}
+                >
+                  {option}
+                </button>
               );
             })}
-          </svg>
-
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--muted)] sm:grid-cols-4 lg:grid-cols-7">
-            {data.map((point) => (
-              <div key={point.label} className="text-center">
-                <div className="font-medium text-[var(--text)]">{point.label}</div>
-                <div>{point.value.toLocaleString()} USDT</div>
-              </div>
-            ))}
           </div>
-        </div>
-
-        {activePoint && activeCoords && (
-          <div
-            className="pointer-events-none absolute z-20 hidden rounded-xl border border-[var(--ov-14)] bg-[var(--bg)] px-3 py-2 text-xs text-[var(--text)] shadow-xl sm:block"
-            style={{
-              left: `calc(${activeCoords.x}% + 12px)`,
-              top: `calc(${activeCoords.y}% + 18px)`,
+          <ChartViewToggle
+            showTable={showTable}
+            onToggle={() => {
+              setShowTable((value) => !value);
+              setHoveredPoint(null);
             }}
-          >
-            <div className="font-medium text-[#5EEAD4]">{activePoint.tooltipDate}</div>
-            <div>{activePoint.value.toLocaleString()} USDT</div>
-          </div>
-        )}
-
-        <div className="mt-3 text-xs text-[var(--muted)]">
-          Range: {minValue.toLocaleString()} to {maxValue.toLocaleString()} USDT
+            controls={tableId}
+          />
         </div>
       </div>
+
+      {showTable ? (
+        <div className="mt-6">
+          <ChartDataTable
+            id={tableId}
+            caption={`Cumulative savings, ${timeframe}`}
+            columns={[
+              { key: "period", label: "Period" },
+              { key: "value", label: "Savings (USDT)", numeric: true },
+            ]}
+            rows={data.map((point) => ({ period: point.tooltipDate, value: point.value.toLocaleString() }))}
+          />
+        </div>
+      ) : (
+        <div className="mt-6 relative">
+          {activePoint && (
+            <div className="absolute right-0 top-0 z-10 rounded-2xl border border-[var(--ov-12)] bg-[var(--bg)] px-4 py-3 text-right shadow-lg">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)]">{activePoint.label}</p>
+              <p className="mt-1 text-lg font-semibold text-[var(--text)]">{activePoint.value.toLocaleString()} USDT</p>
+              <p className="text-xs text-[var(--muted)]">{activePoint.tooltipDate}</p>
+            </div>
+          )}
+
+          <div className="h-[320px] w-full overflow-hidden rounded-[1.5rem] border border-[var(--ov-10)] bg-[var(--surface)] p-4 sm:p-6">
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              className="h-full w-full overflow-visible"
+              role="img"
+              aria-labelledby={titleId}
+              aria-describedby={descId}
+              onMouseLeave={() => setHoveredPoint(null)}
+            >
+              <title id={titleId}>{`Cumulative savings chart for ${timeframe}`}</title>
+              <desc id={descId}>{chartDescription}</desc>
+              <defs>
+                <linearGradient id="savings-area-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--chart-1)" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="var(--chart-1)" stopOpacity="0.02" />
+                </linearGradient>
+                <linearGradient id="savings-line-stroke" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="var(--chart-1)" />
+                  <stop offset="100%" stopColor="var(--chart-2)" />
+                </linearGradient>
+              </defs>
+
+              {[0, 25, 50, 75, 100].map((tick) => (
+                <line
+                  key={tick}
+                  x1="0"
+                  x2="100"
+                  y1={tick}
+                  y2={tick}
+                  stroke="var(--chart-grid)"
+                  strokeDasharray="2 4"
+                />
+              ))}
+
+              <line x1="0" x2="100" y1="88" y2="88" stroke="var(--chart-axis)" />
+              <line x1="8" x2="8" y1="0" y2="88" stroke="var(--chart-grid)" />
+
+              <path d={areaPath} fill="url(#savings-area-fill)" />
+              <path
+                d={linePath}
+                fill="none"
+                stroke="url(#savings-line-stroke)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {plottedPoints.map((point, index) => {
+                const isActive = hoveredPoint === index;
+
+                return (
+                  <g key={data[index].label}>
+                    <circle
+                      cx={point.x}
+                      cy={point.y}
+                      r={isActive ? 2.8 : 1.8}
+                      fill="var(--muted2)"
+                      aria-hidden="true"
+                    />
+                    <circle
+                      cx={point.x}
+                      cy={point.y}
+                      r={6}
+                      fill="transparent"
+                      onMouseEnter={() => setHoveredPoint(index)}
+                      onFocus={() => setHoveredPoint(index)}
+                      tabIndex={0}
+                      role="img"
+                      aria-label={`${data[index].tooltipDate}: ${data[index].value.toLocaleString()} USDT`}
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--muted)] sm:grid-cols-4 lg:grid-cols-7">
+              {data.map((point) => (
+                <div key={point.label} className="text-center">
+                  <div className="font-medium text-[var(--text)]">{point.label}</div>
+                  <div>{point.value.toLocaleString()} USDT</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {activePoint && activeCoords && (
+            <div
+              className="pointer-events-none absolute z-20 hidden rounded-xl border border-[var(--ov-14)] bg-[var(--bg)] px-3 py-2 text-xs text-[var(--text)] shadow-xl sm:block"
+              style={{
+                left: `calc(${activeCoords.x}% + 12px)`,
+                top: `calc(${activeCoords.y}% + 18px)`,
+              }}
+            >
+              <div className="font-medium text-[var(--chart-1)]">{activePoint.tooltipDate}</div>
+              <div>{activePoint.value.toLocaleString()} USDT</div>
+            </div>
+          )}
+
+          <div className="mt-3 text-xs text-[var(--muted)]">
+            Range: {minValue.toLocaleString()} to {maxValue.toLocaleString()} USDT
+          </div>
+        </div>
+      )}
     </section>
   );
 }

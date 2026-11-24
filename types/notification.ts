@@ -1,5 +1,5 @@
-export type NotificationType = "round_complete" | "payout_ready" | "missed_contribution" | "your_turn" | "join_request" | "member_left" | "announcement";
-export type NotificationCategory = "all" | "payouts" | "contributions" | "system";
+export type NotificationType = "round_complete" | "payout_ready" | "missed_contribution" | "your_turn" | "join_request" | "member_left" | "announcement" | "seat_transfer" | "circle_invite" | "circle_paused" | "circle_resumed";
+export type NotificationCategory = "all" | "payouts" | "contributions" | "system" | "snoozed";
 
 export interface Notification {
   id: string;
@@ -9,11 +9,13 @@ export interface Notification {
   timestamp: Date;
   href: string;
   read: boolean;
+  circleId?: string;
 }
 
 export const NOTIFICATION_CATEGORIES: Record<NotificationCategory, NotificationType[]> = {
-  all: ["round_complete", "payout_ready", "missed_contribution", "your_turn", "join_request", "member_left", "announcement"],
+  all: ["round_complete", "payout_ready", "missed_contribution", "your_turn", "join_request", "member_left", "announcement", "seat_transfer", "circle_invite", "circle_paused", "circle_resumed"],
   payouts: ["payout_ready"],
   contributions: ["missed_contribution"],
-  system: ["round_complete", "your_turn", "join_request", "member_left", "announcement"],
+  system: ["round_complete", "your_turn", "join_request", "member_left", "announcement", "seat_transfer", "circle_invite", "circle_paused", "circle_resumed"],
+  snoozed: [],
 };

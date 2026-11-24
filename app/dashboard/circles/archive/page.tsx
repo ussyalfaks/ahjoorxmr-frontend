@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft, CalendarCheck, Users, Wallet } from "lucide-react";
 import { mockCircles } from "@/lib/circles";
+import { formatCurrency } from "@/lib/currencyFormat";
 
 function formatSaved(circle: (typeof mockCircles)[number]) {
   if (circle.totalSaved) return circle.totalSaved;
   const amount = Number(circle.contribution.replace(/[^\d.]/g, ""));
-  return `${(amount * circle.members.length).toLocaleString()} USDT`;
+  return formatCurrency(amount * circle.members.length, "USDT");
 }
 
 export default function CircleArchivePage() {

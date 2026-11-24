@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 export interface Participant {
@@ -12,6 +12,15 @@ export interface Participant {
 
 interface ParticipantListProps {
   participants: Participant[];
+  onSendReminder?: (participants: Participant[]) => void | Promise<void>;
+  /** Total seats in the circle. When provided, remaining seats are shown. */
+  totalSeats?: number;
+  /** Scheduled start date. When provided, a countdown is shown. */
+  startDate?: string | Date;
+  /** Whether the current viewer is the organizer. */
+  isOrganizer?: boolean;
+  /** Called when the organizer starts the circle early. */
+  onStartCircle?: () => void;
 }
 
 type SortKey = "address" | "status";
@@ -52,7 +61,7 @@ function truncateAddress(address: string) {
  * Swap the inner div for an actual <Jazzicon /> if/when that package is
  * added to the project (e.g. `react-jazzicon`).
  */
-function Avatar({ address }: { address: string }) {
+export function Avatar({ address }: { address: string }) {
   const hue = useMemo(() => {
     let hash = 0;
     for (let i = 0; i < address.length; i++) {
@@ -82,8 +91,88 @@ function StatusBadge({ status }: { status: Participant["status"] }) {
   );
 }
 
-export function ParticipantList({ participants }: ParticipantListProps) {
+function exportParticipants(participants: Participant[]) {
+  const rows = [
+    ["Address", "Status", "Rounds paid"],
+    ...participants.map((participant) => [participant.address, participant.status, String(participant.roundsPaid)]),
+  ];
+  const csv = rows.map((row) => row.map((value) => `"${value.replaceAll('"', '""')}"`).join(",")).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `participants-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Countdown to the scheduled start date. Reuses the same interval-based
+ * pattern as the deadline countdown timer.
+ */
+function StartCountdown({ startDate }: { startDate: string | Date }) {
+  const target = useMemo(
+    () => (startDate instanceof Date ? startDate : new Date(startDate)),
+    [startDate],
+  );
+
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const diff = target.getTime() - now;
+
+  if (Number.isNaN(target.getTime())) {
+    return null;
+  }
+
+  if (diff <= 0) {
+    return (
+      <span className="font-medium text-green-600 dark:text-green-400">
+        Starting now
+      </span>
+    );
+  }
+
+  const totalSeconds = Math.floor(diff / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const parts = [
+    days > 0 ? `${days}d` : null,
+    `${hours}h`,
+    `${minutes}m`,
+    `${seconds}s`,
+  ].filter(Boolean);
+
+  return (
+    <span className="font-mono font-medium text-gray-900 dark:text-[var(--text)]">
+      {parts.join(" ")}
+    </span>
+  );
+}
+
+export function ParticipantList({
+  participants,
+  onSendReminder,
+  totalSeats,
+  startDate,
+  isOrganizer = false,
+  onStartCircle,
+}: ParticipantListProps) {
+  const seatsRemaining =
+    typeof totalSeats === "number"
+      ? Math.max(totalSeats - participants.length, 0)
+      : undefined;
+  const seatsFilled = seatsRemaining === 0;
+
   const [sortKey, setSortKey] = useState<SortKey>("address");
+  const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(new Set());
+  const [reminderSent, setReminderSent] = useState(false);
 
   const sorted = useMemo(() => {
     const list = [...participants];
@@ -95,8 +184,74 @@ export function ParticipantList({ participants }: ParticipantListProps) {
     return list;
   }, [participants, sortKey]);
 
+  const selected = participants.filter((participant) => selectedAddresses.has(participant.address));
+  const allSelected = participants.length > 0 && selected.length === participants.length;
+
+  function toggleSelected(address: string) {
+    setReminderSent(false);
+    setSelectedAddresses((current) => {
+      const next = new Set(current);
+      if (next.has(address)) next.delete(address);
+      else next.add(address);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setReminderSent(false);
+    setSelectedAddresses(allSelected ? new Set() : new Set(participants.map((participant) => participant.address)));
+  }
+
+  async function sendReminder() {
+    if (!selected.length || !window.confirm(`Send a contribution reminder to ${selected.length} participant${selected.length === 1 ? "" : "s"}?`)) return;
+    await onSendReminder?.(selected);
+    setSelectedAddresses(new Set());
+    setReminderSent(true);
+  }
+
+  function exportSelected() {
+    if (!selected.length) return;
+    exportParticipants(selected);
+    setSelectedAddresses(new Set());
+  }
+
   return (
     <section className="rounded-lg border border-gray-200 dark:border-[var(--border)] bg-white dark:bg-[var(--content)]">
+      {/* Pre-launch lobby: seats, countdown and start CTA */}
+      {(typeof seatsRemaining === "number" || startDate) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-[var(--border)] bg-[var(--ov-0a)] px-4 py-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+            {typeof seatsRemaining === "number" && (
+              <span className="text-gray-700 dark:text-[var(--muted)]">
+                <span className="font-semibold text-gray-900 dark:text-[var(--text)]">
+                  {participants.length}
+                </span>{" "}
+                joined ·{" "}
+                <span className="font-semibold text-gray-900 dark:text-[var(--text)]">
+                  {seatsRemaining}
+                </span>{" "}
+                {seatsRemaining === 1 ? "seat" : "seats"} remaining
+              </span>
+            )}
+            {startDate && (
+              <span className="flex items-center gap-2 text-gray-700 dark:text-[var(--muted)]">
+                Starts in <StartCountdown startDate={startDate} />
+              </span>
+            )}
+          </div>
+
+          {isOrganizer && seatsFilled && onStartCircle && (
+            <button
+              type="button"
+              onClick={onStartCircle}
+              className="rounded-md bg-[#4B6B76] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] focus-visible:ring-offset-2"
+            >
+              Start circle now
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-[var(--border)] px-4 py-3">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-[var(--text)]">
           Participants{" "}
@@ -121,11 +276,21 @@ export function ParticipantList({ participants }: ParticipantListProps) {
         </div>
       </div>
 
+      {selected.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-[var(--ov-03)] px-4 py-3 dark:border-[var(--border)]" role="toolbar" aria-label="Bulk participant actions">
+          <span className="mr-auto text-xs font-medium text-[var(--text)]">{selected.length} selected</span>
+          <button type="button" onClick={sendReminder} className="rounded-md bg-[#4B6B76] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#3D5A64]">Send reminder</button>
+          <button type="button" onClick={exportSelected} className="rounded-md border border-[var(--ov-14)] px-3 py-1.5 text-xs font-medium text-[var(--text)] hover:bg-[var(--ov-07)]">Export selected CSV</button>
+        </div>
+      )}
+      {reminderSent && <p className="border-b border-gray-200 px-4 py-2 text-xs text-green-700 dark:border-[var(--border)] dark:text-green-400" role="status">Reminder queued for the selected participants.</p>}
+
       {/* Scrollable on mobile, full table on desktop */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[480px] text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 dark:border-[var(--border)] text-xs uppercase tracking-wide text-gray-400 dark:text-[var(--muted)]">
+              <th className="w-10 px-4 py-2 font-medium"><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all participants" /></th>
               <th className="px-4 py-2 font-medium">Participant</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium">Rounds paid</th>
@@ -134,6 +299,7 @@ export function ParticipantList({ participants }: ParticipantListProps) {
           <tbody className="divide-y divide-gray-100 dark:divide-[var(--border)]">
             {sorted.map((participant) => (
               <tr key={participant.address}>
+                <td className="px-4 py-3"><input type="checkbox" checked={selectedAddresses.has(participant.address)} onChange={() => toggleSelected(participant.address)} aria-label={`Select ${truncateAddress(participant.address)}`} /></td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <Avatar address={participant.address} />

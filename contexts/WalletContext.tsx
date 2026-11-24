@@ -1,5 +1,7 @@
 "use client";
 
+import { safeStorage } from "@/lib/safeStorage";
+
 import {
   createContext,
   useContext,
@@ -8,8 +10,20 @@ import {
   useCallback,
   ReactNode,
 } from "react";
+import { authenticateWithPasskey } from "@/lib/passkeys";
+import { APP_NETWORK } from "@/config/network";
+import { apiClient } from "@/lib/api/client";
+import {
+  authRequiredEventName,
+  clearAuthToken,
+  storeAuthToken,
+} from "@/lib/api/authToken";
+import { publicEnv } from "@/lib/env";
 
-export type WalletId = "argent" | "braavos";
+// Stellar wallet IDs supported via @creit.tech/stellar-wallets-kit
+export type WalletId = "freighter" | "xbull" | "albedo" | "lobstr" | "passkey";
+
+export type StellarNetwork = "testnet" | "mainnet";
 
 export interface WalletInfo {
   id: WalletId;
@@ -17,67 +31,230 @@ export interface WalletInfo {
 }
 
 export const AVAILABLE_WALLETS: WalletInfo[] = [
-  { id: "argent", name: "Argent X" },
-  { id: "braavos", name: "Braavos" },
+  { id: "freighter", name: "Freighter" },
+  { id: "xbull", name: "xBull" },
+  { id: "albedo", name: "Albedo" },
+  { id: "lobstr", name: "LOBSTR" },
 ];
 
 export interface LinkedWallet {
   address: string;
   walletId: WalletId;
   balance: number;
+  // #220: what network this wallet reports itself on. Defaults to
+  // APP_NETWORK on connect (a real integration would read this from
+  // `getNetworkDetails()` instead) — see setWalletNetwork for how a
+  // mismatch gets produced/cleared.
+  network: StellarNetwork;
+  // #217: whether this wallet already has a USDC trustline. Defaults to
+  // false so the dashboard banner has something real to detect and
+  // dismiss — a real integration would derive this from
+  // `Horizon.loadAccount(address).balances`.
+  hasUsdcTrustline: boolean;
 }
 
 interface WalletContextValue {
   linkedWallets: LinkedWallet[];
   activeWalletAddress: string | null;
-  
+  network: StellarNetwork;
+  isExtensionMissing: boolean;
+  error: string | null;
+  needsReauthentication: boolean;
+  reauthenticationError: string | null;
+
   // Legacy compat
   address: string | null;
   walletName: string | null;
   isConnected: boolean;
-  
-  connect: (walletId: WalletId) => Promise<void>;
+
+  connect: (walletId: WalletId) => Promise<string | null>;
+  authenticateWallet: (address: string, walletId: WalletId) => Promise<void>;
+  signInWithPasskey: () => Promise<void>;
   disconnect: (address?: string) => void;
   setActiveWallet: (address: string) => void;
+  // #220: demo-only escape hatch to produce network mismatch
+  setWalletNetwork: (address: string, network: StellarNetwork) => void;
+  // #217: one-click USDC trustline action
+  addUsdcTrustline: (address: string) => void;
+  refreshBalance: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextValue | null>(null);
 
 const STORAGE_KEY_LINKED = "ahjoor_linked_wallets";
 const STORAGE_KEY_ACTIVE = "ahjoor_active_wallet";
+const STORAGE_KEY_LAST_WALLET = "ahjoor_last_wallet_id";
+const STORAGE_KEY_NETWORK = "ahjoor_network";
 
-function generateMockAddress(walletId: WalletId): string {
-  const prefix = walletId === "argent" ? "0x01a" : "0x02b";
-  const hex = Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10);
-  return `${prefix}${hex.slice(0, 37)}`;
+const HORIZON_TESTNET = "https://horizon-testnet.stellar.org";
+const HORIZON_MAINNET = "https://horizon.stellar.org";
+
+function isFreighterInstalled(): boolean {
+  if (typeof window === "undefined") return false;
+  return !!(window as unknown as Record<string, unknown>)["freighter"];
+}
+
+function isXBullInstalled(): boolean {
+  if (typeof window === "undefined") return false;
+  return !!(window as unknown as Record<string, unknown>)["xBullSDK"];
+}
+
+function getExtensionCheckFn(walletId: WalletId): () => boolean {
+  const checks: Partial<Record<WalletId, () => boolean>> = {
+    freighter: isFreighterInstalled,
+    xbull: isXBullInstalled,
+    albedo: () => true, // web-based popup, extension not strictly required
+    lobstr: () => true, // web-based / deep link
+    passkey: () => true,
+  };
+  return checks[walletId] ?? (() => true);
+}
+
+async function fetchStellarBalance(address: string, network: StellarNetwork): Promise<number> {
+  const horizonUrl = network === "mainnet" ? HORIZON_MAINNET : HORIZON_TESTNET;
+  try {
+    const res = await fetch(`${horizonUrl}/accounts/${address}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return 0;
+    const data = await res.json();
+    const native = (data.balances as Array<{ asset_type: string; balance: string }> | undefined)?.find(
+      (b) => b.asset_type === "native"
+    );
+    return native ? parseFloat(native.balance) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function connectFreighter(network: StellarNetwork): Promise<string> {
+  const { isConnected, requestAccess } = await import("@stellar/freighter-api");
+  const connection = await isConnected();
+  if (connection.error || !connection.isConnected) {
+    throw new Error("Freighter not installed or not enabled");
+  }
+  const access = await requestAccess();
+  if (access.error || !access.address) throw new Error("Freighter access denied by user");
+  void network;
+  return access.address;
+}
+
+let walletKitInitialized = false;
+
+async function connectWalletKit(walletId: WalletId, network: StellarNetwork): Promise<string> {
+  const [{ StellarWalletsKit, Networks }, { defaultModules }] = await Promise.all([
+    import("@creit.tech/stellar-wallets-kit"),
+    import("@creit.tech/stellar-wallets-kit/modules/utils"),
+  ]);
+  if (!walletKitInitialized) {
+    StellarWalletsKit.init({ modules: defaultModules() });
+    walletKitInitialized = true;
+  }
+  StellarWalletsKit.setNetwork(network === "mainnet" ? Networks.PUBLIC : Networks.TESTNET);
+  StellarWalletsKit.setWallet(walletId);
+  const { address } = await StellarWalletsKit.getAddress();
+  if (!address) throw new Error(`Could not retrieve address from ${walletId}`);
+  return address;
+}
+
+async function signChallenge(
+  walletId: WalletId,
+  address: string,
+  transaction: string
+): Promise<string> {
+  if (walletId === "passkey") {
+    throw new Error("SEP-10 signing is not supported for passkey wallets yet.");
+  }
+
+  if (walletId === "freighter") {
+    const { signTransaction } = await import("@stellar/freighter-api");
+    const result = await signTransaction(transaction, {
+      networkPassphrase: publicEnv.stellarNetworkPassphrase,
+      address,
+    });
+    if (result.error) throw new Error(result.error.message);
+    if (result.signerAddress && result.signerAddress !== address) {
+      throw new Error("The wallet signed the challenge with a different address.");
+    }
+    return result.signedTxXdr;
+  }
+
+  const [{ StellarWalletsKit, Networks }, { defaultModules }] = await Promise.all([
+    import("@creit.tech/stellar-wallets-kit"),
+    import("@creit.tech/stellar-wallets-kit/modules/utils"),
+  ]);
+  if (!walletKitInitialized) {
+    StellarWalletsKit.init({ modules: defaultModules() });
+    walletKitInitialized = true;
+  }
+  StellarWalletsKit.setNetwork(
+    publicEnv.stellarNetwork === "mainnet" ? Networks.PUBLIC : Networks.TESTNET
+  );
+  StellarWalletsKit.setWallet(walletId);
+  const result = await StellarWalletsKit.signTransaction(transaction, {
+    networkPassphrase: publicEnv.stellarNetworkPassphrase,
+    address,
+  });
+  if (result.signerAddress && result.signerAddress !== address) {
+    throw new Error("The wallet signed the challenge with a different address.");
+  }
+  return result.signedTxXdr;
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [linkedWallets, setLinkedWallets] = useState<LinkedWallet[]>([]);
   const [activeWalletAddress, setActiveWalletAddress] = useState<string | null>(null);
+  const [network, setNetwork] = useState<StellarNetwork>("testnet");
+  const [isExtensionMissing, setIsExtensionMissing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [needsReauthentication, setNeedsReauthentication] = useState(false);
+  const [reauthenticationError, setReauthenticationError] = useState<string | null>(null);
 
   useEffect(() => {
+    const handleAuthenticationRequired = () => {
+      setNeedsReauthentication(true);
+      setReauthenticationError(null);
+    };
+    window.addEventListener(authRequiredEventName, handleAuthenticationRequired);
+    return () => window.removeEventListener(authRequiredEventName, handleAuthenticationRequired);
+  }, []);
+
+  const authenticateWallet = useCallback(async (address: string, walletId: WalletId) => {
+    const challenge = await apiClient.getAuthChallenge(address);
+    const signedTransaction = await signChallenge(walletId, address, challenge.transaction);
+    const session = await apiClient.exchangeAuthChallenge(signedTransaction);
+    if (!session.token) throw new Error("The authentication endpoint did not return a session token.");
+    storeAuthToken(session.token, session.expiresAt, session.expiresIn);
+    setNeedsReauthentication(false);
+    setReauthenticationError(null);
+  }, []);
+
+  // Load persisted wallets + auto-reconnect last-used wallet
+  useEffect(() => {
     try {
+      const storedNetwork = localStorage.getItem(STORAGE_KEY_NETWORK) as StellarNetwork | null;
+      if (storedNetwork === "mainnet" || storedNetwork === "testnet") {
+        setNetwork(storedNetwork);
+      }
+
       const storedWallets = localStorage.getItem(STORAGE_KEY_LINKED);
       const storedActive = localStorage.getItem(STORAGE_KEY_ACTIVE);
-      const legacyStored = localStorage.getItem("ahjoor_wallet");
-      
+
       if (storedWallets) {
-        const parsed = JSON.parse(storedWallets) as LinkedWallet[];
+        // Backfills network/hasUsdcTrustline for wallets persisted before those fields existed
+        type StoredWallet = Omit<LinkedWallet, "network" | "hasUsdcTrustline"> &
+          Partial<Pick<LinkedWallet, "network" | "hasUsdcTrustline">>;
+        const parsed = (JSON.parse(storedWallets) as StoredWallet[]).map((w): LinkedWallet => ({
+          network: APP_NETWORK,
+          hasUsdcTrustline: false,
+          ...w,
+        }));
         setLinkedWallets(parsed);
-        if (storedActive && parsed.some(w => w.address === storedActive)) {
+        if (storedActive && parsed.some((w) => w.address === storedActive)) {
           setActiveWalletAddress(storedActive);
         } else if (parsed.length > 0) {
           setActiveWalletAddress(parsed[0].address);
         }
-      } else if (legacyStored) {
-        const { address: addr, walletId: wid } = JSON.parse(legacyStored);
-        const legacyWallet: LinkedWallet = { address: addr, walletId: wid, balance: 1500.50 };
-        setLinkedWallets([legacyWallet]);
-        setActiveWalletAddress(addr);
-        localStorage.setItem(STORAGE_KEY_LINKED, JSON.stringify([legacyWallet]));
-        localStorage.setItem(STORAGE_KEY_ACTIVE, addr);
-        localStorage.removeItem("ahjoor_wallet");
       }
     } catch {
       // ignore storage errors
@@ -86,43 +263,133 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const saveToStorage = (wallets: LinkedWallet[], activeAddr: string | null) => {
     try {
-      localStorage.setItem(STORAGE_KEY_LINKED, JSON.stringify(wallets));
+      safeStorage.setItem(STORAGE_KEY_LINKED, JSON.stringify(wallets));
       if (activeAddr) {
-        localStorage.setItem(STORAGE_KEY_ACTIVE, activeAddr);
+        safeStorage.setItem(STORAGE_KEY_ACTIVE, activeAddr);
       } else {
-        localStorage.removeItem(STORAGE_KEY_ACTIVE);
+        safeStorage.removeItem(STORAGE_KEY_ACTIVE);
       }
     } catch {
       // ignore
     }
   };
 
-  const connect = useCallback(async (wid: WalletId) => {
-    const addr = generateMockAddress(wid);
-    const mockBalance = Number((Math.random() * 5000).toFixed(2));
-    
-    setLinkedWallets(prev => {
-      const newWallets = [...prev, { address: addr, walletId: wid, balance: mockBalance }];
+  const connect = useCallback(
+    async (wid: WalletId) => {
+      setError(null);
+      const checkInstalled = getExtensionCheckFn(wid);
+      if (!checkInstalled()) {
+        setIsExtensionMissing(true);
+        const errMsg = `${AVAILABLE_WALLETS.find((w) => w.id === wid)?.name ?? wid} not installed or not enabled`;
+        setError(errMsg);
+        return null;
+      }
+      setIsExtensionMissing(false);
+
+      let addr: string;
+      try {
+        if (wid === "freighter") {
+          addr = await connectFreighter(network);
+        } else {
+          addr = await connectWalletKit(wid, network);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to connect wallet";
+        if (
+          message.toLowerCase().includes("not installed") ||
+          message.toLowerCase().includes("not enabled")
+        ) {
+          setIsExtensionMissing(true);
+        } else {
+          setIsExtensionMissing(false);
+        }
+        setError(message);
+        return null;
+      }
+
+      setError(null);
+      setIsExtensionMissing(false);
+      const balance = await fetchStellarBalance(addr, network);
+
+      setLinkedWallets((prev) => {
+        // avoid duplicates
+        const existing = prev.find((w) => w.address === addr);
+        const newWallets = existing
+          ? prev.map((w) => (w.address === addr ? { ...w, balance } : w))
+          : [...prev, { address: addr, walletId: wid, balance, network: APP_NETWORK, hasUsdcTrustline: false }];
+        saveToStorage(newWallets, addr);
+        return newWallets;
+      });
+      setActiveWalletAddress(addr);
+
+      try {
+        localStorage.setItem(STORAGE_KEY_LAST_WALLET, wid);
+      } catch {}
+
+      return addr;
+    },
+    [network]
+  );
+
+  const signInWithPasskey = useCallback(async () => {
+    try {
+      await authenticateWithPasskey();
+    } catch {
+      // fallback mock passkey address
+    }
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let addr = "G";
+    for (let i = 0; i < 55; i++) addr += chars[Math.floor(Math.random() * 32)];
+
+    const balance = await fetchStellarBalance(addr, network);
+
+    setLinkedWallets((prev) => {
+      const newWallets = [...prev, { address: addr, walletId: "passkey" as const, balance, network: APP_NETWORK, hasUsdcTrustline: false }];
       saveToStorage(newWallets, addr);
       return newWallets;
     });
     setActiveWalletAddress(addr);
-  }, []);
+  }, [network]);
 
-  const disconnect = useCallback((addrToRemove?: string) => {
-    setLinkedWallets(prev => {
-      const targetAddr = addrToRemove || activeWalletAddress;
-      if (!targetAddr) return prev;
-      
-      const newWallets = prev.filter(w => w.address !== targetAddr);
-      
-      let newActive = activeWalletAddress;
-      if (activeWalletAddress === targetAddr) {
-        newActive = newWallets.length > 0 ? newWallets[0].address : null;
-        setActiveWalletAddress(newActive);
+  const disconnect = useCallback(
+    (addrToRemove?: string) => {
+      setError(null);
+      setIsExtensionMissing(false);
+      if (!addrToRemove || addrToRemove === activeWalletAddress) {
+        clearAuthToken();
+        setNeedsReauthentication(false);
       }
-      
-      saveToStorage(newWallets, newActive);
+      setLinkedWallets((prev) => {
+        const targetAddr = addrToRemove || activeWalletAddress;
+        if (!targetAddr) return prev;
+
+        const newWallets = prev.filter((w) => w.address !== targetAddr);
+
+        let newActive = activeWalletAddress;
+        if (activeWalletAddress === targetAddr) {
+          newActive = newWallets.length > 0 ? newWallets[0].address : null;
+          setActiveWalletAddress(newActive);
+        }
+
+        saveToStorage(newWallets, newActive);
+        return newWallets;
+      });
+    },
+    [activeWalletAddress]
+  );
+
+  const setWalletNetwork = useCallback((addr: string, net: StellarNetwork) => {
+    setLinkedWallets((prev) => {
+      const newWallets = prev.map((w) => (w.address === addr ? { ...w, network: net } : w));
+      saveToStorage(newWallets, activeWalletAddress);
+      return newWallets;
+    });
+  }, [activeWalletAddress]);
+
+  const addUsdcTrustline = useCallback((addr: string) => {
+    setLinkedWallets((prev) => {
+      const newWallets = prev.map((w) => (w.address === addr ? { ...w, hasUsdcTrustline: true } : w));
+      saveToStorage(newWallets, activeWalletAddress);
       return newWallets;
     });
   }, [activeWalletAddress]);
@@ -130,29 +397,104 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const setActiveWallet = useCallback((addr: string) => {
     setActiveWalletAddress(addr);
     try {
-      localStorage.setItem(STORAGE_KEY_ACTIVE, addr);
+      safeStorage.setItem(STORAGE_KEY_ACTIVE, addr);
     } catch {}
   }, []);
 
-  const activeWallet = linkedWallets.find(w => w.address === activeWalletAddress) || null;
-  const walletName = activeWallet 
-    ? (AVAILABLE_WALLETS.find((w) => w.id === activeWallet.walletId)?.name ?? null)
-    : null;
+  const refreshBalance = useCallback(async () => {
+    if (!activeWalletAddress) return;
+    const balance = await fetchStellarBalance(activeWalletAddress, network);
+    setLinkedWallets((prev) => {
+      const updated = prev.map((w) =>
+        w.address === activeWalletAddress ? { ...w, balance } : w
+      );
+      saveToStorage(updated, activeWalletAddress);
+      return updated;
+    });
+  }, [activeWalletAddress, network]);
+
+  // Persist network choice
+  const handleNetworkChange = useCallback((net: StellarNetwork) => {
+    setNetwork(net);
+    try {
+      localStorage.setItem(STORAGE_KEY_NETWORK, net);
+    } catch {}
+  }, []);
+  void handleNetworkChange; // exposed via context if consumers need it
+
+  const activeWallet =
+    linkedWallets.find((w) => w.address === activeWalletAddress) || null;
+  const walletName = activeWallet
+    ? (AVAILABLE_WALLETS.find((w) => w.id === activeWallet.walletId)?.name ??
+        (activeWallet.walletId === "passkey" ? "Passkey" : null))
+  : null;
 
   return (
     <WalletContext.Provider
-      value={{ 
+      value={{
         linkedWallets,
         activeWalletAddress,
-        address: activeWalletAddress, 
-        walletName, 
-        isConnected: !!activeWalletAddress, 
-        connect, 
+        network,
+        isExtensionMissing,
+        error,
+        needsReauthentication,
+        reauthenticationError,
+        address: activeWalletAddress,
+        walletName,
+        isConnected: !!activeWalletAddress,
+        connect,
+        authenticateWallet,
+        signInWithPasskey,
         disconnect,
-        setActiveWallet
+        setActiveWallet,
+        setWalletNetwork,
+        addUsdcTrustline,
+        refreshBalance,
       }}
     >
       {children}
+      {needsReauthentication && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reauthentication-title"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+        >
+          <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl">
+            <h2 id="reauthentication-title" className="mb-2 text-lg font-semibold text-[var(--text)]">
+              Verify your wallet again
+            </h2>
+            <p className="mb-4 text-sm text-[var(--muted)]">
+              Your sign-in session expired or is no longer valid. Sign a fresh SEP-10 challenge to continue.
+            </p>
+            {reauthenticationError && (
+              <p role="alert" className="mb-4 text-sm text-red-500">
+                {reauthenticationError}
+              </p>
+            )}
+            {activeWallet && activeWallet.walletId !== "passkey" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setReauthenticationError(null);
+                  void authenticateWallet(activeWallet.address, activeWallet.walletId).catch((error: unknown) => {
+                    setReauthenticationError(
+                      error instanceof Error ? error.message : "Wallet authentication failed."
+                    );
+                  });
+                }}
+                className="w-full rounded-lg bg-[var(--primary)] px-4 py-2 font-medium text-white"
+              >
+                Sign again
+              </button>
+            ) : (
+              <a href="/login" className="block rounded-lg bg-[var(--primary)] px-4 py-2 text-center font-medium text-white">
+                Connect a wallet
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </WalletContext.Provider>
   );
 }

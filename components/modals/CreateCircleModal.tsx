@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { X, ArrowRight, ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import SavingsCalculator from "@/components/calculator/SavingsCalculator";
 import { CIRCLE_CATEGORIES, CATEGORY_LABELS, type CircleCategory } from "@/lib/circles";
+import type { PenaltyConfig } from "@/types/circle";
+import GasFeeEstimate from "@/components/modals/GasFeeEstimate";
+import { useGasFeeEstimate } from "@/hooks/useGasFeeEstimate";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onCreate?: (circle: CreateCircleData) => void;
+  initialValues?: Partial<CreateCircleData>;
 }
 
 export interface CreateCircleData {
@@ -19,6 +23,10 @@ export interface CreateCircleData {
   maxMembers: string;
   roundDuration: string;
   category: CircleCategory;
+  isPrivate: boolean;
+  penaltyEnabled: boolean;
+  penaltyType: "percentage" | "fixed";
+  penaltyValue: string;
 }
 
 interface CircleTemplate {
@@ -68,16 +76,29 @@ const EMPTY: CreateCircleData = {
   maxMembers: "",
   roundDuration: "",
   category: "family",
+  isPrivate: false,
+  penaltyEnabled: false,
+  penaltyType: "percentage",
+  penaltyValue: "",
 };
 
 const TOTAL_STEPS = 4;
 
-export default function CreateCircleModal({ open, onClose, onCreate }: Props) {
+export default function CreateCircleModal({ open, onClose, onCreate, initialValues }: Props) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<CreateCircleData>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const feeRequest = useMemo(() => ({ operation: "create-circle" as const }), []);
+  const { fee, loading: feeLoading } = useGasFeeEstimate(open, feeRequest);
+
+  useEffect(() => {
+    if (!open) return;
+    setForm({ ...EMPTY, ...initialValues });
+    setStep(initialValues ? 1 : 0);
+    setSuccess(false);
+  }, [open, initialValues]);
 
   useFocusTrap(ref, open, handleClose);
 
@@ -151,7 +172,7 @@ export default function CreateCircleModal({ open, onClose, onCreate }: Props) {
       >
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+          className="absolute top-4 end-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
           aria-label="Close"
         >
           <X size={20} />
@@ -440,10 +461,12 @@ export default function CreateCircleModal({ open, onClose, onCreate }: Props) {
                   ))}
                 </div>
 
+                <GasFeeEstimate fee={fee} loading={feeLoading} />
+
                 <div className="mt-6">
                   <h3 className="text-sm font-semibold text-[var(--text)] mb-3">Simulation Preview</h3>
                   <div className="max-h-[300px] overflow-y-auto custom-scrollbar -mx-2 px-2">
-                    <SavingsCalculator 
+                    <SavingsCalculator
                       isReadOnly={true}
                       amount={Number(form.contribution) || 0}
                       participants={Number(form.maxMembers) || 0}
