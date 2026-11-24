@@ -35,7 +35,7 @@ interface AnalyticsData {
 }
 
 // Mock analytics data shaped to match on-chain response
-const generateMockAnalytics = (circleId: string): AnalyticsData => ({
+const generateMockAnalytics = (circleId: string): CircleAnalyticsData => ({
   circleId,
   circleName: "Family savings",
   rounds: [
@@ -259,9 +259,14 @@ export default function CircleAnalyticsPage({ params }: { params: Promise<{ id: 
         </Link>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold font-sora text-[var(--text)]">{analytics.circleName} Analytics</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">Track contributions, payouts, and participant reliability.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-sora text-[var(--text)]">{analytics.circleName} Analytics</h1>
+          <p className="mt-1 text-sm text-[var(--muted)]">Track contributions, payouts, and participant reliability.</p>
+        </div>
+        <div className="self-start sm:self-auto">
+          <ExportReportButton analytics={analytics} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

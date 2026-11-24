@@ -43,6 +43,8 @@ import { getCircleCurrency, isPayoutInProgress } from "@/lib/payoutMethods";
 import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
 import type { MilestoneData } from "@/types/milestone";
 import { useCirclePause } from "@/hooks/useCirclePause";
+import { useTimezone } from "@/hooks/useTimezone";
+import { generateCalendarIcs, downloadIcsFile } from "@/lib/calendarExport";
 import { detectCircleMilestones, celebrateMilestone } from "@/lib/milestoneCelebrations";
 import { recordLeftCircle } from "@/lib/circleRecommendations";
 import CirclePausedBanner from "@/components/circles/CirclePausedBanner";
@@ -431,6 +433,7 @@ export default function CircleDetailPage({
   }, [rawCircle]);
   const { showToast } = useToast();
   const router = useRouter();
+  const { timezone, formatDateTime } = useTimezone();
 
   const [disputes, setDisputes] = useState<Dispute[]>(() =>
     MOCK_DISPUTES.filter((d) => d.circleId === id)
@@ -1048,6 +1051,35 @@ export default function CircleDetailPage({
               }
             />
           </div>
+          {circle.nextPayoutDeadline && (
+            <div className="flex flex-wrap items-center justify-between text-xs text-[var(--muted)] gap-2 bg-[var(--ov-05)] p-2.5 rounded-xl border border-[var(--ov-0a)]">
+              <span>
+                Payout Time: <strong className="text-[var(--text)]">{formatDateTime(new Date(circle.nextPayoutDeadline.getTime() + pauseState.totalPausedMs))}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const deadlineDate = new Date(circle.nextPayoutDeadline!.getTime() + pauseState.totalPausedMs);
+                  const ics = generateCalendarIcs(
+                    [
+                      {
+                        id: `payout-${circle.id}-${circle.currentRound}`,
+                        title: `${circle.name} Payout Deadline`,
+                        description: `Payout deadline for ${circle.name}. Round ${circle.currentRound} of ${circle.totalRounds}.`,
+                        startDate: deadlineDate,
+                      },
+                    ],
+                    timezone
+                  );
+                  downloadIcsFile(`${circle.name.toLowerCase().replace(/\s+/g, "-")}-payout.ics`, ics);
+                  showToast({ title: "Calendar event downloaded", variant: "success" });
+                }}
+                className="hover:text-[var(--text)] transition-colors underline font-medium"
+              >
+                Add to calendar (.ics)
+              </button>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-[var(--muted)] mb-1">Next Recipient</p>

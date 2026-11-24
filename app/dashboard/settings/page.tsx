@@ -27,6 +27,7 @@ import TwoFactorSetup from "@/components/settings/TwoFactorSetup";
 import EmailNotificationPreferences from "@/components/settings/EmailNotificationPreferences";
 import ActiveSessionsManager from "@/components/settings/ActiveSessionsManager";
 import PasskeyManager from "@/components/settings/PasskeyManager";
+import TimezoneSetting from "@/components/settings/TimezoneSetting";
 import { OPEN_SHORTCUTS_EVENT } from "@/components/ui/ShortcutsModal";
 import { Toggle } from "@/components/ui/Toggle";
 import AccountDataExport from "@/components/settings/AccountDataExport";
