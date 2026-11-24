@@ -18,3 +18,25 @@ describe("SimpleCard Component", () => {
     expect(screen.getByText("Card Content")).toBeInTheDocument();
   });
 });
+
+
+describe("SimpleCard Component - Issue #330", () => {
+  it("applies correct styling classes", () => {
+    const { container } = render(
+      <SimpleCard title="Styled Card"><p>Content</p></SimpleCard>
+    );
+    const cardElement = container.querySelector("div");
+    expect(cardElement).toHaveClass("rounded-lg", "p-4", "shadow");
+  });
+
+  it("renders with proper semantic structure", () => {
+    render(
+      <SimpleCard title="Semantic Card">
+        <span>Nested Content</span>
+      </SimpleCard>
+    );
+    const title = screen.getByText("Semantic Card");
+    expect(title.tagName).toBe("H3");
+    expect(title).toHaveClass("font-bold");
+  });
+});
