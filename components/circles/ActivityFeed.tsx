@@ -9,6 +9,8 @@ import {
   XCircle,
   Activity,
   Megaphone,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import type { CircleEvent, EventType } from "@/types/circle";
 
@@ -71,6 +73,16 @@ const EVENT_CONFIG: Record<
     label: "sent an announcement",
     icon: <Megaphone size={16} />,
     color: "text-[#4B6B76] bg-[#4B6B7615]",
+  },
+  comment_pinned: {
+    label: "pinned a message",
+    icon: <Pin size={16} />,
+    color: "text-[#F59E0B] bg-[#F59E0B15]",
+  },
+  comment_unpinned: {
+    label: "unpinned a message",
+    icon: <PinOff size={16} />,
+    color: "text-[var(--muted)] bg-[var(--ov-0a)]",
   },
 };
 
