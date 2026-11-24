@@ -18,7 +18,7 @@ The frontend is a Next.js App Router application. Routes compose reusable UI, wh
 
 ## Data Flow
 
-For data-backed features, prefer the typed API and hook path. In mock mode, the adapter reads fixtures in `data/`; with an HTTP adapter configured, it requests data from the backend. A hook exposes loading, error, and result state to the UI.
+For data-backed features, prefer the typed API and hook path. In mock mode, the adapter reads fixtures in `data/`; with an HTTP adapter configured, it requests data from the backend. A hook exposes loading, error, and result state to the UI. For full implementation details, how `NEXT_PUBLIC_API_ADAPTER` works, and instructions for adding endpoints, see the [API Adapters & Data Fetching Guide](API_ADAPTERS.md).
 
 ```mermaid
 flowchart LR

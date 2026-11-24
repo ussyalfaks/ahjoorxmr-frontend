@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Info, PieChart, DollarSign, Percent, ArrowRight, X } from "lucide-react";
+import { formatCurrency } from "@/lib/currencyFormat";
 
 export interface ContributionBreakdown {
   contributionAmount: number;
@@ -23,9 +24,6 @@ interface ContributionSplitPreviewProps {
   showActions?: boolean;
 }
 
-function formatCurrency(amount: number, currency: string): string {
-  return `${amount.toFixed(2)} ${currency}`;
-}
 
 export default function ContributionSplitPreview({
   breakdown,

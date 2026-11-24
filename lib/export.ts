@@ -6,10 +6,12 @@
  * library while still producing a paginated, styled document.
  */
 
+import { toMachineReadableAmount } from "@/lib/currencyFormat";
+
 export type ExportFormat = "csv" | "pdf";
 
-/** One row of exported history. Columns are fixed by the export spec. */
-export interface ExportRow {
+/** One row of exported history, using the default history export columns. */
+export interface ExportRow extends ExportRecord {
   date: string;
   circleName: string;
   round: number | string;
@@ -18,7 +20,14 @@ export interface ExportRow {
   transactionHash: string;
 }
 
-const COLUMNS: { key: keyof ExportRow; label: string }[] = [
+export type ExportRecord = Record<string, string | number>;
+
+export interface ExportColumn {
+  key: string;
+  label: string;
+}
+
+const COLUMNS: ExportColumn[] = [
   { key: "date", label: "Date" },
   { key: "circleName", label: "Circle Name" },
   { key: "round", label: "Round #" },
@@ -44,10 +53,19 @@ function escapeCsvField(value: unknown): string {
   return guarded;
 }
 
-export function buildCsv(rows: ExportRow[]): string {
-  const header = COLUMNS.map((c) => escapeCsvField(c.label)).join(",");
+export function buildCsv<Row extends ExportRecord>(
+  rows: Row[],
+  columns: ExportColumn[] = COLUMNS
+): string {
+  const header = columns.map((c) => escapeCsvField(c.label)).join(",");
   const body = rows.map((row) =>
-    COLUMNS.map((c) => escapeCsvField(row[c.key])).join(",")
+    COLUMNS.map((c) => {
+      let val = row[c.key];
+      if (c.key === "amount") {
+        val = toMachineReadableAmount(val);
+      }
+      return escapeCsvField(val);
+    }).join(",")
   );
   // Leading BOM so Excel reads UTF-8 correctly.
   return `﻿${[header, ...body].join("\r\n")}`;
@@ -80,8 +98,12 @@ function triggerDownload(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function exportCsv(rows: ExportRow[], filename: string) {
-  const blob = new Blob([buildCsv(rows)], {
+export function exportCsv<Row extends ExportRecord>(
+  rows: Row[],
+  filename: string,
+  columns?: ExportColumn[]
+) {
+  const blob = new Blob([buildCsv(rows, columns)], {
     type: "text/csv;charset=utf-8;",
   });
   triggerDownload(blob, filename);
@@ -95,19 +117,20 @@ function escapeHtml(value: unknown): string {
     .replace(/"/g, "&quot;");
 }
 
-export function buildPrintableHtml(
-  rows: ExportRow[],
+export function buildPrintableHtml<Row extends ExportRecord>(
+  rows: Row[],
   title: string,
-  subtitle: string
+  subtitle: string,
+  columns: ExportColumn[] = COLUMNS
 ): string {
-  const head = COLUMNS.map((c) => `<th>${escapeHtml(c.label)}</th>`).join("");
+  const head = columns.map((c) => `<th>${escapeHtml(c.label)}</th>`).join("");
   const body =
     rows.length === 0
-      ? `<tr><td colspan="${COLUMNS.length}" class="empty">No records to export.</td></tr>`
+      ? `<tr><td colspan="${columns.length}" class="empty">No records to export.</td></tr>`
       : rows
           .map(
             (row) =>
-              `<tr>${COLUMNS.map(
+              `<tr>${columns.map(
                 (c) =>
                   `<td class="${c.key === "transactionHash" ? "hash" : ""}">${escapeHtml(
                     row[c.key]
@@ -145,10 +168,11 @@ export function buildPrintableHtml(
  * Uses a hidden same-origin iframe so the current page is never replaced and
  * no popup blocker is involved.
  */
-export function exportPdf(
-  rows: ExportRow[],
+export function exportPdf<Row extends ExportRecord>(
+  rows: Row[],
   title: string,
-  subtitle: string
+  subtitle: string,
+  columns?: ExportColumn[]
 ): void {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
@@ -173,5 +197,5 @@ export function exportPdf(
     window.setTimeout(cleanup, 60000);
   };
 
-  iframe.srcdoc = buildPrintableHtml(rows, title, subtitle);
+  iframe.srcdoc = buildPrintableHtml(rows, title, subtitle, columns);
 }

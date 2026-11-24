@@ -16,6 +16,7 @@ import {
   Contrast,
 } from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import LanguageSelector from "@/components/ui/LanguageSelector";
 import { useTheme, type FontSize } from "@/contexts/ThemeContext";
 import { useIdleTimer } from "@/hooks/useIdleTimer";
 import { useWallet } from "@/contexts/WalletContext";
@@ -127,7 +128,7 @@ function HighContrastToggle() {
             }`}
         >
           <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${highContrast ? "translate-x-5" : "translate-x-0"
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${highContrast ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0"
               }`}
           />
         </button>
@@ -262,7 +263,7 @@ function AutoLogoutSection() {
               }`}
           >
             <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${storedEnabled ? "translate-x-5" : "translate-x-0"
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${storedEnabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0"
                 }`}
             />
           </button>
@@ -435,7 +436,18 @@ function SettingsContent() {
             </div>
             <FontSizeControl />
             <HighContrastToggle />
-            <TimezoneSetting />
+
+            <div className="pt-3 border-t border-[var(--ov-08)]">
+              <div className="mb-2">
+                <span className="block text-sm font-semibold text-[var(--text)]">
+                  Language & Layout Direction
+                </span>
+                <span className="block text-xs text-[var(--muted)] mt-0.5">
+                  Select your language. Right-to-left (RTL) languages like Arabic automatically mirror navigation, modals, and tables.
+                </span>
+              </div>
+              <LanguageSelector variant="buttons" />
+            </div>
           </section>
 
           <AccountDataExport />

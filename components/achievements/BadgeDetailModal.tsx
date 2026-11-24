@@ -113,7 +113,7 @@ export default function BadgeDetailModal({ badge, onClose }: BadgeDetailModalPro
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
+          className="absolute top-5 end-5 p-2 rounded-full text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--ov-0a)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76]"
           aria-label="Close modal"
         >
           <X size={20} aria-hidden="true" />
