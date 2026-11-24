@@ -5,6 +5,7 @@ import { MOCK_CIRCLES } from "@/data/circles";
 import { getGoalProgress, type SavingsGoal } from "@/lib/savingsGoals";
 
 const money = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+const payoutDate = (value: string) => new Date(value).toLocaleDateString();
 
 export default function SavingsGoalCard({ goal, actions }: { goal: SavingsGoal; actions?: ReactNode }) {
   const p = getGoalProgress(goal);
@@ -45,6 +46,20 @@ export default function SavingsGoalCard({ goal, actions }: { goal: SavingsGoal; 
         <span>Projected: {p.projectedDate ? p.projectedDate.toLocaleDateString() : "Not reachable with linked circles"}</span>
       </div>
       {circleNames.length > 0 && <p className="text-xs text-[var(--faint)]">Linked: {circleNames.join(", ")}</p>}
+      {p.payouts.length > 0 && (
+        <div className="space-y-1 border-t border-[var(--ov-0f)] pt-3">
+          <p className="text-xs font-medium text-[var(--text)]">Contributing payouts</p>
+          {p.payouts.map((payout) => (
+            <div key={payout.transaction_hash} className="flex items-center justify-between gap-3 text-xs text-[var(--muted)]">
+              <span>{payout.circle_name}</span>
+              <span>{payoutDate(payout.payout_date)}</span>
+              <span className="font-medium text-[var(--text)]">
+                {payout.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {payout.token_symbol}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       {actions}
     </div>
   );

@@ -4,7 +4,7 @@
  * `contribution × participants`, one round every `daysPerRound` days.
  */
 import { MOCK_CIRCLES, type DiscoverCircle } from "@/data/circles";
-import { MOCK_CONTRIBUTIONS } from "@/data/contributions";
+import { MOCK_PAYOUT_HISTORY, type PayoutRecord } from "@/data/payouts";
 
 export interface SavingsGoal {
   id: string;
@@ -22,6 +22,7 @@ export interface GoalProgress {
   percent: number;
   projectedDate: Date | null;
   onTrack: boolean;
+  payouts: PayoutRecord[];
 }
 
 const KEY = "ahjoor_savings_goals";
@@ -74,12 +75,40 @@ export function expectedPayout(circle: DiscoverCircle): number {
   return parseAmount(circle.contribution) * circle.totalSlots;
 }
 
-export function getGoalProgress(goal: SavingsGoal, now = Date.now()): GoalProgress {
-  const circles = MOCK_CIRCLES.filter((c) => goal.circleIds.includes(c.id));
-  const saved = MOCK_CONTRIBUTIONS.filter((c) => goal.circleIds.includes(c.circleId) && c.date).reduce(
-    (sum, c) => sum + c.amount,
-    0
+function normalizeName(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function payoutCircleId(payout: PayoutRecord): string | undefined {
+  const record = payout as PayoutRecord & { circleId?: string; circle_id?: string };
+  if (record.circleId) return record.circleId;
+  if (record.circle_id) return record.circle_id;
+
+  const payoutName = normalizeName(payout.circle_name);
+  const circle = MOCK_CIRCLES.find((candidate) => {
+    const circleName = normalizeName(candidate.name);
+    return payoutName === circleName
+      || payoutName.includes(circleName)
+      || circleName.includes(payoutName);
+  });
+  return circle?.id;
+}
+
+/** Completed payouts received from circles linked to this goal. */
+export function getGoalPayouts(goal: SavingsGoal, payouts: PayoutRecord[] = MOCK_PAYOUT_HISTORY): PayoutRecord[] {
+  return payouts.filter((payout) =>
+    payout.status === "completed" && goal.circleIds.includes(payoutCircleId(payout) ?? "")
   );
+}
+
+export function getGoalProgress(
+  goal: SavingsGoal,
+  now = Date.now(),
+  payouts: PayoutRecord[] = MOCK_PAYOUT_HISTORY
+): GoalProgress {
+  const circles = MOCK_CIRCLES.filter((c) => goal.circleIds.includes(c.id));
+  const goalPayouts = getGoalPayouts(goal, payouts);
+  const saved = goalPayouts.reduce((sum, payout) => sum + payout.amount, 0);
   const expectedPayouts = circles.reduce((sum, c) => sum + expectedPayout(c), 0);
   const dailyRate = circles.reduce((sum, c) => sum + parseAmount(c.contribution) / parseDays(c.duration), 0);
   const remaining = Math.max(goal.targetAmount - saved, 0);
@@ -97,5 +126,6 @@ export function getGoalProgress(goal: SavingsGoal, now = Date.now()): GoalProgre
     percent: goal.targetAmount > 0 ? Math.min(100, (saved / goal.targetAmount) * 100) : 0,
     projectedDate,
     onTrack: projectedDate !== null && projectedDate.getTime() <= targetTime,
+    payouts: goalPayouts,
   };
 }
