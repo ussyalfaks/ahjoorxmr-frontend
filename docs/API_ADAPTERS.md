@@ -470,3 +470,124 @@ When updating a page to use the API client:
 6. [ ] **Verify in Both Modes**:
    - Run `NEXT_PUBLIC_API_ADAPTER=mock pnpm dev` to verify the page loads with simulated latency.
    - Run `NEXT_PUBLIC_API_ADAPTER=http NEXT_PUBLIC_API_URL=https://... pnpm dev` to verify live HTTP fetching.
+
+
+---
+
+## 5. Common Pitfalls & Troubleshooting (Issue #331)
+
+### Pitfall 1: Forgetting to Update Query Keys During Invalidation
+
+**Problem**: You create a mutation that modifies data but forget to invalidate the related query key.
+
+```ts
+// ❌ WRONG: Mutation succeeds but cache is not invalidated
+export function useCreateGoal() {
+  return useMutation({
+    mutationFn: (input: CreateGoalInput) => apiClient.createGoal(input),
+    // Missing: onSuccess callback to invalidate
+  });
+}
+```
+
+**Solution**: Always invalidate the relevant query key in the `onSuccess` callback:
+
+```ts
+// ✅ CORRECT: Invalidates cache on mutation success
+export function useCreateGoal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateGoalInput) => apiClient.createGoal(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
+    },
+  });
+}
+```
+
+### Pitfall 2: Missing Loading and Error States in Components
+
+**Problem**: Components render immediately with an empty array, so users cannot tell if data is loading or if an error occurred.
+
+```ts
+// ❌ WRONG: No indication of loading or error
+export function GoalsList() {
+  const { data: goals = [] } = useGoals();
+  return <ul>{goals.map(g => <li key={g.id}>{g.name}</li>)}</ul>;
+}
+```
+
+**Solution**: Explicitly handle `isLoading` and `isError`:
+
+```ts
+// ✅ CORRECT: Provides visual feedback during loading and error
+export function GoalsList() {
+  const { data: goals = [], isLoading, isError } = useGoals();
+
+  if (isLoading) return <div aria-busy>Loading goals...</div>;
+  if (isError) return <div role="alert">Failed to load goals</div>;
+
+  return <ul>{goals.map(g => <li key={g.id}>{g.name}</li>)}</ul>;
+}
+```
+
+### Pitfall 3: Hardcoding API Paths Instead of Using Constants
+
+**Problem**: HTTP adapter methods construct URLs by concatenating strings, risking typos and making refactors brittle.
+
+```ts
+// ❌ WRONG: Hardcoded paths in multiple places
+export const httpAdapter: ApiClient = {
+  getGoals() {
+    return request<SavingsGoal[]>("/api/goals");
+  },
+  createGoal(input: CreateGoalInput) {
+    return request<SavingsGoal>("/api/goals", { method: "POST", body: JSON.stringify(input) });
+  },
+};
+```
+
+**Solution**: Define endpoint constants at the top of the adapter:
+
+```ts
+// ✅ CORRECT: Centralized endpoint definitions
+const ENDPOINTS = {
+  GOALS: "/api/goals",
+} as const;
+
+export const httpAdapter: ApiClient = {
+  getGoals() {
+    return request<SavingsGoal[]>(ENDPOINTS.GOALS);
+  },
+  createGoal(input: CreateGoalInput) {
+    return request<SavingsGoal>(ENDPOINTS.GOALS, { method: "POST", body: JSON.stringify(input) });
+  },
+};
+```
+
+### Pitfall 4: Not Handling Adapter Switching Gracefully
+
+**Problem**: The app works in mock mode but crashes in HTTP mode due to a missing environment variable or incorrect adapter configuration.
+
+**Solution**: Always validate environment configuration in `lib/env.ts` with Zod and fail fast at startup:
+
+```ts
+// lib/env.ts
+import { z } from "zod";
+
+const publicEnv = z.object({
+  NEXT_PUBLIC_API_ADAPTER: z.enum(["mock", "http"]).default("mock"),
+  NEXT_PUBLIC_API_URL: z.string().url().optional(),
+}).parse(process.env);
+
+// Validate cross-field constraints
+if (publicEnv.NEXT_PUBLIC_API_ADAPTER === "http" && !publicEnv.NEXT_PUBLIC_API_URL) {
+  throw new Error(
+    "NEXT_PUBLIC_API_ADAPTER is set to 'http' but NEXT_PUBLIC_API_URL is not configured."
+  );
+}
+
+export { publicEnv };
+```
+
+This ensures errors are caught during build/startup, not at runtime in production.
