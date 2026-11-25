@@ -225,24 +225,26 @@ function CirclesContent() {
      setCreateOpen(true);
    }
 
-   function duplicateCircle(circle: DiscoverCircle) {
-    if (!requireVerified()) return;
-     const contribution = circle.contribution.replace(/[^\d.]/g, "");
-    const roundDuration = circle.duration.replace(/[^\d.]/g, "");
-    setDuplicateValues({
-      name: `${circle.name} (Copy)`,
-      description: circle.description ?? "",
-      contribution,
-      maxMembers: String(circle.totalSlots),
-      roundDuration,
-      category: circle.category ?? "family",
-      isPrivate: circle.isPrivate ?? false,
-      penaltyEnabled: circle.penaltyEnabled ?? false,
-      penaltyType: circle.penaltyType ?? "percentage",
-      penaltyValue: circle.penaltyValue ?? "",
-    });
-    setCreateOpen(true);
-  }
+function duplicateCircle(circle: DiscoverCircle) {
+     if (!requireVerified()) return;
+      const contribution = circle.contribution.replace(/[^\d.]/g, "");
+      const roundDuration = circle.duration.replace(/[^\d.]/g, "");
+      setDuplicateValues({
+        name: `${circle.name} (Copy)`,
+        description: circle.description ?? "",
+        contribution,
+        maxMembers: String(circle.totalSlots),
+        roundDuration,
+        category: circle.category ?? "family",
+        isPrivate: circle.isPrivate ?? false,
+        penaltyEnabled: circle.penaltyEnabled ?? false,
+        penaltyType: circle.penaltyType ?? "percentage",
+        penaltyValue: circle.penaltyValue ?? "",
+        reserveEnabled: circle.reserveEnabled ?? false,
+        reservePercentage: circle.reservePercentage ? String(circle.reservePercentage) : "",
+      });
+      setCreateOpen(true);
+    }
 
   function handleCreateCircle(data: CreateCircleData) {
     const newCircle = {
@@ -259,6 +261,9 @@ function CirclesContent() {
       penaltyEnabled: data.penaltyEnabled,
       penaltyType: data.penaltyType,
       penaltyValue: data.penaltyValue,
+      reserveEnabled: data.reserveEnabled,
+      reservePercentage: data.reserveEnabled ? Number(data.reservePercentage) : 0,
+      reserveBalance: 0,
     };
     saveStoredCircle(newCircle as any);
     setLocalCircles((current) => [newCircle, ...current.filter((c) => c.id !== newCircle.id)]);

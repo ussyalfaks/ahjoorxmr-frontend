@@ -2,6 +2,8 @@ import { safeStorage } from "@/lib/safeStorage";
 import {
   recordContributionPayment as recordPayment,
   refundRemainingContributionCredits,
+  distributeReserveBalance,
+  getReserveBalance,
   type ContributionCreditEntry,
   type RecordContributionInput,
 } from "@/lib/contributionCredit";
@@ -36,4 +38,19 @@ export function refundCompletedCircleCredits(
   const result = refundRemainingContributionCredits(ledger, circleId);
   if (result.refunds.length > 0) saveLedger(result.entries);
   return result.refunds;
+}
+
+export function distributeCompletedCircleReserve(
+  circleId: string,
+  memberAddresses: string[]
+): ReturnType<typeof distributeReserveBalance>["distributions"] {
+  const ledger = getContributionCreditLedger();
+  const result = distributeReserveBalance(ledger, circleId, memberAddresses);
+  if (result.distributions.length > 0) saveLedger(result.entries);
+  return result.distributions;
+}
+
+export function getCircleReserveBalance(circleId: string): number {
+  const ledger = getContributionCreditLedger();
+  return getReserveBalance(ledger, circleId);
 }

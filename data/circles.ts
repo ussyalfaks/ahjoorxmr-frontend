@@ -32,6 +32,10 @@ export interface DiscoverCircle {
   penaltyEnabled?: boolean;
   penaltyType?: "percentage" | "fixed";
   penaltyValue?: string;
+  /** Reserve / emergency fund configuration */
+  reserveEnabled?: boolean;
+  reservePercentage?: number;
+  reserveBalance?: number;
 }
 
 export const MOCK_CIRCLES: DiscoverCircle[] = [
