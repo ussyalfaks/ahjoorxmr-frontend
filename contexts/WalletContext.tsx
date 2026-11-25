@@ -58,6 +58,7 @@ interface WalletContextValue {
   activeWalletAddress: string | null;
   network: StellarNetwork;
   isExtensionMissing: boolean;
+  error: string | null;
   needsReauthentication: boolean;
   reauthenticationError: string | null;
 
@@ -205,6 +206,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [activeWalletAddress, setActiveWalletAddress] = useState<string | null>(null);
   const [network, setNetwork] = useState<StellarNetwork>("testnet");
   const [isExtensionMissing, setIsExtensionMissing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [needsReauthentication, setNeedsReauthentication] = useState(false);
   const [reauthenticationError, setReauthenticationError] = useState<string | null>(null);
 
@@ -274,9 +276,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const connect = useCallback(
     async (wid: WalletId) => {
+      setError(null);
       const checkInstalled = getExtensionCheckFn(wid);
       if (!checkInstalled()) {
         setIsExtensionMissing(true);
+        const errMsg = `${AVAILABLE_WALLETS.find((w) => w.id === wid)?.name ?? wid} not installed or not enabled`;
+        setError(errMsg);
         return null;
       }
       setIsExtensionMissing(false);
@@ -288,11 +293,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         } else {
           addr = await connectWalletKit(wid, network);
         }
-      } catch {
-        setIsExtensionMissing(true);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to connect wallet";
+        if (
+          message.toLowerCase().includes("not installed") ||
+          message.toLowerCase().includes("not enabled")
+        ) {
+          setIsExtensionMissing(true);
+        } else {
+          setIsExtensionMissing(false);
+        }
+        setError(message);
         return null;
       }
 
+      setError(null);
+      setIsExtensionMissing(false);
       const balance = await fetchStellarBalance(addr, network);
 
       setLinkedWallets((prev) => {
@@ -337,6 +353,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(
     (addrToRemove?: string) => {
+      setError(null);
+      setIsExtensionMissing(false);
       if (!addrToRemove || addrToRemove === activeWalletAddress) {
         clearAuthToken();
         setNeedsReauthentication(false);
@@ -418,6 +436,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         activeWalletAddress,
         network,
         isExtensionMissing,
+        error,
         needsReauthentication,
         reauthenticationError,
         address: activeWalletAddress,

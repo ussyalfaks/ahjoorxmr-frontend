@@ -7,7 +7,7 @@ export default function Toaster() {
   const { toasts, dismissToast } = useToast();
 
   return (
-    <div className="pointer-events-none fixed right-4 top-4 z-[100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 sm:right-6 sm:top-6 sm:w-full">
+    <div className="pointer-events-none fixed end-4 top-4 z-[100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 sm:end-6 sm:top-6 sm:w-full">
       {toasts.map((toast) => {
         const styles = toastVariantStyles(toast.variant);
         const Icon = styles.icon;

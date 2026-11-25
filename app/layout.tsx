@@ -46,12 +46,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
         {/* Applies the persisted/system theme before hydration to avoid a flash of the wrong theme. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('ahjoor-theme');var d=t==='dark'||((t==null||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();`,
+          }}
+        />
+        {/* Applies the persisted language and direction before hydration to avoid a flash of LTR. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var l=localStorage.getItem('ahjoor-language')||'en';var rtl=['ar','he','fa','ur'].indexOf(l.toLowerCase())!==-1;document.documentElement.lang=l;document.documentElement.dir=rtl?'rtl':'ltr';document.documentElement.dataset.direction=rtl?'rtl':'ltr';}catch(e){}})();`,
           }}
         />
         {/* Exposes stored cookie consent so analytics scripts can check it before loading. */}

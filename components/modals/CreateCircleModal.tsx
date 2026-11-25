@@ -27,6 +27,8 @@ export interface CreateCircleData {
   penaltyEnabled: boolean;
   penaltyType: "percentage" | "fixed";
   penaltyValue: string;
+  reserveEnabled: boolean;
+  reservePercentage: string;
 }
 
 interface CircleTemplate {
@@ -80,6 +82,8 @@ const EMPTY: CreateCircleData = {
   penaltyEnabled: false,
   penaltyType: "percentage",
   penaltyValue: "",
+  reserveEnabled: false,
+  reservePercentage: "",
 };
 
 const TOTAL_STEPS = 4;
@@ -129,12 +133,19 @@ export default function CreateCircleModal({ open, onClose, onCreate, initialValu
   const step1Valid = form.name.trim().length > 0;
   const contributionAmount = Number(form.contribution);
   const penaltyAmount = Number(form.penaltyValue);
+  const reserveAmount = Number(form.reservePercentage);
   const penaltyIsValid =
     !form.penaltyEnabled ||
     (form.penaltyValue.trim().length > 0 &&
       Number.isFinite(penaltyAmount) &&
       penaltyAmount > 0 &&
       (form.penaltyType === "percentage" ? penaltyAmount <= 100 : penaltyAmount <= contributionAmount));
+  const reserveIsValid =
+    !form.reserveEnabled ||
+    (form.reservePercentage.trim().length > 0 &&
+      Number.isFinite(reserveAmount) &&
+      reserveAmount > 0 &&
+      reserveAmount <= 100);
   const step2Valid =
     form.contribution.trim().length > 0 &&
     Number(form.contribution) > 0 &&
@@ -142,13 +153,19 @@ export default function CreateCircleModal({ open, onClose, onCreate, initialValu
     Number(form.maxMembers) >= 2 &&
     form.roundDuration.trim().length > 0 &&
     Number(form.roundDuration) >= 1 &&
-    (!form.penaltyEnabled || penaltyIsValid);
+    (!form.penaltyEnabled || penaltyIsValid) &&
+    (!form.reserveEnabled || reserveIsValid);
 
   function formatPenalty() {
     if (!form.penaltyEnabled) return "No late contribution penalty";
     return form.penaltyType === "percentage"
       ? `${form.penaltyValue}% of the contribution`
       : `${form.penaltyValue} USDT fixed fee`;
+  }
+
+  function formatReserve() {
+    if (!form.reserveEnabled) return "No reserve / emergency fund";
+    return `${form.reservePercentage}% reserve per contribution`;
   }
 
   async function handleSubmit() {
@@ -172,7 +189,7 @@ export default function CreateCircleModal({ open, onClose, onCreate, initialValu
       >
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
+          className="absolute top-4 end-4 text-[var(--muted)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B6B76] rounded"
           aria-label="Close"
         >
           <X size={20} />
@@ -431,6 +448,45 @@ export default function CreateCircleModal({ open, onClose, onCreate, initialValu
                       <p className="mt-2 text-xs text-red-400">Enter a positive penalty up to 100%, or no more than the contribution amount.</p>
                     )}
                   </div>
+                  <div className="border-t border-[var(--ov-14)] pt-4">
+                    <label className="flex items-start gap-3 cursor-pointer" htmlFor="reserve-enabled">
+                      <input
+                        id="reserve-enabled"
+                        type="checkbox"
+                        checked={form.reserveEnabled}
+                        onChange={(e) => setForm((current) => ({ ...current, reserveEnabled: e.target.checked }))}
+                        className="mt-0.5 h-4 w-4 rounded border-[var(--ov-14)] text-[#4B6B76] focus:ring-[#4B6B76]"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-[var(--text)]">Circle Reserve / Emergency Fund</span>
+                        <span className="block text-xs text-[var(--muted)] mt-0.5">Set aside a small percentage of each contribution into a reserve buffer.</span>
+                      </span>
+                    </label>
+                    {form.reserveEnabled && (
+                      <div className="mt-3">
+                        <label className="text-xs text-[var(--muted)] mb-1.5 block" htmlFor="reserve-percentage">
+                          Reserve Percentage (%)
+                        </label>
+                        <input
+                          id="reserve-percentage"
+                          type="number"
+                          min="0.01"
+                          max="100"
+                          step="0.01"
+                          value={form.reservePercentage}
+                          onChange={set("reservePercentage")}
+                          placeholder="e.g. 5"
+                          className="w-full bg-[var(--ov-0a)] border border-[var(--ov-14)] rounded-xl px-3 py-3 text-[var(--text)] text-sm placeholder:text-[var(--faint)] focus:outline-none focus:ring-2 focus:ring-[#4B6B76]"
+                        />
+                        <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                          <strong className="text-[var(--text)]">How it works:</strong> Each member contributes{" "}
+                          {form.reservePercentage || "0"}% of their payment into a shared reserve fund. If a member
+                          misses a payment, the reserve covers the shortfall so payouts stay on schedule. At the
+                          end of the circle, any unused reserve is split back to members proportionally.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -453,6 +509,7 @@ export default function CreateCircleModal({ open, onClose, onCreate, initialValu
                     { label: "Round Duration", value: `${form.roundDuration} days` },
                     { label: "Visibility", value: form.isPrivate ? "Private (request to join)" : "Public (direct join)" },
                     { label: "Late penalty", value: formatPenalty() },
+                    { label: "Reserve / Emergency Fund", value: formatReserve() },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex justify-between text-sm">
                       <span className="text-[var(--muted)]">{label}</span>

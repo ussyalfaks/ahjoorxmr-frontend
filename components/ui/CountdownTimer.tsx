@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { useTimezone } from "@/hooks/useTimezone";
+import { formatDateTimeWithTz } from "@/lib/timezone";
 
 interface Props {
   deadline: Date | null;
@@ -30,6 +32,7 @@ function getTimeLeft(deadline: Date): TimeLeft | null {
 }
 
 export default function CountdownTimer({ deadline, paused = false }: Props) {
+  const { timezone, timezoneAbbr } = useTimezone();
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(
     deadline ? getTimeLeft(deadline) : null
   );
@@ -78,18 +81,21 @@ export default function CountdownTimer({ deadline, paused = false }: Props) {
     : "text-[var(--muted)]";
 
   const pad = (n: number) => String(n).padStart(2, "0");
+  const formattedDeadline = deadline ? formatDateTimeWithTz(deadline, timezone) : "";
 
   return (
     <div
       className={`flex items-center gap-1 text-xs font-mono font-medium tabular-nums ${colorClass}`}
       role="timer"
-      aria-label={`${timeLeft.days} days ${timeLeft.hours} hours ${timeLeft.minutes} minutes${reducedMotion ? "" : ` ${timeLeft.seconds} seconds`} remaining`}
+      title={formattedDeadline ? `Deadline: ${formattedDeadline}` : undefined}
+      aria-label={`${timeLeft.days} days ${timeLeft.hours} hours ${timeLeft.minutes} minutes${reducedMotion ? "" : ` ${timeLeft.seconds} seconds`} remaining (${formattedDeadline})`}
       aria-live="off"
     >
       {timeLeft.days > 0 && <span>{timeLeft.days}d</span>}
       <span>{pad(timeLeft.hours)}h</span>
       <span>{pad(timeLeft.minutes)}m</span>
       {!reducedMotion && <span>{pad(timeLeft.seconds)}s</span>}
+      <span className="text-[10px] text-[var(--faint)] font-sans ml-0.5">{timezoneAbbr}</span>
     </div>
   );
 }

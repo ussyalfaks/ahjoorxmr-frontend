@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useState } from "react";
 import { getHistoricalUsdRate } from "@/lib/historicalRates";
+import { formatCurrency, formatNumber } from "@/lib/currencyFormat";
 import ChartDataTable, { ChartViewToggle } from "@/components/charts/ChartDataTable";
 
 export interface ContributionRecord {
@@ -25,7 +26,7 @@ function formatDate(date: string) {
 }
 
 function formatUsd(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value);
+  return formatCurrency(value, "USD", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function ContributionFiatValueChart({ contributions }: { contributions: ContributionRecord[] }) {
@@ -77,7 +78,7 @@ export default function ContributionFiatValueChart({ contributions }: { contribu
     y: 88 - ((mode === "fiat" ? point.fiatValue : point.amount) / maxValue) * 72,
   }));
   const valueLabel = (point: HistoricalContribution) =>
-    mode === "fiat" ? formatUsd(point.fiatValue) : `${point.amount.toLocaleString()} USDT`;
+    mode === "fiat" ? formatUsd(point.fiatValue) : formatCurrency(point.amount, "USDT");
   const chartDescription = points.length === 0
     ? "No contributions yet."
     : `Line chart of ${points.length} contributions from ${formatDate(points[0].date)} (${valueLabel(points[0])}) to ${formatDate(points[points.length - 1].date)} (${valueLabel(points[points.length - 1])}).`;
@@ -135,7 +136,7 @@ export default function ContributionFiatValueChart({ contributions }: { contribu
             ]}
             rows={points.map((point) => ({
               date: formatDate(point.date),
-              amount: point.amount.toLocaleString(),
+              amount: formatNumber(point.amount),
               fiat: formatUsd(point.fiatValue),
               rate: `${formatUsd(point.rate)}${point.estimated ? " (estimated)" : ""}`,
             }))}
@@ -147,7 +148,7 @@ export default function ContributionFiatValueChart({ contributions }: { contribu
             {hoveredPoint !== null && points[hoveredPoint] && (
               <div className="absolute right-4 top-4 z-10 rounded-xl border border-[var(--ov-14)] bg-[var(--bg)] px-3 py-2 text-right text-xs shadow-xl sm:right-6 sm:top-6" role="status">
                 <p className="font-medium text-[var(--chart-1)]">{formatDate(points[hoveredPoint].date)}</p>
-                <p className="mt-1 text-[var(--text)]">{points[hoveredPoint].amount.toLocaleString()} USDT</p>
+                <p className="mt-1 text-[var(--text)]">{formatCurrency(points[hoveredPoint].amount, "USDT")}</p>
                 <p className="text-[var(--text)]">{formatUsd(points[hoveredPoint].fiatValue)}</p>
                 <p className="text-[var(--muted)]">Rate: {formatUsd(points[hoveredPoint].rate)} / USDT{points[hoveredPoint].estimated ? " (estimated)" : ""}</p>
               </div>
@@ -181,8 +182,8 @@ export default function ContributionFiatValueChart({ contributions }: { contribu
             {points.map((point) => (
               <div key={point.id} className="rounded-xl bg-[var(--content)] p-3 text-sm" title={`${formatDate(point.date)}: ${point.amount} USDT, ${formatUsd(point.fiatValue)}, rate ${point.rate.toFixed(4)}`}>
                 <div className="flex items-center justify-between gap-2 text-xs text-[var(--muted)]"><span>{formatDate(point.date)}</span>{point.estimated && <span className="text-amber-600 dark:text-amber-400">Estimated</span>}</div>
-                <p className="mt-1 font-semibold text-[var(--text)]">{mode === "fiat" ? formatUsd(point.fiatValue) : `${point.amount.toLocaleString()} USDT`}</p>
-                <p className="mt-1 text-xs text-[var(--muted)]">{point.amount.toLocaleString()} USDT at {formatUsd(point.rate)} / USDT</p>
+                <p className="mt-1 font-semibold text-[var(--text)]">{mode === "fiat" ? formatUsd(point.fiatValue) : formatCurrency(point.amount, "USDT")}</p>
+                <p className="mt-1 text-xs text-[var(--muted)]">{formatCurrency(point.amount, "USDT")} at {formatUsd(point.rate)} / USDT</p>
               </div>
             ))}
           </div>

@@ -179,7 +179,7 @@ We follow a structured branching strategy to keep the codebase organized:
    git pull upstream main
    ```
 
-## Code Standards
+## Code Standards (Issue #317)
 
 ### TypeScript/JavaScript
 
@@ -188,33 +188,45 @@ We follow a structured branching strategy to keep the codebase organized:
 - Use meaningful variable and function names
 - Add comments only where they clarify non-obvious logic
 - Keep functions small and focused
+- Avoid `any` types; use proper TypeScript generics
+- Import types using `import type` to aid tree-shaking
 
 ### React Components
 
 - Use functional components with hooks
 - Follow the project's component structure
-- Implement proper prop types
-- Handle loading and error states
+- Implement proper prop types using TypeScript interfaces
+- Handle loading and error states explicitly
 - Make components reusable when possible
+- Memoize components when necessary using `React.memo`
+- Use `React.ReactNode` for children instead of less specific types
 
 ### Styling
 
 - Follow the existing styling approach (Tailwind CSS/CSS Modules)
 - Maintain responsive design principles
 - Ensure accessibility standards (WCAG)
+- Use semantic HTML elements (`<button>`, `<nav>`, `<article>`, etc.)
+- Add appropriate ARIA labels for assistive technologies
+- Test color contrast ratios for readability
 
 ### Testing
 
-- Write tests for new features
+- Write tests for new features and bug fixes
 - Update existing tests when modifying code
-- Ensure relevant checks pass before submitting a PR:
-  ```bash
-  pnpm run lint
-  pnpm run typecheck
-  pnpm run test
-  pnpm run build
-  ```
-- For end-to-end tests, run `pnpm run test:e2e`. Install the Playwright browser first with `pnpm exec playwright install chromium`.
+- Ensure all tests pass before submitting PR
+- Aim for meaningful test coverage (focus on critical paths)
+- Use React Testing Library for component tests
+- Test user interactions, not implementation details
+- Include accessibility checks in component tests
+
+### Code Organization
+
+- Keep files focused on a single responsibility
+- Extract shared utilities to `lib/` directory
+- Place reusable hooks in `hooks/` directory
+- Organize components by feature domain (e.g., `components/wallet/`, `components/circles/`)
+- Use barrel exports (`index.ts`) for cleaner imports
 
 ## Commit Message Guidelines
 
