@@ -9,6 +9,8 @@ import {
   XCircle,
   Activity,
   Megaphone,
+  Pin,
+  PinOff,
   Link2,
   PauseCircle,
   PlayCircle,
@@ -60,6 +62,15 @@ const EVENT_CONFIG: Record<
     icon: <Megaphone size={16} />,
     color: "text-[#4B6B76] bg-[#4B6B7615]",
   },
+  comment_pinned: {
+    label: "pinned a message",
+    icon: <Pin size={16} />,
+    color: "text-[#F59E0B] bg-[#F59E0B15]",
+  },
+  comment_unpinned: {
+    label: "unpinned a message",
+    icon: <PinOff size={16} />,
+    color: "text-[var(--muted)] bg-[var(--ov-0a)]",
   invite_used: {
     label: "Invite link used",
     icon: <Link2 size={16} />,

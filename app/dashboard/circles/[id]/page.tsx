@@ -21,6 +21,8 @@ import ExportButton from "@/components/ui/ExportButton";
 import { useToast } from "@/components/ui/Toast";
 import type { CircleEvent, PenaltyConfig } from "@/types/circle";
 import type { Dispute } from "@/types/dispute";
+import { type Comment, MAX_PINNED_COMMENTS } from "@/types/discussion";
+import type { ExportRow } from "@/lib/export";
 import type { Comment } from "@/types/discussion";
 import type { ExportColumn, ExportRecord, ExportRow } from "@/lib/export";
 import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
@@ -29,6 +31,7 @@ import { getMockCircleHealth } from "@/lib/circleHealth";
 import { getPayoutDraw, type PayoutDraw } from "@/lib/payoutDraw";
 import AutoPaySection from "@/components/circles/AutoPaySection";
 import { enableAutoPay, getAutoPayConfig, recordAutoPayAttempt } from "@/lib/autoPay";
+import { useCircleModeration } from "@/hooks/useCircleModeration";
 import CircleRulesView from "@/components/circles/CircleRulesView";
 import { CIRCLE_RULES_UPDATED_EVENT, getCircleRules, rulesMarkdownToList, type CircleRulesRecord } from "@/lib/circleRules";
 import { getCircleFaq, CIRCLE_FAQ_UPDATED_EVENT, type FaqItem } from "@/lib/circleFaq";
@@ -199,6 +202,9 @@ const MOCK_COMMENTS: Comment[] = [
     displayName: "Emeka",
     body: "Hey everyone! Just a reminder that round 2 contributions are due by end of week.",
     createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000),
+    isPinned: true,
+    pinnedAt: new Date(now - 3 * 24 * 60 * 60 * 1000),
+    pinnedBy: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f",
   },
   {
     id: "c2",
@@ -206,6 +212,24 @@ const MOCK_COMMENTS: Comment[] = [
     author: CURRENT_WALLET,
     body: "Thanks for the heads up! I already made my contribution earlier today.",
     createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000),
+    parentId: "c1",
+  },
+  {
+    id: "c2b",
+    circleId: "1",
+    author: "0x111abc2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8",
+    body: "Confirmed, mine has been submitted as well.",
+    createdAt: new Date(now - 1.5 * 24 * 60 * 60 * 1000),
+    parentId: "c1",
+  },
+  {
+    id: "c2c",
+    circleId: "1",
+    author: "0xemeka4b2c8f1d9e0a7b3c5d6e8f2a1b4c7d9e0f",
+    displayName: "Emeka",
+    body: "Thanks for the quick responses everyone! On track for another smooth round.",
+    createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000),
+    parentId: "c1",
   },
   {
     id: "c3",
@@ -220,6 +244,9 @@ const MOCK_COMMENTS: Comment[] = [
     author: CURRENT_WALLET,
     body: "Welcome everyone to the Community Fund circle! Feel free to use this thread for updates and questions.",
     createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000),
+    isPinned: true,
+    pinnedAt: new Date(now - 1 * 24 * 60 * 60 * 1000),
+    pinnedBy: CURRENT_WALLET,
   },
 ];
 
@@ -444,7 +471,8 @@ export default function CircleDetailPage({
   const [comments, setComments] = useState<Comment[]>(() =>
     MOCK_COMMENTS.filter((c) => c.circleId === id)
   );
-  const [payoutDraw, setPayoutDraw] = useState<PayoutDraw | null>(null);
+  const [circleEvents, setCircleEvents] = useState<CircleEvent[]>(() => MOCK_EVENTS);
+  const [payoutDraw] = useState<PayoutDraw | null>(() => getPayoutDraw(id));
   const [announcementEvents, setAnnouncementEvents] = useState<CircleEvent[]>([]);
   const [inviteEvents, setInviteEvents] = useState<CircleEvent[]>([]);
   const [creditLedger, setCreditLedger] = useState<ContributionCreditEntry[]>([]);
@@ -509,9 +537,7 @@ export default function CircleDetailPage({
   const [circleFaq, setCircleFaq] = useState<FaqItem[]>(() => getCircleFaq(id));
   const [openFaqId, setOpenFaqId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setPayoutDraw(getPayoutDraw(id));
-  }, [id]);
+  const moderation = useCircleModeration(circle, CURRENT_WALLET);
 
   // Celebrate milestones this circle has reached (each plays once per user).
   useEffect(() => {
@@ -635,6 +661,106 @@ export default function CircleDetailPage({
     [id]
   );
 
+  const handleReplyComment = useCallback(
+    async (body: string, parentId: string) => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      setComments((current) => [
+        ...current,
+        {
+          id: `comment-${Date.now()}`,
+          circleId: id,
+          author: CURRENT_WALLET,
+          body,
+          createdAt: new Date(),
+          parentId,
+        },
+      ]);
+    },
+    [id]
+  );
+
+  const handlePinComment = useCallback(
+    (commentId: string) => {
+      const target = comments.find((c) => c.id === commentId);
+      if (!target) return;
+
+      const currentPinned = comments.filter((c) => c.isPinned && !c.isDeleted);
+      if (currentPinned.length >= MAX_PINNED_COMMENTS) {
+        showToast({
+          title: "Pin limit reached",
+          message: `You can pin up to ${MAX_PINNED_COMMENTS} messages per circle. Please unpin a message first.`,
+          variant: "error",
+        });
+        return;
+      }
+
+      setComments((current) =>
+        current.map((c) =>
+          c.id === commentId
+            ? { ...c, isPinned: true, pinnedAt: new Date(), pinnedBy: CURRENT_WALLET }
+            : c
+        )
+      );
+
+      const pinEvent: CircleEvent = {
+        id: `event-pin-${Date.now()}`,
+        type: "comment_pinned",
+        actor: CURRENT_WALLET,
+        timestamp: new Date(),
+        meta: { message: target.body, commentId: target.id },
+      };
+      setCircleEvents((prev) => [pinEvent, ...prev]);
+
+      showToast({
+        title: "Message pinned",
+        message: "The message is now pinned at the top and logged to activity.",
+        variant: "success",
+      });
+    },
+    [comments, showToast]
+  );
+
+  const handleUnpinComment = useCallback(
+    (commentId: string) => {
+      const target = comments.find((c) => c.id === commentId);
+      if (!target) return;
+
+      setComments((current) =>
+        current.map((c) =>
+          c.id === commentId
+            ? { ...c, isPinned: false, pinnedAt: undefined, pinnedBy: undefined }
+            : c
+        )
+      );
+
+      const unpinEvent: CircleEvent = {
+        id: `event-unpin-${Date.now()}`,
+        type: "comment_unpinned",
+        actor: CURRENT_WALLET,
+        timestamp: new Date(),
+        meta: { message: target.body, commentId: target.id },
+      };
+      setCircleEvents((prev) => [unpinEvent, ...prev]);
+
+      showToast({
+        title: "Message unpinned",
+        message: "The message was unpinned and logged to activity.",
+        variant: "success",
+      });
+    },
+    [comments, showToast]
+  );
+
+  const handleDeleteComment = useCallback(
+    (commentId: string) => {
+      setComments((current) => current.filter((c) => c.id !== commentId));
+      showToast({
+        title: "Comment deleted",
+        variant: "success",
+      });
+    },
+    [showToast]
+  );
   const handleModerationAction = useCallback((action: ModerationEvent) => {
     const event: CircleEvent = {
       id: `mod-${Date.now()}`,
@@ -738,6 +864,7 @@ export default function CircleDetailPage({
   const currentUserPaid = (currentUserParticipant?.paid ?? false) || currentRoundPaymentRecorded;
   const isNextRecipient = circle.nextPayoutRecipient === CURRENT_WALLET;
   const canManageCircle = circle.isOrganizer || circle.isCoOrganizer;
+  const health = getMockCircleHealth(circle.id);
   const circleCurrency = getCircleCurrency(circle.contribution);
   const payoutInProgress = isPayoutInProgress(isNextRecipient, circle.nextPayoutDeadline);
   const visibleCreditParticipants = circle.participants.filter(
@@ -1500,6 +1627,7 @@ export default function CircleDetailPage({
             <h2 className="text-lg font-bold font-sora text-[var(--text)] shrink-0">Activity</h2>
             <div className="ml-4 h-px bg-[var(--ov-1a)] w-full" aria-hidden="true" />
           </div>
+          <ActivityFeed events={[...circleEvents, ...announcementEvents]} pageSize={5} />
           <ActivityFeed events={[...MOCK_EVENTS, ...announcementEvents, ...inviteEvents, ...pauseEvents]} pageSize={5} />
         </div>
 
@@ -1548,6 +1676,21 @@ export default function CircleDetailPage({
         hidden={activeTab !== "discussion"}
         className={activeTab === "discussion" ? "space-y-6" : ""}
       >
+        <DiscussionThread
+          comments={comments}
+          currentAddress={CURRENT_WALLET}
+          canModerate={moderation.canModerate}
+          canPin={moderation.canPin}
+          onReply={handleReplyComment}
+          onPin={handlePinComment}
+          onUnpin={handleUnpinComment}
+          onDeleteComment={handleDeleteComment}
+          disabled={!circle.isMember}
+        />
+        <CommentComposer
+          onSubmit={handlePostComment}
+          disabled={!circle.isMember}
+        />
         {circle.isMember && (
           <>
             <DiscussionThread

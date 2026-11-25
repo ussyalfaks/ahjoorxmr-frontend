@@ -43,6 +43,8 @@ export type EventType =
   | "round_started"
   | "circle_closed"
   | "announcement_sent"
+  | "comment_pinned"
+  | "comment_unpinned";
   | "invite_used"
   | "circle_paused"
   | "circle_resumed";
