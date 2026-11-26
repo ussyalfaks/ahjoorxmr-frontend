@@ -29,6 +29,25 @@ export interface Comment {
   removedBy?: string;
 }
 
+export interface PollOption {
+  id: string;
+  text: string;
+  /** Wallet addresses that selected this option. */
+  voterAddresses: string[];
+}
+
+export interface CirclePoll {
+  id: string;
+  circleId: string;
+  question: string;
+  options: PollOption[];
+  createdBy: string;
+  createdAt: string;
+  closeAt?: string;
+  /** Explicit close by the organizer, in addition to closeAt. */
+  closed: boolean;
+}
+
 /** Max character length enforced by the composer. */
 export const COMMENT_MAX_LENGTH = 500;
 

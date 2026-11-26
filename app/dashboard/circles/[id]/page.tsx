@@ -22,8 +22,6 @@ import { useToast } from "@/components/ui/Toast";
 import type { CircleEvent, PenaltyConfig } from "@/types/circle";
 import type { Dispute } from "@/types/dispute";
 import { type Comment, MAX_PINNED_COMMENTS } from "@/types/discussion";
-import type { ExportRow } from "@/lib/export";
-import type { Comment } from "@/types/discussion";
 import type { ExportColumn, ExportRecord, ExportRow } from "@/lib/export";
 import CircleHealthIndicator from "@/components/circles/CircleHealthIndicator";
 import BookmarkButton from "@/components/circles/BookmarkButton";
@@ -43,6 +41,7 @@ import PayoutScheduleTimeline, { type PayoutRound } from "@/components/circles/P
 import PayoutMethodSelector from "@/components/circles/PayoutMethodSelector";
 import PayoutMethodBadge from "@/components/circles/PayoutMethodBadge";
 import { getCircleCurrency, isPayoutInProgress } from "@/lib/payoutMethods";
+import CirclePolls from "@/components/circles/CirclePolls";
 import ShareMilestoneButton from "@/components/ui/ShareMilestoneButton";
 import type { MilestoneData } from "@/types/milestone";
 import { useCirclePause } from "@/hooks/useCirclePause";
@@ -456,9 +455,13 @@ export default function CircleDetailPage({
   const rawCircle = CIRCLES[id] ?? getStoredCircle(id);
   const circle = useMemo(() => {
     if (!rawCircle) return null;
+    const currentParticipant = rawCircle.participants.find(
+      (participant) => participant.address.toLowerCase() === CURRENT_WALLET.toLowerCase()
+    );
     return {
       ...rawCircle,
       isOrganizer: rawCircle.creator.toLowerCase() === CURRENT_WALLET.toLowerCase(),
+      isCoOrganizer: currentParticipant?.role === "co-organizer",
       isMember: rawCircle.participants.some(
         (p) => p.address.toLowerCase() === CURRENT_WALLET.toLowerCase()
       ),
@@ -1731,21 +1734,6 @@ export default function CircleDetailPage({
         hidden={activeTab !== "discussion"}
         className={activeTab === "discussion" ? "space-y-6" : ""}
       >
-        <DiscussionThread
-          comments={comments}
-          currentAddress={CURRENT_WALLET}
-          canModerate={moderation.canModerate}
-          canPin={moderation.canPin}
-          onReply={handleReplyComment}
-          onPin={handlePinComment}
-          onUnpin={handleUnpinComment}
-          onDeleteComment={handleDeleteComment}
-          disabled={!circle.isMember}
-        />
-        <CommentComposer
-          onSubmit={handlePostComment}
-          disabled={!circle.isMember}
-        />
         {circle.isMember && (
           <>
             <DiscussionThread
@@ -1753,11 +1741,23 @@ export default function CircleDetailPage({
               currentAddress={CURRENT_WALLET}
               circleId={id}
               organizerAddress={circle.creator}
+              canModerate={moderation.canModerate}
+              canPin={moderation.canPin}
+              onReply={handleReplyComment}
+              onPin={handlePinComment}
+              onUnpin={handleUnpinComment}
+              onDeleteComment={handleDeleteComment}
+              disabled={false}
               onModerationAction={handleModerationAction}
+            />
+            <CirclePolls
+              circleId={id}
+              currentAddress={CURRENT_WALLET}
+              canCreate={circle.isOrganizer || circle.isCoOrganizer}
             />
             <CommentComposer
               onSubmit={handlePostComment}
-              disabled={!circle.isMember}
+              disabled={false}
             />
           </>
         )}
